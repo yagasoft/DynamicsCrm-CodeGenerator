@@ -1,14 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="d57dd223-384b-41dd-b5d0-814a71ce8d61" Version="6.15.3" Language="en-US" Publisher="Ahmed el-Sawalhy" />
-        <DisplayName>CRM Code Generator</DisplayName>
-        <Description xml:space="preserve">Allows you to generate CRM schema files.  Much like CrmSrvUtil.exe but with a lot more features; select entities (smaller code/assembly), runs in VisualStudio, T4 templates for control of how code is generated (also allows other languages),  Template is saved to project,   connection info save to SUO &amp;  so that you can modify it as needed.</Description>
+        <Identity Id="CrmCodeGenerator" Version="6.15.4" Language="en-US" Publisher="Ahmed el-Sawalhy" />
+        <DisplayName>Dynamics CRM - Template-based Code Generator</DisplayName>
+        <Description xml:space="preserve">Visual Studio extension that allows generating early-bound classes for Microsoft Dynamics CRM entities based on a template.</Description>
+        <MoreInfo>https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator</MoreInfo>
         <License>license.txt</License>
         <ReleaseNotes>README.txt</ReleaseNotes>
         <Icon>Resources\Generator.ico</Icon>
         <PreviewImage>Resources\Generator.png</PreviewImage>
-        <Tags>CRM</Tags>
+        <Tags>dynamics,crm,generator</Tags>
     </Metadata>
     <Installation InstalledByMsi="false">
         <InstallationTarget Version="[12.0,)" Id="Microsoft.VisualStudio.Pro" />
