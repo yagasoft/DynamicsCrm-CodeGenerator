@@ -7,8 +7,8 @@
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator</MoreInfo>
         <License>license.txt</License>
         <ReleaseNotes>README.txt</ReleaseNotes>
-        <Icon>Resources\Generator.ico</Icon>
-        <PreviewImage>Resources\Generator.png</PreviewImage>
+        <Icon>Resources\generator-logo.png</Icon>
+        <PreviewImage>Resources\generator-logo.png</PreviewImage>
         <Tags>dynamics,crm,generator</Tags>
     </Metadata>
     <Installation InstalledByMsi="false">
