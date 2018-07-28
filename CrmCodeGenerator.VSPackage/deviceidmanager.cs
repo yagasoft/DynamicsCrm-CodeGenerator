@@ -251,10 +251,10 @@ public static class DeviceIdManager
         file.Delete();
         return null;
 
-        using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
-        {
-            return Deserialize<LiveDevice>(stream);
-        }
+		//using (FileStream stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+		//{
+		//	return Deserialize<LiveDevice>(stream);
+		//}
     }
 
     private static void WriteDevice(string environment, LiveDevice device)

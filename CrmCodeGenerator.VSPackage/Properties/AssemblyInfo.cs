@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio.Shell;
-using System;
+﻿using System;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
@@ -11,9 +10,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("CrmCodeGenerator.VSPackage")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Labashosky")]
+[assembly: AssemblyCompany("Ahmed el-Sawalhy (yagasoft.com)")]
 [assembly: AssemblyProduct("CrmCodeGenerator.VSPackage")]
-[assembly: AssemblyCopyright("2013")]
+[assembly: AssemblyCopyright("2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]   
 [assembly: ComVisible(false)]     
@@ -33,5 +32,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
-[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",  NewVersion = "8.0.0.0", OldVersionLowerBound = "1.0.0.0",  OldVersionUpperBound = "7.0.0.0")]
+
 

@@ -10,11 +10,10 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 {
     public static class Status
     {
-        public static void Update(string message)
+        public static void Update(string message, bool newLine = true)
         {
             //Configuration.Instance.DTE.ExecuteCommand("View.Output");
             var dte = Package.GetGlobalService(typeof(SDTE)) as EnvDTE.DTE;
-            //var win = dte.Windows.Item(EnvDTE.Constants.vsWindowKindOutput);
             var win = dte.Windows.Item("{34E76E81-EE4A-11D0-AE2E-00A0C90FFFC3}");
             win.Visible = true;
 
@@ -24,9 +23,15 @@ namespace CrmCodeGenerator.VSPackage.Helpers
             int hr = outputWindow.CreatePane(guidGeneral, "Crm Code Generator", 1, 0);
             hr = outputWindow.GetPane(guidGeneral, out pane);
             pane.Activate();
-            pane.OutputString(message);
-            pane.OutputString("\n");
-            pane.FlushToTaskList();
+
+			pane.OutputString(message);
+
+			if (newLine)
+			{
+				pane.OutputString("\n");
+			}
+
+			pane.FlushToTaskList();
             System.Windows.Forms.Application.DoEvents();
         }
         public static void Clear()

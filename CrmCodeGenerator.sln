@@ -1,26 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{FE93ED76-041D-4F4C-8569-FC05C2D982B7}"
-	ProjectSection(SolutionItems) = preProject
-		lib\microsoft.crm.sdk.proxy.dll = lib\microsoft.crm.sdk.proxy.dll
-		lib\microsoft.xrm.client.dll = lib\microsoft.xrm.client.dll
-		lib\microsoft.xrm.sdk.dll = lib\microsoft.xrm.sdk.dll
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrmCodeGenerator.VSPackage", "CrmCodeGenerator.VSPackage\CrmCodeGenerator.VSPackage.csproj", "{474A5BC2-BEFF-4F74-A029-7ED81B6633A8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrmCodeGenerator.Controls", "CrmCodeGenerator.Controls\CrmCodeGenerator.Controls.csproj", "{CE17A54E-0661-429F-AFDC-272E8668B14E}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D53929D0-932B-4D63-9736-AF3CE1F55339}"
-	ProjectSection(SolutionItems) = preProject
-		Documentation\image_thumb_1.png = Documentation\image_thumb_1.png
-		Documentation\image_thumb_2.png = Documentation\image_thumb_2.png
-		LICENSE = LICENSE
-		README.md = README.md
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,7 +43,18 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
-		SolutionGuid = {A6E84E50-393E-4D70-8B43-CF9CD3E460A2}
+	EndGlobalSection
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 3
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = http://10.2.2.209:8080/tfs/tfs08datatcollection
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = CrmCodeGenerator.Controls\\CrmCodeGenerator.Controls.csproj
+		SccProjectName1 = CrmCodeGenerator.Controls
+		SccLocalPath1 = CrmCodeGenerator.Controls
+		SccProjectUniqueName2 = CrmCodeGenerator.VSPackage\\CrmCodeGenerator.VSPackage.csproj
+		SccProjectName2 = CrmCodeGenerator.VSPackage
+		SccLocalPath2 = CrmCodeGenerator.VSPackage
 	EndGlobalSection
 	GlobalSection(CrmCodeGeneration) = preSolution
 		UseSSL = True
@@ -69,7 +65,6 @@ Global
 		ServerPort = 443
 		HomeRealm = 
 		Domain = 
-		WindowsAuthorization = False
 		Organization = DEV-CRM
 		IncludeEntities = account,contact,lead,opportunity,systemuser
 		IncludeNonStandard = False

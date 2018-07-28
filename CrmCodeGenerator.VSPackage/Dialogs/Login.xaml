@@ -1,24 +1,25 @@
-﻿<ui:DialogWindow x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
+﻿<ui:DialogWindow
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vs_shell="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.12.0"
         xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.12.0"                 
-        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
         xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
-        Title="CRM Code Generator Configuration" Width="470" SizeToContent="Height" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner">
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
+        Title="Dynamics CRM T4 Template Generator v6.15.2" Height="485.021" Width="477.463" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
-    <Window.Resources>
-        <Style TargetType="Grid" >
+    <ui:DialogWindow.Resources>
+        <Style TargetType="{x:Type Grid}" >
             <!--<Setter Property="Background"  Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.DialogBrushKey}}"/>-->
             <!--<Setter Property="Background"  Value="Blue"></Setter>-->
         </Style>
-        <Style TargetType="Label">
+        <Style TargetType="{x:Type Label}">
             <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.DialogTextBrushKey}}"/>
             <Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource VsFont.EnvironmentFontSize}" />-->
             <Setter Property="Margin" Value="-4,0,0,-4" />
         </Style>
-        <Style TargetType="TextBox">
+        <Style TargetType="{x:Type TextBox}">
             <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowTextBrushKey}}"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>-->
             <!--<Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}" />
@@ -26,7 +27,7 @@
             <Setter Property="Margin" Value="0,0,0,0" />
             <Setter Property="Height" Value="20" />
         </Style>
-        <Style TargetType="PasswordBox">
+        <Style TargetType="{x:Type PasswordBox}">
             <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowTextBrushKey}}"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>-->
             <!--<Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}" />
@@ -34,7 +35,7 @@
             <Setter Property="Margin" Value="0,0,0,0" />
             <Setter Property="Height" Value="20" />
         </Style>
-        <Style TargetType="CheckBox">
+        <Style TargetType="{x:Type CheckBox}">
             <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowTextBrushKey}}"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>-->
             <!--<Setter Property="Background"  Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.DialogBrushKey}}"/>
@@ -42,9 +43,9 @@
             <Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}" />
             <Setter Property="FontSize" Value="{DynamicResource VsFont.EnvironmentFontSize}" />-->
             <Setter Property="Margin" Value="0,0,15,0" />
-            
+
         </Style>
-        <Style TargetType="ComboBox">
+        <Style TargetType="{x:Type ComboBox}">
             <!--<Setter Property="Foreground" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowTextBrushKey}}"/>
             <Setter Property="Background" Value="{DynamicResource {x:Static vs_shell:EnvironmentColors.ToolWindowBackgroundBrushKey}}"/>-->
             <!--<Setter Property="FontFamily" Value="{DynamicResource VsFont.EnvironmentFontFamily}" />
@@ -71,144 +72,192 @@
             </Style.Triggers>
         </Style>-->
         <converter:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
-    </Window.Resources>
-    <Window.CommandBindings>
+        <Image x:Key="GearImage" Source="../Resources/Gear.png"/>
+        <Image x:Key="InfoImage" Source="../Resources/Info.png"/>
+    </ui:DialogWindow.Resources>
+    <ui:DialogWindow.CommandBindings>
         <CommandBinding Command="Close" Executed="Cancel_Click" />
-    </Window.CommandBindings>
-    <Window.InputBindings>
+    </ui:DialogWindow.CommandBindings>
+    <ui:DialogWindow.InputBindings>
         <KeyBinding Key="Escape" Command="Close" />
-    </Window.InputBindings>
+    </ui:DialogWindow.InputBindings>
 
-    <StackPanel x:Name="Inputs" Grid.Column="0" Grid.Row="0" Margin="5,10,5,10" >
-        <Label>CRM Connection</Label>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,10,0,5">
-            <CheckBox IsChecked="{Binding UseSSL, Mode=TwoWay}" IsEnabled="{Binding CanUseSSL}" x:Name="UseSSL">Use SSL</CheckBox>
-            <CheckBox IsChecked="{Binding UseIFD, Mode=TwoWay}"  IsEnabled="{Binding CanUseIfd}" x:Name="UseIFD">Use IFD</CheckBox>
-            <CheckBox IsChecked="{Binding UseOnline, Mode=TwoWay}" x:Name="UseOnline">Use CRM Online</CheckBox>
-            <CheckBox IsChecked="{Binding UseOffice365, Mode=TwoWay}" x:Name="UseOffice365">Use Office 365</CheckBox>
-        </StackPanel>
-        <Grid>
-            <Grid.Resources>
-                <Style TargetType="{x:Type TextBox}">
-                    <Setter Property="Margin" Value="0,3,0,2" />
-                    <Setter Property="Height" Value="20" />
-                </Style>
-                <Style TargetType="{x:Type ComboBox}">
-                    <Setter Property="Margin" Value="0,3,0,2" />
-                    <Setter Property="Height" Value="20" />
-                </Style>
-            </Grid.Resources>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <!---->
-                <Label Grid.Column="0"  Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" >Server Name</Label>
-                <TextBox  Grid.Column="1"  Grid.Row="0"  Text="{Binding ServerName, Mode=TwoWay}" Visibility="{Binding NeedServer, Converter={StaticResource BoolToHiddenConverter} }" ></TextBox>
-            <ComboBox Margin="0,3,0,2" Grid.Column="1"  Grid.Row="0" 
-        		IsTextSearchEnabled="True" 
-        		Text="{Binding ServerName, Mode=TwoWay}"
-                Visibility="{Binding NeedOnlineServer, Converter={StaticResource BoolToHiddenConverter} }"            
-        		x:Name="OnlineServer">
-                <!--ItemsSource="{Binding OnLineServers, Mode=TwoWay}"-->
-            <ComboBoxItem IsSelected="True">crm.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm2.dynamics.com</ComboBoxItem>
-			<ComboBoxItem >crm3.dynamics.com</ComboBoxItem>
-			<ComboBoxItem >crm4.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm5.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm6.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm7.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm8.dynamics.com</ComboBoxItem>
-            <ComboBoxItem >crm9.dynamics.com</ComboBoxItem>
-            </ComboBox>
-            <Label Grid.Column="0"  Grid.Row="1"  IsEnabled="{Binding NeedServerPort }">Server Port</Label>
-            <TextBox Grid.Column="1"  Grid.Row="1" IsEnabled="{Binding NeedServerPort }" Text="{Binding ServerPort, Mode=TwoWay}"></TextBox>
-            <Label Grid.Column="0"  Grid.Row="2" IsEnabled="{Binding NeedHomeRealm}" >Home Realm Url</Label>
-            <TextBox Grid.Column="1"  Grid.Row="2" IsEnabled="{Binding NeedHomeRealm}" Text="{Binding HomeRealm, Mode=TwoWay}"  HorizontalAlignment="Stretch"></TextBox>
-        </Grid>
+    <xctk:BusyIndicator x:Name="BusyIndicator">
+        <StackPanel x:Name="Inputs" Grid.Column="0" Grid.Row="0" Margin="5,5,5,0" ScrollViewer.VerticalScrollBarVisibility="Disabled" >
+            <GroupBox Margin="0,0,0,2">
+                <GroupBox.Header>
+                    CRM Connection
+                </GroupBox.Header>
+                <StackPanel Margin="0,3,0,-7">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox x:Name="ComboBoxSettings" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4"
+					ItemsSource="{Binding SettingsList, Mode=OneWay}"
+					SelectedIndex="{Binding SelectedSettingsIndex, Mode=TwoWay}"
+					SelectionChanged="ComboBoxSettings_SelectionChanged" />
+                        <Button x:Name="ButtonNewSettings" Grid.Row="1" Grid.Column="0" Margin="2,2,0,0" Content="New" Click="ButtonNewSettings_Click"/>
+                        <Button x:Name="ButtonDuplicateSettings" Grid.Row="1" Grid.Column="1" Margin="2,2,0,0" Content="Duplicate" Click="ButtonDuplicateSettings_Click"/>
+                        <Button x:Name="ButtonDeleteSettings" Grid.Row="1" Grid.Column="2" Margin="2,2,0,0" Content="Delete" Click="ButtonDeleteSettings_Click"/>
+                        <Button x:Name="ButtonSaveSettings" Grid.Row="1" Grid.Column="3" Margin="2,2,0,0" Content="Save" Click="ButtonSaveSettings_Click"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Stretch" Margin="0,10,0,5" Visibility="Collapsed">
+                        <CheckBox IsChecked="{Binding UseSSL, Mode=TwoWay}" IsEnabled="{Binding CanUseSSL}" x:Name="UseSSL" Content="Use SSL"/>
+                        <CheckBox IsChecked="{Binding UseIFD, Mode=TwoWay}" x:Name="UseIFD" Content="Use IFD"/>
+                        <CheckBox IsChecked="{Binding UseOnline, Mode=TwoWay}" x:Name="UseOnline" Content="Use CRM Online"/>
+                        <CheckBox IsChecked="{Binding UseOffice365, Mode=TwoWay}" x:Name="UseOffice365" Content="Use Office 365"/>
+                    </StackPanel>
+                    <Grid>
+                        <Grid.Resources>
+                            <Style TargetType="{x:Type TextBox}">
+                                <Setter Property="Margin" Value="0,3,0,2" />
+                                <Setter Property="Height" Value="20" />
+                            </Style>
+                            <Style TargetType="{x:Type ComboBox}">
+                                <Setter Property="Margin" Value="0,3,0,2" />
+                                <Setter Property="Height" Value="20" />
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <!---->
+				        <Label Grid.Column="0"  Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Content="Profile Name" />
+				        <TextBox  Grid.Column="1"  Grid.Row="0"  Text="{Binding ProfileName, Mode=TwoWay}" />
+                        <Label Grid.Column="0"  Grid.Row="1" Content="Auth Type" />
+				        <ComboBox Margin="0,3,0,2" Grid.Column="1"  Grid.Row="1" 
+					        IsTextSearchEnabled="True" 
+					        Text="{Binding ServerPort, Mode=TwoWay}"         
+					        x:Name="OnlineServer">
+                                <ComboBoxItem IsSelected="True" Content="AD"/>
+                                <ComboBoxItem Content="Office365" />
+                                <ComboBoxItem Content="IFD" />
+                                <ComboBoxItem Content="OAuth" />
+                        </ComboBox>
+                        <Label Grid.Column="0"  Grid.Row="2" Grid.RowSpan="2" VerticalAlignment="Top" Content="Organisation URL" />
+                        <TextBox  Grid.Column="1"  Grid.Row="2"  Text="{Binding ServerName, Mode=TwoWay}" />
+                        <Label Grid.Column="0"  Grid.Row="3" Content="Home Realm URI" />
+                        <TextBox Grid.Column="1"  Grid.Row="3" Text="{Binding HomeRealm, Mode=TwoWay}"  HorizontalAlignment="Stretch"/>
+                    </Grid>
 
-        <StackPanel Margin="0,10,0,10">
-            <CheckBox IsChecked="{Binding UseWindowsAuth, Mode=TwoWay}" IsEnabled="{Binding CanUseWindowsAuth}" x:Name="UseWindowAuth">Windows Authentication</CheckBox>
+                    <StackPanel Margin="0,10,0,10">
+                        <CheckBox IsChecked="{Binding UseWindowsAuth, Mode=TwoWay}" x:Name="UseWindowAuth" Content="Windows Authentication"/>
 
-            <Label Content="Username" />
-            <TextBox Text="{Binding Username, Mode=TwoWay}" x:Name="Username" IsEnabled="{Binding NeedCredentials}"  />
-            <Label Content="Password"  />
-            <!--<TextBox Text="{Binding Path=Password, Mode=TwoWay}" Name="Password"   />-->
-            <PasswordBox x:Name="txtPassword" IsEnabled="{Binding NeedCredentials}"/>
-            <Label Content="Domain" IsEnabled="{Binding NeedCredentials}" />
-            <TextBox Text="{Binding Domain, Mode=TwoWay}" x:Name="Domain"  />
-        </StackPanel>
-
-
-        <!--<Label Content="Discorvy URL" />
-        <TextBox  x:Name="DiscoryURL" Text="{Binding CrmSdkUrl, Mode=TwoWay}" IsEnabled="False" />-->
-        <StackPanel>
-            <Label Content="Organization"/>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ComboBox Grid.Column="0"  
-        		IsTextSearchEnabled="True" 
-        		IsEditable="True" 
-        		ItemsSource="{Binding OrgList, Mode=TwoWay}"
-        		Text="{Binding CrmOrg, Mode=TwoWay}"
-        		x:Name="Organization" />
-                <!--ItemsSource="{Binding Items}" 
+                        <Label Content="Username" />
+                        <TextBox Text="{Binding Username, Mode=TwoWay}" x:Name="Username" IsEnabled="{Binding NeedCredentials}"  />
+                        <Label Content="Password"  />
+                        <!--<TextBox Text="{Binding Path=Password, Mode=TwoWay}" Name="Password"   />-->
+                        <PasswordBox x:Name="txtPassword" IsEnabled="{Binding NeedCredentials}"/>
+                        <Label Content="Domain" />
+                        <TextBox Text="{Binding Domain, Mode=TwoWay}" x:Name="Domain" IsEnabled="{Binding NeedCredentials}"  />
+                </StackPanel>
+                <StackPanel Margin="0,-10,0,10" Visibility="Collapsed">
+                    <Label Content="Organization"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="0"  
+						IsTextSearchEnabled="True" 
+						IsEditable="True" 
+						ItemsSource="{Binding OrgList, Mode=TwoWay}"
+						Text="{Binding CrmOrg, Mode=TwoWay}"
+						x:Name="Organization" />
+                        <!--ItemsSource="{Binding Items}" 
                           SelectedValuePath="Text"
                           Text="{Binding SelectedItemText, Mode=TwoWay}"-->
-                <Button Grid.Column="1" x:Name="Logon"  HorizontalAlignment="Right" Content="Refresh" Click="RefreshOrgs"  CommandParameter="{Binding ElementName=txtPassword}"/>
-            </Grid>
-        </StackPanel>
-        <StackPanel Margin="0,10,0,10">
-            <Label Content="Include Entities" />
-            <Grid Background="Transparent">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <control:MultiSelectComboBox Grid.Column="0" Width="auto" ItemsSource="{Binding EntityList, Mode=TwoWay}" SelectedItems="{Binding EntitiesSelected, Mode=TwoWay}" x:Name="Entities" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
-                <Button Grid.Column="1" x:Name="EntitiesRefresh"  HorizontalAlignment="Right" Content="Refresh" Click="EntitiesRefresh_Click"  CommandParameter="{Binding ElementName=txtPassword}"/>
-                <StackPanel  Grid.Column="0" Grid.Row="1"  Orientation="Horizontal">
-                <CheckBox IsChecked="{Binding IncludeNonStandard, Mode=TwoWay}" x:Name="IncludeNonStandard" Checked="IncludeNonStandardEntities_Click" Unchecked="IncludeNonStandardEntities_Click" ToolTipService.ShowDuration="30000">
-                    <CheckBox.ToolTip>
-                        <ToolTip>
-                            <StackPanel>
-                                <TextBlock FontWeight="Bold"><Run Text="NON-Standard Entities"/></TextBlock>
-                                <TextBlock><Run Text="The CrmSvcUtil.exe program excludes a lot of NON-Standard entities."/><LineBreak /><Run Text="Some are clearly not meant for end user development (eg replicationbacklog, multientitysearchentities, integrationstatus)."/><LineBreak /><Run Text="Some may be useful, but would have to be considered &quot;Microsoft Unsupported&quot; (eg attachment, notification, subscription)."/></TextBlock>
-                            </StackPanel>
-                        </ToolTip>
-                    </CheckBox.ToolTip>
-                    <!--  Background="{DynamicResource {x:Static vs_shell:EnvironmentColors.DialogBrushKey}}" -->
-                    <TextBlock Background="Transparent"><Run Text="Include NON-Standard Entities"/></TextBlock>
-                </CheckBox>
-                    <CheckBox IsChecked="{Binding IncludeUnpublished, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
-                        <CheckBox.ToolTip>
-                            <ToolTip>
-                                <StackPanel>
-                                    <TextBlock FontWeight="Bold"><Run Text="Unpublished changes"/></TextBlock>
-                                    <TextBlock><Run Text="Leave unchecked to ignore the changes that haven't yet been published."/><LineBreak /><Run Text="Some are clearly not meant for end user development (eg replicationbacklog, multientitysearchentities, integrationstatus)."/><LineBreak /><Run Text="Some may be useful, but would have to be considered &quot;Microsoft Unsupported&quot; (eg attachment, notification, subscription)."/></TextBlock>
-                                </StackPanel>
-                            </ToolTip>
-                        </CheckBox.ToolTip>
-                        <TextBlock Background="Transparent"><Run Text="Unpublished changes"/></TextBlock>
-                    </CheckBox>
+                        <Button Grid.Column="1" x:Name="Logon"  HorizontalAlignment="Right" Content="Refresh" Click="RefreshOrgs"  CommandParameter="{Binding ElementName=txtPassword}"/>
+                    </Grid>
                 </StackPanel>
+        </StackPanel>
+        </GroupBox>
+        <StackPanel Margin="0,0,0,10">
+            <GroupBox Margin="0,0,0,5">
+                <GroupBox.Header>
+                    Entities
+                </GroupBox.Header>
+                <StackPanel Margin="0,3,0,-7">
+                    <Grid Background="Transparent" Margin="0,0,0,5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="21" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.ColumnSpan="2" Grid.RowSpan="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="EntitiesSelection" Content="CRM Entities Selection and&#x0a;      Generation Options" Click="EntitiesRefresh_Click" Margin="1,0,0,0"/>
+                            <Button x:Name="EntitiesProfiling" Grid.Column="1" Content="Contract Profiles and&#x0a;     CRM Renaming" Margin="1,0,0,0" Click="EntitiesProfiling_Click"/>
+                        </Grid>
+                        <CheckBox Grid.Column="0" Grid.Row="2"
+						IsChecked="{Binding IncludeNonStandard, Mode=TwoWay}" x:Name="IncludeNonStandard"
+						Checked="IncludeNonStandardEntities_Click" Unchecked="IncludeNonStandardEntities_Click"
+						ToolTipService.ShowDuration="30000" Margin="0,3,0,0">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="NON-Standard Entities"/></TextBlock>
+                                        <TextBlock><Run Text="The CrmSvcUtil.exe program excludes a lot of NON-Standard entities."/><LineBreak /><Run Text="Some are clearly not meant for end user development (eg replicationbacklog, multientitysearchentities, integrationstatus)."/><LineBreak /><Run Text="Some may be useful, but would have to be considered &quot;Microsoft Unsupported&quot; (eg attachment, notification, subscription)."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                            <!--  Background="{DynamicResource {x:Static vs_shell:EnvironmentColors.DialogBrushKey}}" -->
+                            <TextBlock Background="Transparent"><Run Text="Include NON-Standard Entities"/></TextBlock>
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxClearCache" Content="Clear Cache"  Grid.Column="1" Grid.Row="2"
+                                      HorizontalAlignment="Right"
+						Width="85" ToolTipService.ShowDuration="30000" Margin="-1,3,0,0">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="Clear Cache"/></TextBlock>
+                                        <TextBlock><Run Text="By default, the generator fetches only the differences"/><LineBreak /><Run Text=" in data between this run and the last one."/><LineBreak /><Run Text=" This option clears the cached data before fetching from CRM."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            <Grid Height="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="By: Ahmed el-Sawalhy" Margin="3" BorderThickness="0" HorizontalAlignment="Left" VerticalAlignment="Center" Padding="0"/>
+                <Button x:Name="ButtonCredits" Content="{StaticResource ResourceKey=InfoImage}" BorderThickness="1" Grid.Column="1" Margin="0" Padding="3" Click="ButtonCredits_Click" />
+                <Button x:Name="ButtonOptions" Content="{StaticResource ResourceKey=GearImage}" BorderThickness="1" Grid.Column="2" Margin="2,0,2,0" Padding="3" Click="ButtonOptions_Click" />
+                <Button x:Name="ButtonCancel" Content="Cancel" BorderThickness="1" Grid.Column="3" Margin="2,0,2,0" Padding="3,0,3,0" Click="ButtonCancel_Click" />
+                <Button x:Name="GenerateCacheCodeButton" Click="LogonCached_Click" CommandParameter="{Binding ElementName=txtPassword}" Content="Cached" BorderThickness="1" Margin="0,0,2,0" Padding="3,0,3,0" HorizontalAlignment="Right" Grid.Column="4" />
+                <Button x:Name="GenerateCodeButton" Click="Logon_Click" CommandParameter="{Binding ElementName=txtPassword}" Content="Generate" BorderThickness="1" Padding="3,0,3,0" HorizontalAlignment="Right" Grid.Column="5" />
             </Grid>
         </StackPanel>
-
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Click="Logon_Click" CommandParameter="{Binding ElementName=txtPassword}" Content="Generate Code" />
         </StackPanel>
-    </StackPanel>
+    </xctk:BusyIndicator>
 </ui:DialogWindow>

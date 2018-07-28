@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using Window = EnvDTE.Window;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {
@@ -135,5 +139,19 @@ namespace CrmCodeGenerator.VSPackage.Helpers
         {
             return System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point((int)window.Left, (int)window.Top));
         }
-    }
+
+		internal static bool IsConfirmed(string text, string title)
+		{
+			var results = VsShellUtilities.ShowMessageBox(ServiceProvider.GlobalProvider,
+				text, title, OLEMSGICON.OLEMSGICON_WARNING,
+				OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND);
+
+			return results == 6;
+		}
+
+	    internal static void ShowInfo(string text, string title)
+	    {
+			MessageBox.Show(text, title, MessageBoxButton.OK, MessageBoxImage.Information);
+	    }
+	}
 }

@@ -90,7 +90,7 @@
 
   <Symbols>
     <!-- This is the package guid. -->
-    <GuidSymbol name="guidCrmCodeGenerator_VSPackagePkg" value="{d57cc223-384b-41cc-b5d0-814a71ce8d61}" />
+    <GuidSymbol name="guidCrmCodeGenerator_VSPackagePkg" value="{d57dd223-384b-41dd-b5d0-814a71ce8d61}" />
     
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidCrmCodeGenerator_VSPackageCmdSet" value="{275915bd-3cf8-4fa5-b6fb-9c03e9699b82}">

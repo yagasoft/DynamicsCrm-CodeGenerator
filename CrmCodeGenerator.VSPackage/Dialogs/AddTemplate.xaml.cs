@@ -23,7 +23,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
     /// <summary>
     /// Interaction logic for AddTemplate.xaml
     /// </summary>
-    public partial class AddTemplate : Microsoft.VisualStudio.PlatformUI.DialogWindow
+    public partial class AddTemplate
     {
         private AddTemplateProp _Props;
         public AddTemplateProp Props
@@ -44,8 +44,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
         public AddTemplate(EnvDTE80.DTE2 dte, Project project)
         {
-            WifDetector.CheckForWifInstall();
-
             InitializeComponent();
 
             var main = dte.GetMainWindow();
@@ -57,10 +55,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
             var samplesPath = System.IO.Path.Combine(DteHelper.AssemblyDirectory(), @"Resources\Templates");
             var dir = new DirectoryInfo(samplesPath);
-            Props.TemplateList = new ObservableCollection<String>(dir.GetFiles().Select(x => x.Name).Where(x => !x.Equals("Blank.tt")).ToArray());
+            Props.TemplateList = new ObservableCollection<String>(dir.GetFiles().Select(x => x.Name).Where(x => !x.Equals("_Blank.tt")).ToArray());
             Props.Template = "CrmSchema.tt";
             Props.Folder = project.GetProjectDirectory();
-            
         }
         protected override void OnSourceInitialized(EventArgs e)
         {

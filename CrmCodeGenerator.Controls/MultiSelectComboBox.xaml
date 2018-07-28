@@ -10,23 +10,36 @@
         ScrollViewer.VerticalScrollBarVisibility="Auto"
         ScrollViewer.CanContentScroll="True"
         IsSynchronizedWithCurrentItem="True"
-                           >
+        PreviewMouseLeftButtonDown="MultiSelectCombo_OnPreviewMouseLeftButtonDown">
         <ComboBox.ItemTemplate>
             <DataTemplate>
-                <CheckBox Content="{Binding Title}"
-                          IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
-                          Tag="{RelativeSource FindAncestor, AncestorType={x:Type ComboBox}}"
-                           Click="CheckBox_Click"           />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Content="{Binding Title}" Grid.Column="1"
+                            IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
+                            Foreground="{Binding Path=Colour}"
+                            Margin="2,0,0,0"
+                            Tag="{RelativeSource FindAncestor, AncestorType={x:Type ComboBox}}"
+                              VerticalAlignment="Center"
+                              Click="CheckBox_Click" />
+                    <Label Content="{Binding Path=AppendText}" Grid.Column="2" Height="13" Padding="0,-15,0,0"
+                              Margin="4,0,0,0" VerticalAlignment="Top" Foreground="Blue" FontSize="11"
+                            Tag="{RelativeSource FindAncestor, AncestorType={x:Type ComboBox}}" />
+                </Grid>
             </DataTemplate>
         </ComboBox.ItemTemplate>
         <ComboBox.Template>
             <ControlTemplate TargetType="ComboBox">
-                <Grid >
+                <Grid>
                     <ToggleButton 
-                        x:Name="ToggleButton" 
-                       Grid.Column="2" IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}"
-                        Focusable="false"                           
-                        ClickMode="Press" HorizontalContentAlignment="Left" >
+                            x:Name="ToggleButton" 
+                           Grid.Column="2" IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}"
+                            Focusable="false"                           
+                            ClickMode="Press" HorizontalContentAlignment="Left" >
                         <ToggleButton.Template>
                             <ControlTemplate>
                                 <Grid>
@@ -35,44 +48,44 @@
                                         <ColumnDefinition Width="18"/>
                                     </Grid.ColumnDefinitions>
                                     <Border
-                  x:Name="Border" 
-                  Grid.ColumnSpan="2"
-                  CornerRadius="2"
-                  Background="White"
-                  BorderBrush="Black"
-                  BorderThickness="1,1,1,1" />
+                                      x:Name="Border" 
+                                      Grid.ColumnSpan="2"
+                                      CornerRadius="2"
+                                      Background="White"
+                                      BorderBrush="Black"
+                                      BorderThickness="1,1,1,1" />
                                     <Border 
-                    x:Name="BorderComp" 
-                  Grid.Column="0"
-                  CornerRadius="2" 
-                  Margin="1" 
-                 Background="White"
-                  BorderBrush="Black"
-                  BorderThickness="0,0,0,0" >
+                                            x:Name="BorderComp" 
+                                          Grid.Column="0"
+                                          CornerRadius="2" 
+                                          Margin="1" 
+                                         Background="White"
+                                          BorderBrush="Black"
+                                          BorderThickness="0,0,0,0" >
                                         <TextBlock Text="{Binding Path=Text,RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=UserControl}}" 
                                                Background="White" Padding="3" />
                                     </Border>
                                     <Path 
-                  x:Name="Arrow"
-                  Grid.Column="1"     
-                  Fill="Black"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                      x:Name="Arrow"
+                                      Grid.Column="1"     
+                                      Fill="Black"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Data="M 0 0 L 4 4 L 8 0 Z"/>
                                 </Grid>
                             </ControlTemplate>
                         </ToggleButton.Template>
-                         </ToggleButton>
-                        <Popup 
-                        Name="Popup"
+                    </ToggleButton>
+                    <Popup 
+                        x:Name="Popup"
                         Placement="Bottom"                        
                         AllowsTransparency="True" 
                         Focusable="False"  IsOpen="{TemplateBinding IsDropDownOpen}"
                         PopupAnimation="Slide">
                         <Grid 
-                                  Name="DropDown"
+                                  x:Name="DropDown"
                                   SnapsToDevicePixels="True"  
-                            MinWidth="{TemplateBinding ActualWidth}"
+                                    MinWidth="{TemplateBinding ActualWidth}"
                                   MaxHeight="{TemplateBinding MaxDropDownHeight}">
                             <Border 
                                     x:Name="DropDownBorder" 

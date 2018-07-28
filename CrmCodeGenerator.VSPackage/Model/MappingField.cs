@@ -1,323 +1,340 @@
-﻿using System;
+﻿#region Imports
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Microsoft.Xrm.Sdk.Metadata;
 using CrmCodeGenerator.VSPackage.Helpers;
+using Microsoft.Xrm.Sdk.Metadata;
+
+#endregion
 
 namespace CrmCodeGenerator.VSPackage.Model
 {
-    [Serializable]
-    public class MappingField
-    {
-        public AttributeMetadata AttributeMetadata { get; set; }
-        public CrmPropertyAttribute Attribute { get; set; }
-        public MappingEntity Entity { get; set; }
-        public string AttributeOf { get; set; }
-        public MappingEnum EnumData { get; set; }
-        public AttributeTypeCode FieldType { get; set; }
-        public string FieldTypeString { get; set; }
-        public bool IsValidForCreate { get; set; }
-        public bool IsValidForRead { get; set; }
-        public bool IsValidForUpdate { get; set; }
-        public bool IsActivityParty { get; set; }
-        public bool IsStateCode { get; set; }
-        public bool IsDeprecated { get; set; }
-        public bool IsOptionSet { get; private set; }
-        public bool IsTwoOption { get; private set; }
-        public string DeprecatedVersion {get ; set; }
-        public string LookupSingleType { get; set; }
-        bool IsPrimaryKey { get; set; }
-        public bool IsRequired { get; set; }
-        public int? MaxLength { get; set; }
-        public decimal? Min { get; set; }
-        public decimal? Max { get; set; }
-        public string PrivatePropertyName { get; set; }
-        public string DisplayName { get; set; }
-        public string HybridName { get; set; }
-        public string LogicalName { get; set; }
-        public string StateName { get; set; }
-        public string TargetTypeForCrmSvcUtil { get; set; }
-        public string Description { get; set; }
-        public string DescriptionXmlSafe
-        {
-            get
-            {
-                return Naming.XmlEscape(Description);
-            }
-        }
+	[Serializable]
+	public class MappingField
+	{
+		public Guid? MetadataId { get; set; }
+		public CrmPropertyAttribute Attribute { get; set; }
+		public MappingEntity Entity { get; set; }
+		public string AttributeOf { get; set; }
+		public MappingEnum EnumData { get; set; }
+		public AttributeTypeCode FieldType { get; set; }
+		public string FieldTypeString { get; set; }
+		public bool IsValidForCreate { get; set; }
+		public bool IsValidForRead { get; set; }
+		public bool IsValidForUpdate { get; set; }
+		public bool IsActivityParty { get; set; }
+		public bool IsStateCode { get; set; }
+		public bool IsDeprecated { get; set; }
+		public string DeprecatedVersion { get; set; }
+		public string LookupSingleType { get; set; }
+		private bool IsPrimaryKey { get; set; }
+		public bool IsRequired { get; set; }
 
-        public string Label { get; set; }
-        public MappingField()
-        {
-            IsValidForUpdate = false;
-            IsValidForCreate = false;
-            IsDeprecated = false;
-            Description = "";
-        }
-        public static MappingField Parse(AttributeMetadata attribute, MappingEntity entity)
-        {
-            var result = new MappingField();
-            result.Entity = entity;
-            result.AttributeOf = attribute.AttributeOf;
-            result.IsValidForCreate = (bool)attribute.IsValidForCreate;
-            result.IsValidForRead = (bool)attribute.IsValidForRead;
-            result.IsValidForUpdate = (bool)attribute.IsValidForUpdate;
-            result.IsActivityParty = attribute.AttributeType == AttributeTypeCode.PartyList ? true : false;
-            result.IsStateCode = attribute.AttributeType == AttributeTypeCode.State ? true : false;
-            result.IsOptionSet = attribute.AttributeType == AttributeTypeCode.Picklist;
-            result.IsTwoOption = attribute.AttributeType == AttributeTypeCode.Boolean;
-            result.DeprecatedVersion = attribute.DeprecatedVersion;
-            result.IsDeprecated = !string.IsNullOrWhiteSpace(attribute.DeprecatedVersion); 
-            
-            if (attribute is PicklistAttributeMetadata)
-                result.EnumData =
-                    MappingEnum.Parse(attribute as PicklistAttributeMetadata);
+		public int? MaxLength;
+		public decimal? Min;
+		public decimal? Max;
 
-            if (attribute is LookupAttributeMetadata)
-            {
-                var lookup = attribute as LookupAttributeMetadata;
+		public string PrivatePropertyName { get; set; }
+		public string DisplayName { get; set; }
+		public string HybridName { get; set; }
+		public string FriendlyName { get; set; }
+		public string LogicalName { get; set; }
+		public string SchemaName { get; set; }
 
-                if (lookup.Targets.Count() == 1)
-                    result.LookupSingleType = lookup.Targets[0];
-            }
+		public string StateName { get; set; }
+		public string TargetTypeForCrmSvcUtil { get; set; }
+		public string Description { get; set; }
 
-            ParseMinMaxValues(attribute, result);
+		public string DescriptionXmlSafe => Naming.XmlEscape(Description);
 
-            if (attribute.AttributeType != null)
-                result.FieldType = attribute.AttributeType.Value;
+		public string Label { get; set; }
+		public LocalizedLabelSerialisable[] LocalizedLabels { get; set; }
 
-            result.IsPrimaryKey = attribute.IsPrimaryId == true;
+		public LookupLabel LookupLabel { get; set; }
+		public DateTimeBehavior? DateTimeBehavior { get; set; }
 
-            result.LogicalName = attribute.LogicalName;
-            result.DisplayName = Naming.GetProperVariableName(attribute);
-            result.PrivatePropertyName = Naming.GetEntityPropertyPrivateName(attribute.SchemaName);
-            result.HybridName = Naming.GetProperHybridFieldName(result.DisplayName, result.Attribute);
+		public MappingField()
+		{
+			IsValidForUpdate = false;
+			IsValidForCreate = false;
+			IsDeprecated = false;
+			Description = "";
+		}
 
-            if(attribute.Description != null)
-                if(attribute.Description.UserLocalizedLabel != null)
-                    result.Description = attribute.Description.UserLocalizedLabel.Label;
+		public static void UpdateCache(List<AttributeMetadata> attributeMetadataList, MappingEntity mappingEntity,
+			bool isTitleCaseLogicalName)
+		{
+			// update modified fields
+			var modifiedFields =
+				mappingEntity.Fields.Where(field => attributeMetadataList.Exists(attMeta => attMeta.MetadataId == field.MetadataId))
+					.ToList();
+			modifiedFields.AsParallel().ForAll(
+				field =>
+					GetMappingField(attributeMetadataList.First(attMeta => attMeta.MetadataId == field.MetadataId), mappingEntity,
+						field, isTitleCaseLogicalName));
 
-            if (attribute.DisplayName != null)
-                if (attribute.DisplayName.UserLocalizedLabel != null)
-                    result.Label = attribute.DisplayName.UserLocalizedLabel.Label;
+			// add new attributes
+			var newAttributes =
+				attributeMetadataList.Where(
+					attMeta => !Array.Exists(mappingEntity.Fields, field => field.MetadataId == attMeta.MetadataId)).ToList();
+			newAttributes.ForEach(
+				attMeta =>
+				{
+					var newFields = new MappingField[mappingEntity.Fields.Length + 1];
+					Array.Copy(mappingEntity.Fields, newFields, mappingEntity.Fields.Length);
+					mappingEntity.Fields = newFields;
+					mappingEntity.Fields[mappingEntity.Fields.Length - 1] = GetMappingField(attMeta, mappingEntity, null,
+						isTitleCaseLogicalName);
+				});
+		}
 
-            result.IsRequired = attribute.RequiredLevel != null && attribute.RequiredLevel.Value == AttributeRequiredLevel.ApplicationRequired;
+		public static MappingField GetMappingField(AttributeMetadata attribute, MappingEntity entity,
+			MappingField result, bool isTitleCaseLogicalName)
+		{
+			result = result ?? new MappingField();
 
-            result.Attribute =
-                new CrmPropertyAttribute
-                {
-                    LogicalName = attribute.LogicalName,
-                    IsLookup = attribute.AttributeType == AttributeTypeCode.Lookup || attribute.AttributeType == AttributeTypeCode.Customer
-                };
-            result.TargetTypeForCrmSvcUtil = GetTargetType(result);
-            result.FieldTypeString = result.TargetTypeForCrmSvcUtil;
+			result.Entity = entity;
+			result.MetadataId = attribute.MetadataId;
+			result.LogicalName = attribute.LogicalName ?? result.LogicalName;
+			result.AttributeOf = attribute.AttributeOf ?? result.AttributeOf;
+			result.IsValidForCreate = attribute.IsValidForCreate ?? result.IsValidForCreate;
+			result.IsValidForRead = attribute.IsValidForRead ?? result.IsValidForRead;
+			result.IsValidForUpdate = attribute.IsValidForUpdate ?? result.IsValidForUpdate;
 
+			if (attribute.AttributeType != null)
+			{
+				result.FieldType = attribute.AttributeType.Value;
+				result.IsActivityParty = attribute.AttributeType == AttributeTypeCode.PartyList;
+				result.IsStateCode = attribute.AttributeType == AttributeTypeCode.State;
+			}
 
-            return result;
-        }
+			result.DeprecatedVersion = attribute.DeprecatedVersion ?? result.DeprecatedVersion;
 
-        private static void ParseMinMaxValues(AttributeMetadata attribute, MappingField result)
-        {
-            if (attribute is StringAttributeMetadata) { result.MaxLength = (attribute as StringAttributeMetadata).MaxLength ?? -1; }
-            if (attribute is MemoAttributeMetadata) { result.MaxLength = (attribute as MemoAttributeMetadata).MaxLength ?? -1; }
+			if (attribute.DeprecatedVersion != null)
+			{
+				result.IsDeprecated = !string.IsNullOrWhiteSpace(attribute.DeprecatedVersion);
+			}
 
-            if (attribute is IntegerAttributeMetadata)
-            {
-                var attr = attribute as IntegerAttributeMetadata;
+			if (attribute is EnumAttributeMetadata || attribute is BooleanAttributeMetadata)
+			{
+				result.EnumData =
+					MappingEnum.GetMappingEnum(attribute, result.EnumData, isTitleCaseLogicalName);
+			}
 
-                result.Min = attr.MinValue ?? -1;
-                result.Max = attr.MaxValue ?? -1;
-            }
+			var lookup = attribute as LookupAttributeMetadata;
 
-            if (attribute is DecimalAttributeMetadata)
-            {
-                var attr = attribute as DecimalAttributeMetadata;
+			if (lookup?.Targets != null && lookup.Targets.Length == 1)
+			{
+				result.LookupSingleType = lookup.Targets[0];
+			}
 
-                result.Min = attr.MinValue ?? -1;
-                result.Max = attr.MaxValue ?? -1;
-            }
+			ParseDateTime(attribute, result);
+			ParseMinMaxValues(attribute, result);
 
-            if (attribute is MoneyAttributeMetadata)
-            {
-                var attr = attribute as MoneyAttributeMetadata;
+			result.IsPrimaryKey = attribute.IsPrimaryId ?? result.IsPrimaryKey;
 
-                result.Min = attr.MinValue != null ? (decimal)attr.MinValue.Value : -1;
-                result.Max = attr.MaxValue != null ? (decimal)attr.MaxValue.Value : -1;
-            }
+			if (attribute.SchemaName != null)
+			{
+				result.SchemaName = attribute.SchemaName ?? result.SchemaName;
 
-            if (attribute is DoubleAttributeMetadata)
-            {
-                var attr = attribute as DoubleAttributeMetadata;
+				if (attribute.LogicalName != null)
+				{
+					result.DisplayName = Naming.GetProperVariableName(attribute, isTitleCaseLogicalName);
+				}
+				result.PrivatePropertyName = Naming.GetEntityPropertyPrivateName(attribute.SchemaName);
+			}
 
-                result.Min = attr.MinValue != null ? (decimal)attr.MinValue.Value : -1;
-                result.Max = attr.MaxValue != null ? (decimal)attr.MaxValue.Value : -1;
-            }
-        }
+			result.HybridName = Naming.GetProperHybridFieldName(result.DisplayName, result.Attribute);
 
+			if (attribute.Description?.UserLocalizedLabel != null)
+			{
+				result.Description = attribute.Description.UserLocalizedLabel.Label;
+			}
 
+			if (attribute.DisplayName != null)
+			{
+				if (attribute.DisplayName.LocalizedLabels != null)
+				{
+					result.LocalizedLabels = attribute.DisplayName
+						.LocalizedLabels.Select(label => new LocalizedLabelSerialisable
+														 {
+															 LanguageCode = label.LanguageCode,
+															 Label = label.Label
+														 }).ToArray();
+				}
 
+				if (attribute.DisplayName.UserLocalizedLabel != null)
+				{
+					result.Label = attribute.DisplayName.UserLocalizedLabel.Label;
+				}
+			}
 
-        private static string GetTargetType(MappingField field)
-        {
-            if (field.IsPrimaryKey)
-                return "System.Nullable<System.Guid>";
+			if (attribute.RequiredLevel != null)
+			{
+				result.IsRequired = attribute.RequiredLevel.Value == AttributeRequiredLevel.ApplicationRequired;
+			}
 
-            switch (field.FieldType)
-            {
-                case AttributeTypeCode.Picklist:
-                    return "Microsoft.Xrm.Sdk.OptionSetValue";
-                case AttributeTypeCode.BigInt:
-                    return "System.Nullable<long>";
-                case AttributeTypeCode.Integer:
-                    return "System.Nullable<int>";
-                case AttributeTypeCode.Boolean:
-                    return "System.Nullable<bool>";
-                case AttributeTypeCode.DateTime:
-                    return "System.Nullable<System.DateTime>";
-                case AttributeTypeCode.Decimal:
-                    return "System.Nullable<decimal>";
-                case AttributeTypeCode.Money:
-                    return "Microsoft.Xrm.Sdk.Money";
-                case AttributeTypeCode.Double:
-                    return "System.Nullable<double>";
-                case AttributeTypeCode.Uniqueidentifier:
-                    return "System.Nullable<System.Guid>";
-                case AttributeTypeCode.Lookup:
-                case AttributeTypeCode.Owner:
-                case AttributeTypeCode.Customer:
-                    return "Microsoft.Xrm.Sdk.EntityReference";
-                case AttributeTypeCode.State:
-                    return "System.Nullable<" + field.Entity.StateName + ">";
-                case AttributeTypeCode.Status:
-                    return "Microsoft.Xrm.Sdk.OptionSetValue";
-                case AttributeTypeCode.Memo:
-                case AttributeTypeCode.Virtual:
-                case AttributeTypeCode.EntityName:
-                case AttributeTypeCode.String:
-                    return "string";
-                case AttributeTypeCode.PartyList:
-                    return "System.Collections.Generic.IEnumerable<ActivityParty>";
-                case AttributeTypeCode.ManagedProperty:
-                    return "Microsoft.Xrm.Sdk.BooleanManagedProperty";
-                default:
-                    return "object";
-            }
-        }
+			if (attribute.AttributeType != null)
+			{
+				result.Attribute =
+					new CrmPropertyAttribute
+					{
+						LogicalName = attribute.LogicalName,
+						IsLookup = attribute.AttributeType == AttributeTypeCode.Lookup
+							|| attribute.AttributeType == AttributeTypeCode.Customer
+					};
+			}
 
+			result.TargetTypeForCrmSvcUtil = GetTargetType(result);
+			result.FieldTypeString = result.TargetTypeForCrmSvcUtil;
 
-        public string TargetType
-        {
-            get
-            {
-                if (IsPrimaryKey)
-                    return "Guid";
+			return result;
+		}
 
-                switch (FieldType)
-                {
-                    case AttributeTypeCode.Picklist:
-                        return string.Format("Enums.{0}?", EnumData.DisplayName);
+		private static void ParseMinMaxValues(AttributeMetadata attribute, MappingField result)
+		{
+			if (attribute is StringAttributeMetadata)
+			{
+				var attr = attribute as StringAttributeMetadata;
 
-                    case AttributeTypeCode.BigInt:
-                    case AttributeTypeCode.Integer:
-                        return "int?";
+				result.MaxLength = attr.MaxLength ?? result.MaxLength;
+			}
 
-                    case AttributeTypeCode.Boolean:
-                        return "bool?";
+			if (attribute is MemoAttributeMetadata)
+			{
+				var attr = attribute as MemoAttributeMetadata;
 
-                    case AttributeTypeCode.DateTime:
-                        return "DateTime?";
+				result.MaxLength = attr.MaxLength ?? result.MaxLength;
+			}
 
-                    case AttributeTypeCode.Decimal:
-                    case AttributeTypeCode.Money:
-                        return "decimal?";
+			if (attribute is IntegerAttributeMetadata)
+			{
+				var attr = attribute as IntegerAttributeMetadata;
 
-                    case AttributeTypeCode.Double:
-                        return "double?";
+				result.Min = attr.MinValue ?? result.Min;
+				result.Max = attr.MaxValue ?? result.Max;
+			}
 
-                    case AttributeTypeCode.Uniqueidentifier:
-                    case AttributeTypeCode.Lookup:
-                    case AttributeTypeCode.Owner:
-                    case AttributeTypeCode.Customer:
-                        return "Guid?";
+			if (attribute is DecimalAttributeMetadata)
+			{
+				var attr = attribute as DecimalAttributeMetadata;
 
-                    case AttributeTypeCode.State:
-                    case AttributeTypeCode.Status:
-                        return "int";
+				result.Min = attr.MinValue ?? result.Min;
+				result.Max = attr.MaxValue ?? result.Max;
+			}
 
-                    case AttributeTypeCode.Memo:
-                    case AttributeTypeCode.Virtual:
-                    case AttributeTypeCode.EntityName:
-                    case AttributeTypeCode.String:
-                        return "string";
+			if (attribute is MoneyAttributeMetadata)
+			{
+				var attr = attribute as MoneyAttributeMetadata;
 
-                    default:
-                        return "object";
-                }
-            }
-        }
+				result.Min = attr.MinValue != null ? (decimal) attr.MinValue.Value : result.Min;
+				result.Max = attr.MaxValue != null ? (decimal) attr.MaxValue.Value : result.Max;
+			}
 
-        public string GetMethod { get; set; }
+			if (attribute is DoubleAttributeMetadata)
+			{
+				var attr = attribute as DoubleAttributeMetadata;
 
-        public string SetMethodCall
-        {
-            get
-            {
-                var methodName = "";
+				result.Min = attr.MinValue != null ? (decimal) attr.MinValue.Value : result.Min;
+				result.Max = attr.MaxValue != null ? (decimal) attr.MaxValue.Value : result.Max;
+			}
+		}
 
-                switch (FieldType)
-                {
-                    case AttributeTypeCode.Picklist:
-                        methodName = "SetPicklist"; break;
-                    case AttributeTypeCode.BigInt:
-                    case AttributeTypeCode.Integer:
-                        methodName = "SetValue<int?>"; break;
-                    case AttributeTypeCode.Boolean:
-                        methodName = "SetValue<bool?>"; break;
-                    case AttributeTypeCode.DateTime:
-                        methodName = "SetValue<DateTime?>"; break;
-                    case AttributeTypeCode.Decimal:
-                        methodName = "SetValue<decimal?>"; break;
-                    case AttributeTypeCode.Money:
-                        methodName = "SetMoney"; break;
-                    case AttributeTypeCode.Memo:
-                    case AttributeTypeCode.String:
-                        methodName = "SetValue<string>"; break;
-                    case AttributeTypeCode.Double:
-                        methodName = "SetValue<double?>"; break;
-                    case AttributeTypeCode.Uniqueidentifier:
-                        methodName = "SetValue<Guid?>"; break;
-                    case AttributeTypeCode.Lookup:
-                        methodName = "SetLookup"; break;
-                    //methodName = "SetLookup"; break;
-                    case AttributeTypeCode.Virtual:
-                        methodName = "SetValue<string>"; break;
-                    case AttributeTypeCode.Customer:
-                        methodName = "SetCustomer"; break;
-                    case AttributeTypeCode.Status:
-                        methodName = ""; break;
-                    case AttributeTypeCode.EntityName:
-                        methodName = "SetEntityNameReference"; break;
-                    case AttributeTypeCode.State:
-                    case AttributeTypeCode.Owner:
-                    default:
-                        return "";
-                }
+		private static void ParseDateTime(AttributeMetadata attribute, MappingField result)
+		{
+			var metadata = attribute as DateTimeAttributeMetadata;
+			var behaviour = metadata?.DateTimeBehavior?.Value;
 
-                if (methodName == "" || !this.IsValidForUpdate)
-                    return "";
+			if (metadata != null)
+			{
+				if (result.FieldType == AttributeTypeCode.DateTime
+					&& !string.IsNullOrEmpty(behaviour))
+				{
+					try
+					{
+						result.DateTimeBehavior = (DateTimeBehavior) Enum.Parse(typeof(DateTimeBehavior), behaviour);
+					}
+					catch
+					{
+						// ignored
+					}
+				}
+			}
+		}
+		
+		private static string GetTargetType(MappingField field)
+		{
+			if (field.IsPrimaryKey)
+			{
+				return "Guid?";
+			}
 
-                if (FieldType == AttributeTypeCode.Picklist)
-                    return string.Format("{0}(\"{1}\", (int?)value);", methodName, this.Attribute.LogicalName);
+			switch (field.FieldType)
+			{
+				case AttributeTypeCode.Picklist:
+					return "OptionSetValue";
+				case AttributeTypeCode.BigInt:
+					return "long?";
+				case AttributeTypeCode.Integer:
+					return "int?";
+				case AttributeTypeCode.Boolean:
+					return "bool?";
+				case AttributeTypeCode.DateTime:
+					return "DateTime?";
+				case AttributeTypeCode.Decimal:
+					return "decimal?";
+				case AttributeTypeCode.Money:
+					return "Money";
+				case AttributeTypeCode.Double:
+					return "double?";
+				case AttributeTypeCode.Uniqueidentifier:
+					return "Guid?";
+				case AttributeTypeCode.Lookup:
+				case AttributeTypeCode.Owner:
+				case AttributeTypeCode.Customer:
+					return "EntityReference";
+				case AttributeTypeCode.State:
+					return field.Entity.StateName + "?";
+				case AttributeTypeCode.Status:
+					return "OptionSetValue";
+				case AttributeTypeCode.Memo:
+				case AttributeTypeCode.Virtual:
+				case AttributeTypeCode.EntityName:
+				case AttributeTypeCode.String:
+					return "string";
+				case AttributeTypeCode.PartyList:
+					return "ActivityParty[]";
+				case AttributeTypeCode.ManagedProperty:
+					return "BooleanManagedProperty";
+				default:
+					return "object";
+			}
+		}
 
-                if (FieldType == AttributeTypeCode.Lookup || FieldType == AttributeTypeCode.Customer)
-                    if (string.IsNullOrEmpty(LookupSingleType))
-                        return string.Format("{0}(\"{1}\", {2}Type, value);", methodName, Attribute.LogicalName, this.DisplayName);
-                    else
-                        return string.Format("{0}(\"{1}\", \"{2}\", value);", methodName, Attribute.LogicalName, this.LookupSingleType);
+		public string GetMethod { get; set; }
+	}
 
-                return string.Format("{0}(\"{1}\", value);", methodName, this.Attribute.LogicalName);
-            }
-        }
-    }
+	[Serializable]
+	public enum DateTimeBehavior
+	{
+		DateOnly = 2,
+		TimeZoneIndependent = 3,
+		UserLocal = 1
+	}
+
+	[Serializable]
+	public class LookupLabel
+	{
+		public string LabelFieldNames { get; set; }
+		public string LogicalName { get; set; }
+		public string IdFieldName { get; set; }
+
+		public LookupLabel(string labelFieldNames = null, string logicalName = null, string idFieldName = null)
+		{
+			LabelFieldNames = labelFieldNames;
+			LogicalName = logicalName;
+			IdFieldName = idFieldName;
+		}
+	}
 }

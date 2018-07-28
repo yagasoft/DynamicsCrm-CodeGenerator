@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Xrm.Sdk;
 
 namespace CrmCodeGenerator.VSPackage.Model
 {
@@ -39,7 +40,8 @@ namespace CrmCodeGenerator.VSPackage.Model
     public class CrmPropertyAttribute : Attribute
     {
         public string LogicalName { get; set; }
-        public bool IsLookup { get; set; }
+		public string SchemaName { get; set; }
+		public bool IsLookup { get; set; }
         public bool IsEntityReferenceHelper { get; set; }
     }
 
@@ -49,6 +51,14 @@ namespace CrmCodeGenerator.VSPackage.Model
     {
         public string DisplayName { get; set; }
         public int Value { get; set; }
-
+		public LocalizedLabelSerialisable[] LocalizedLabels { get; set; }
     }
+
+	[Serializable]
+	public class LocalizedLabelSerialisable
+	{
+		public int LanguageCode { get; set; }
+		public string Label { get; set; }
+	}
+
 }

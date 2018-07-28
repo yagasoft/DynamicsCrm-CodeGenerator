@@ -1,0 +1,267 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
+        xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d" x:Class="CrmCodeGenerator.VSPackage.Dialogs.Options"
+        Title="Options" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+
+    <Window.Resources>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Margin" Value="-4,0,0,-4" />
+        </Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="Height" Value="20" />
+        </Style>
+        <Style TargetType="{x:Type PasswordBox}">
+            <Setter Property="Margin" Value="0,0,0,0" />
+            <Setter Property="Height" Value="20" />
+        </Style>
+        <Style TargetType="{x:Type CheckBox}">
+            <Setter Property="Margin" Value="0,0,15,0" />
+        </Style>
+        <Style TargetType="{x:Type ComboBox}">
+            <Setter Property="Margin" Value="0,0,0,0" />
+        </Style>
+        <converter:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
+        <converter:InverseCheckboxBooleanConverter x:Key="InverseCheckboxBooleanConverter"/>
+    </Window.Resources>
+    <Window.CommandBindings>
+        <CommandBinding Command="Close" Executed="Close_Click" />
+    </Window.CommandBindings>
+    <Window.InputBindings>
+        <KeyBinding Key="Escape" Command="Close" />
+    </Window.InputBindings>
+
+    <xctk:BusyIndicator x:Name="BusyIndicator">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Vertical">
+                <GroupBox Margin="5" Padding="2">
+                    <GroupBox.Header>
+                        General
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.ColumnSpan="2" VerticalAlignment="Stretch" Margin="0,5,0,7">
+                            <Label Padding="15,0,2,6" Content="Default value clearing mode:" DockPanel.Dock="Top"></Label>
+                            <ComboBox x:Name="ComboBoxClearMode" Margin="7,0,7,0"
+                                      SelectedItem="{Binding SelectedClearMode, Mode=TwoWay}" />
+                        </DockPanel>
+                        <CheckBox x:Name="CheckBoxSplitFiles" Content="One entity per file"
+                                  Grid.Row="1"
+                                  IsChecked="{Binding SplitFiles, Mode=TwoWay}" HorizontalAlignment="Left"
+					        Margin="5" ToolTipService.ShowDuration="30000">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="One Entity Per File"/></TextBlock>
+                                        <TextBlock><Run Text="A main file will be created,"/><LineBreak /><Run Text=" along with a file named after each entity containing its own schema."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxIsUseCustomDictionary" Grid.Row="2" Grid.ColumnSpan="2" Content="Use custom type for label collections"
+				            Margin="5" IsChecked="{Binding IsUseCustomDictionary, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="Use Custom Type for Label Collections"/></TextBlock>
+                                        <TextBlock><Run Text="This will use the 'OptionsetLanguageLabel' type for label collections instead of the 'IDictionary' type."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxIsGenerateLoadPerRelation" Grid.Row="3" Grid.ColumnSpan="2" Content="Generate a 'Load' method per relation"
+				            Margin="5" IsChecked="{Binding IsGenerateLoadPerRelation, Mode=TwoWay}">
+                        </CheckBox>
+                        <Grid Grid.Row="4" Grid.ColumnSpan="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <CheckBox x:Name="CheckBoxGenerateGlobalActions" Content="Generate global actions classes/prototypes" IsChecked="{Binding GenerateGlobalActions, Mode=TwoWay}" HorizontalAlignment="Left"
+					        Margin="5" ToolTipService.ShowDuration="30000" />
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Margin="5" Padding="2" Grid.Row="1">
+                    <GroupBox.Header>
+                        Naming
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <CheckBox x:Name="CheckBoxUseDisplayNames" Content="Use CRM labels for variable names"
+				            Margin="5" IsChecked="{Binding UseDisplayNames, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="Use CRM Labels for Variable Names"/></TextBlock>
+                                        <TextBlock><Run Text="This will use field labels instead of logical names to generate variable names."/><LineBreak /><Run Text=" Kindly note that a change in the labels in CRM will affect variable names in code,"/><LineBreak /><Run Text=" when the code is regenerated."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxTitleCaseLogicalNames" Content="Old-style capitalised attribute names" Grid.Row="1"
+				            Margin="5" IsChecked="{Binding TitleCaseLogicalNames, Mode=TwoWay}" IsEnabled="{Binding TitleCaseLogicalNamesEnabled}" ToolTipService.ShowDuration="30000">
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxLockNamesOnGenerate" Content="Lock names on generate" Grid.Row="2"
+				            Margin="5" IsChecked="{Binding LockNamesOnGenerate, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="Lock Names on Generate"/></TextBlock>
+                                        <TextBlock><Run Text="This will cause CRM labels to be filled under the 'New Name' column on generate."/><LineBreak /><Run Text=" This effectively locks names, so that CRM changes don't affect the variable names."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Margin="5" Padding="2" Grid.Row="4">
+                    <GroupBox.Header>
+                        Threading
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="2*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="5">
+                            <Label Content="Threads" Margin="0" />
+                            <xctk:IntegerUpDown x:Name="IntSpinnerThreads" AllowTextInput="True" Increment="1" Minimum="1" Height="20" />
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="5" Grid.Column="1">
+                            <Label Content="Max entities per thread" Margin="0" />
+                            <xctk:IntegerUpDown x:Name="IntSpinnerEntitiesPerThread" AllowTextInput="True" Increment="1" Minimum="1" Height="20" />
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="1">
+                <GroupBox Margin="5" Padding="2" Visibility="Collapsed">
+                    <GroupBox.Header>
+                        Non-Services
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Margin="5" Padding="2" Grid.Row="3" Visibility="Collapsed">
+                    <GroupBox.Header>
+                        Services
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox x:Name="CheckBoxOptionSetLabelsContract" Content="Generate option-set labels in contract class" IsChecked="{Binding GenerateOptionSetLabelsInContract, Mode=TwoWay}" HorizontalAlignment="Left"
+					        Margin="5" ToolTipService.ShowDuration="30000">
+                            <CheckBox.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock FontWeight="Bold"><Run Text="Generate option-set labels in contract class"/></TextBlock>
+                                        <TextBlock><Run Text="Creates a labels dictionary for currently selected option set value "/><LineBreak /><Run Text=" in the contract class itself. This is separate from the metadata class."/></TextBlock>
+                                    </StackPanel>
+                                </ToolTip>
+                            </CheckBox.ToolTip>
+                        </CheckBox>
+                        <CheckBox x:Name="CheckBoxLookupLabelsContract" Content="Generate lookup labels in contract class" Grid.Row="1"
+                                  IsChecked="{Binding GenerateLookupLabelsInContract, Mode=TwoWay}" IsEnabled="{Binding ElementName=CheckBoxLookupLabelsEntity, Path=IsChecked}"
+                                  HorizontalAlignment="Left" Margin="5" />
+                        <!--<Label Content="Entities to generate metadata class for:" Grid.Row="1" />
+                        <control:MultiSelectComboBox x:Name="ServicesMetadataEntities" Grid.Row="2" Grid.ColumnSpan="2" Width="300" Margin="5"
+                                                     IsButtonVisible="True" 
+                                                     ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                                                 ItemsSource="{Binding EntityList, Mode=TwoWay}"
+                                                 SelectedItems="{Binding ServicesMetadataEntitiesSelected, Mode=TwoWay}"
+                                                 FilteredItems="{Binding FilteredEntities}" />-->
+                        <!--<Label Content="Entities to generate contract class for:" Grid.Row="3" />
+                        <control:MultiSelectComboBox x:Name="ContractClassEntities" Grid.Row="4" Grid.ColumnSpan="2" Width="300" Margin="5"
+                                                     IsButtonVisible="True" 
+                                                     ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"
+                                                 ItemsSource="{Binding EntityList, Mode=TwoWay}"
+                                                 SelectedItems="{Binding ContractClassEntitiesSelected, Mode=TwoWay}"
+                                                 FilteredItems="{Binding FilteredEntities}" />-->
+                    </Grid>
+                </GroupBox>
+                <GroupBox Margin="5" Padding="2" Visibility="Collapsed">
+                    <GroupBox.Header>
+                        JavaScript
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                    </Grid>
+                </GroupBox>
+                <GroupBox Margin="5" Padding="2" Visibility="Collapsed">
+                    <GroupBox.Header>
+                        Actions
+                    </GroupBox.Header>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <!--<CheckBox x:Name="CheckBoxGenerateGlobalActions" Content="Generate global actions classes/prototypes" IsChecked="{Binding GenerateGlobalActions, Mode=TwoWay}" HorizontalAlignment="Left"
+					        Margin="5" ToolTipService.ShowDuration="30000" />-->
+
+                    </Grid>
+                </GroupBox>
+            </StackPanel>
+            <StackPanel Orientation="Vertical" Grid.Column="2">
+            </StackPanel>
+            <Button x:Name="GenerateCodeButton" Click="Close_Click" Content="OK" Margin="3,0,5,5" BorderThickness="1" Padding="0,2,0,2" Width="50" HorizontalAlignment="Right" Grid.ColumnSpan="99" Grid.Row="99" />
+        </Grid>
+    </xctk:BusyIndicator>
+</Window>

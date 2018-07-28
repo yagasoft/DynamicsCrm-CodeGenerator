@@ -1,8 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CrmCodeGenerator.VSPackage.Model;
+using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Messages;
+using Microsoft.Xrm.Sdk.Metadata;
+using Microsoft.Xrm.Sdk.Metadata.Query;
+using Microsoft.Xrm.Sdk.Query;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {
@@ -16,7 +23,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
                         , "businessunitmap" // Not included with CrmSvcUtil 2013
                         , "clientupdate"  // Not included with CrmSvcUtil 2013
                         , "commitment" // Not included with CrmSvcUtil 2013
-                        //  , "competitoraddress" //isn't include in CrmSvcUtil but it shows in the default solution
+                        , "competitoraddress" //isn't include in CrmSvcUtil but it shows in the default solution
                         , "complexcontrol" //Not Included with CrmSvcUtil 2013
                         , "dependencynode" //Not Included with CrmSvcUtil 2013
                         , "displaystringmap" // Not Included with CrmSvcUtil 2013
@@ -69,6 +76,78 @@ namespace CrmCodeGenerator.VSPackage.Helpers
                         , "wizardaccessprivilege" // Not included with CrmSvcUtil 6.0.0001.0061
                         , "wizardpage" // Not included with CrmSvcUtil 6.0.0001.0061
                         , "workflowwaitsubscription" // Not included with CrmSvcUtil 6.0.0001.0061
+						// the following cause duplicate errors in generated code
+						, "bulkdeleteoperation"
+						, "reportlink"
+						, "rollupjob"
         };
-    }
+
+	    public static List<EntityMetadata> RefreshSettingsEntityMetadata(IOrganizationService service, Settings settings)
+	    {
+			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
+
+			var entityProperties = new MetadataPropertiesExpression
+			{
+				AllProperties = false
+			};
+			entityProperties.PropertyNames.AddRange("DisplayName", "SchemaName");
+
+			var entityQueryExpression = new EntityQueryExpression
+			{
+				Criteria = entityFilter,
+				Properties = entityProperties,
+			};
+
+			var retrieveMetadataChangesRequest = new RetrieveMetadataChangesRequest
+			{
+				Query = entityQueryExpression,
+				ClientVersionStamp = null
+			};
+
+			var result = ((RetrieveMetadataChangesResponse) service.Execute(retrieveMetadataChangesRequest)).EntityMetadata;
+
+			// cache the result
+		    var resultFiltered =
+				settings.ProfileEntityMetadataCache =
+			    result.Where(entity =>
+			                 {
+				                 if (settings.IncludeNonStandard)
+				                 {
+					                 return true;
+				                 }
+
+				                 if (entity.SchemaName == null || entity.LogicalName == null)
+				                 {
+					                 return false;
+				                 }
+
+				                 return !NonStandard.Contains(entity.LogicalName);
+			                 }).ToList();
+
+			// reset attributes cache as well
+		    settings.ProfileAttributeMetadataCache = new Dictionary<string, EntityMetadata>();
+
+			var origSelection = settings.EntitiesToIncludeString;
+			var newList = new ObservableCollection<string>();
+
+			foreach (var entity in resultFiltered.OrderBy(e => e.LogicalName))
+			{
+				newList.Add(entity.LogicalName);
+			}
+
+			settings.EntityList = newList;
+			settings.EntitiesToIncludeString = string.Join(",",
+				origSelection.Split(',').Where(selection => settings.EntityList.Contains(selection)));
+
+			// remove obsolete entities in the filters
+		    foreach (var filter in settings.EntityDataFilterArray.EntityFilters)
+		    {
+			    filter.EntityFilterList.RemoveAll(entity => !settings.EntityList.Contains(entity.LogicalName));
+		    }
+
+			settings.FiltersChanged();
+
+			return resultFiltered;
+	    }
+	}
 }
