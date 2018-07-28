@@ -1,5 +1,5 @@
 # DynamicsCrm-CodeGenerator
-### Version: 6.15.3
+### Version: 6.15.4
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
