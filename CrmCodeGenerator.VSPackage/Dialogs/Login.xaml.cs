@@ -536,11 +536,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void EntitiesRefresh_Click(object sender, RoutedEventArgs events)
 		{
+			settings.Password = ((PasswordBox)((Button)sender).CommandParameter).Password;
 			new EntitySelection(this, settings, service).ShowDialog();
 		}
 
 		private void EntitiesProfiling_Click(object sender, RoutedEventArgs e)
 		{
+			settings.Password = ((PasswordBox)((Button)sender).CommandParameter).Password;
 			new Filter(this, settings, service).ShowDialog();
 		}
 
