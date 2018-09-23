@@ -73,4 +73,4 @@ When you make changes to the template and save, Visual Studio will automatically
 + Fixed: updating image throws exception
 
 ---
-**Copyright &copy; by Ahmed el-Sawalhy ([YagaSoft](http://yagasoft.com))** -- _GPL v3 Licence_
+**Copyright &copy; by Ahmed el-Sawalhy ([Yagasoft](http://yagasoft.com))** -- _GPL v3 Licence_
