@@ -86,10 +86,7 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="LinkDev.Libraries.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\LinkDev.Libraries.Common.1.6.2\lib\net452\LinkDev.Libraries.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="LinkDev.Libraries.EnhancedOrgService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ba9fbb93cdb1815, processorArchitecture=MSIL">
-      <HintPath>..\packages\LinkDev.Libraries.EnhancedOrgService.1.3.3\lib\net452\LinkDev.Libraries.EnhancedOrgService.dll</HintPath>
+      <HintPath>..\packages\LinkDev.Libraries.Common.1.6.6\lib\net452\LinkDev.Libraries.Common.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Crm.Sdk.Proxy, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.0.7\lib\net452\Microsoft.Crm.Sdk.Proxy.dll</HintPath>
@@ -337,9 +334,6 @@
       <HintPath>..\packages\Microsoft.WindowsAzure.ConfigurationManager.1.7.0.0\lib\net35-full\Microsoft.WindowsAzure.Configuration.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Microsoft.Xrm.Client, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\LinkDev.Libraries.EnhancedOrgService.1.3.3\lib\net452\Microsoft.Xrm.Client.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.0.7\lib\net452\Microsoft.Xrm.Sdk.dll</HintPath>
     </Reference>
@@ -531,6 +525,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CrmSchemaJs.js" />
     <Content Include="license.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
