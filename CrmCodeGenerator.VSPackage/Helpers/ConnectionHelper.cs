@@ -9,8 +9,11 @@ using System.Collections.ObjectModel;
 using System.DirectoryServices.AccountManagement;
 using System.DirectoryServices.ActiveDirectory;
 using System.Security;
+using System.ServiceModel;
 using System.ServiceModel.Description;
+using System.Text.RegularExpressions;
 using System.Windows.Documents;
+using LinkDev.Libraries.Common;
 using LinkDev.Libraries.EnhancedOrgService.Builders;
 using LinkDev.Libraries.EnhancedOrgService.Factories;
 using LinkDev.Libraries.EnhancedOrgService.Pools;
@@ -24,31 +27,12 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 {
 	public class ConnectionHelper
     {
-		private static readonly IDictionary<string, IEnhancedServicePool<EnhancedOrgService>> poolCache
-			= new Dictionary<string, IEnhancedServicePool<EnhancedOrgService>>();
-		private static readonly IDictionary<string, EnhancedServiceFactory<EnhancedOrgService>> factoryCache
-			= new Dictionary<string, EnhancedServiceFactory<EnhancedOrgService>>();
-
 		public static IOrganizationService GetConnection(Settings settings, ref int connectionsCreated, int total = 1)
 		{
 			Status.Update($"Creating connection {connectionsCreated + 1} / {total} to CRM ... ");
 
 			var connectionString = settings.GetOrganizationCrmConnectionString();
-
-			poolCache.TryGetValue(connectionString, out var pool);
-			factoryCache.TryGetValue(connectionString, out var factory);
-
-			if (pool == null || factory == null)
-			{
-				var template = EnhancedServiceBuilder.NewBuilder
-					.Initialise(connectionString)
-					.Finalise()
-					.GetBuild();
-				factoryCache[connectionString] = factory = new EnhancedServiceFactory<EnhancedOrgService>(template);
-				poolCache[connectionString] = pool = new EnhancedServicePool<EnhancedOrgService>(factory);
-			}
-
-			var service = pool.GetService();
+			var service = CreateCrmService(connectionString);
 
 			Status.Update($"Created connection {++connectionsCreated} / {total}.");
 
@@ -59,6 +43,48 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 		{
 			var temp = 0;
 			return GetConnection(settings, ref temp);
+		}
+
+		private static string latestStringUsed = "";
+		private static readonly object lockObject = new object();
+
+		public static IOrganizationService CreateCrmService(string connectionString)
+		{
+			CrmServiceClient service;
+
+			lock (lockObject)
+			{
+				if (latestStringUsed != connectionString
+					&& !connectionString.ToLower().Contains("requirenewinstance"))
+				{
+					latestStringUsed = connectionString;
+					connectionString = connectionString.Trim(';', ' ');
+					connectionString += ";RequireNewInstance=true";
+				}
+
+				service = new CrmServiceClient(connectionString);
+			}
+
+			var escapedString = Regex.Replace(connectionString, @"Password\s*?=.*?(?:;{0,1}$|;)",
+				"Password=********;");
+
+			try
+			{
+				if (!string.IsNullOrEmpty(service.LastCrmError) || service.LastCrmException != null)
+				{
+					throw new ServiceActivationException(
+						$"Can't create connection to: \"{escapedString}\" due to \"{service.LastCrmError}\"");
+				}
+
+				return service;
+			}
+			catch (Exception ex)
+			{
+				var errorMessage = service.LastCrmError
+					?? (service.LastCrmException != null ? CrmHelpers.BuildExceptionMessage(service.LastCrmException) : null)
+						?? CrmHelpers.BuildExceptionMessage(ex);
+				throw new ServiceActivationException($"Can't create connection to: \"{escapedString}\" due to\r\n{errorMessage}");
+			}
 		}
 
 		public static OrganizationDetail GetOrganizationDetails(Settings settings)

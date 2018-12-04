@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ahmed el-Sawalhy (yagasoft.com)")]
 [assembly: AssemblyProduct("CrmCodeGenerator.VSPackage")]
-[assembly: AssemblyCopyright("2015")]
+[assembly: AssemblyCopyright("Yagasoft 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]   
 [assembly: ComVisible(false)]     
