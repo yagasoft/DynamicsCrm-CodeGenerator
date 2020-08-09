@@ -192,12 +192,17 @@ namespace CrmCodeGenerator.VSPackage.Model
 			set
 			{
 				var clauses = value?.Split(';').Select(e => e.Trim()).Where(e => e.Contains("=")).ToArray();
-				var subclauses = clauses?.Select(e => e.Split('=').Select(s => s.Trim())).ToArray();
-				var longestKeyLength = subclauses?.Select(e => e.FirstOrDefault()?.Length ?? 0).Max() ?? 0;
-				clauses = subclauses?
-					.Select(e => e.StringAggregate(" = ".PadLeft(longestKeyLength + 3 - e.FirstOrDefault()?.Length ?? 0)))
-					.ToArray();
-				var formattedString = clauses.StringAggregate(";\r\n").Trim() + ";";
+
+				if (clauses?.Any() == true)
+				{
+					var subclauses = clauses?.Select(e => e.Split('=').Select(s => s.Trim())).ToArray();
+					var longestKeyLength = subclauses?.Select(e => e.FirstOrDefault()?.Length ?? 0).Max() ?? 0;
+					clauses = subclauses?
+						.Select(e => e.StringAggregate(" = ".PadLeft(longestKeyLength + 3 - e.FirstOrDefault()?.Length ?? 0)))
+						.ToArray();
+				}
+
+				var formattedString = clauses.StringAggregate(";\r\n").Trim();
 
 				SetField(ref connectionString, formattedString);
 				OnPropertyChanged("ConnectionString");

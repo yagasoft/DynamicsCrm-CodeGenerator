@@ -8,7 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
     x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
-    Title="Dynamics CRM T4 Template Generator v7.1.1"
+    Title="Dynamics CRM T4 Template Generator v7.1.2"
     Height="390.021" Width="477.463"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
@@ -53,13 +53,13 @@
                     Connection String
                 </GroupBox.Header>
                 <StackPanel Margin="0,3,0,-7">
-                    <TextBox Height="200" Margin="0 0 0 7" Text="{Binding ConnectionString, Mode=TwoWay}"
+                    <TextBox Height="200" Margin="0,0,0,7" Text="{Binding ConnectionString, Mode=TwoWay}"
                              xml:space="preserve"
                              FontFamily="Courier New"
                              VerticalAlignment="Top"
                              TextWrapping="NoWrap"
                              AcceptsReturn="True"
-                             HorizontalScrollBarVisibility="Disabled"
+                             HorizontalScrollBarVisibility="Auto"
                              VerticalScrollBarVisibility="Auto" />
                 </StackPanel>
             </GroupBox>

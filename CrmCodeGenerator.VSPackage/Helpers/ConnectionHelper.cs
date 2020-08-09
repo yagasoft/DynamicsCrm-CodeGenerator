@@ -1,5 +1,6 @@
 ﻿#region Imports
 
+using System.Text.RegularExpressions;
 using CrmCodeGenerator.VSPackage.Model;
 using Microsoft.Xrm.Sdk;
 using Yagasoft.Libraries.EnhancedOrgService.Helpers;
@@ -16,16 +17,18 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 
 		public static IEnhancedOrgService GetConnection(SettingsNew settings)
 		{
-			Status.Update($"Creating connection to CRM ... ");
-
 			if (connectionPool == null)
 			{
-				connectionPool = EnhancedServiceHelper.GetPool(settings.ConnectionString);
+				Status.Update($"Creating connection pool to CRM ... ");
+				Status.Update($"Connection String:"
+					+ $" '{Regex.Replace(settings.ConnectionString, @"Password\s*?=.*?(?:;{0,1}$|;)", "Password=********;").Replace("\r\n", " ")}'.");
+
+				connectionPool = EnhancedServiceHelper.GetPool(settings.ConnectionString, 10);
+
+				Status.Update($"Created connection pool.");
 			}
 
 			var service = connectionPool.GetService();
-
-			Status.Update($"Created connection.");
 
 			return service;
 		}

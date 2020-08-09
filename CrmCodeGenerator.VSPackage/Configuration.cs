@@ -35,7 +35,7 @@ namespace CrmCodeGenerator.VSPackage
 
 				var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
 				var project = dte.GetSelectedProject();
-				var file = project.GetPath() + "\\" + FileName + "-Config.json";
+				var file = $@"{project.GetPath()}\{FileName}-Config.json";
 
 				if (File.Exists(file))
 				{
@@ -51,7 +51,7 @@ namespace CrmCodeGenerator.VSPackage
 					return settings;
 				}
 
-				file = project.GetPath() + "\\" + FileName + ".dat";
+				file = $@"{project.GetPath()}\{FileName}.dat";
 
 				if (File.Exists(file))
 				{
@@ -181,7 +181,7 @@ namespace CrmCodeGenerator.VSPackage
 					Status.Update("Loading cache ... ");
 
 					var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-					var file = dte.Solution.GetPath() + "\\" + FileName + "-Cache.dat";
+					var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
 
 					if (File.Exists(file))
 					{
@@ -248,7 +248,7 @@ namespace CrmCodeGenerator.VSPackage
 
 			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
 			var project = dte.GetSelectedProject();
-			var file = project.GetPath() + "\\" + FileName + "-Config.json";
+			var file = $@"{project.GetPath()}\{FileName}-Config.json";
 
 			if (!File.Exists(file))
 			{
@@ -382,7 +382,7 @@ namespace CrmCodeGenerator.VSPackage
 			Status.Update("Writing cache ... ");
 
 			var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-			var file = dte.Solution.GetPath() + "\\" + FileName + "-Cache.dat";
+			var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
 
 			if (!File.Exists(file))
 			{
