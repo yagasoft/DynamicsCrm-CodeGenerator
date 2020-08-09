@@ -78,18 +78,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	{
 		#region Properties
 
-		public Settings Settings { get; set; }
-
-		private IOrganizationService service;
-
-		public IOrganizationService Service
-		{
-			get
-			{
-				return service ?? ConnectionHelper.GetConnection(Settings);
-			}
-			set { service = value; }
-		}
+		public SettingsNew Settings { get; set; }
 
 		public List<EntityMetadata> EntityMetadataCache;
 
@@ -203,9 +192,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
+		private MetadataCache metadataCache;
+
 		#region Init
 
-		public EntitySelection(Window parentWindow, Settings settings, IOrganizationService service = null)
+		public EntitySelection(Window parentWindow, SettingsNew settings)
 		{
 			InitializeComponent();
 
@@ -214,7 +205,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Entities = new ObservableCollection<EntitiesSelectionGridRow>();
 
 			Settings = settings;
-			Service = service;
+			metadataCache = MetadataCacheHelpers.GetMetadataCache(settings.ConnectionString);
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -224,9 +215,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				           try
 				           {
 					           ShowBusy("Fetching entity metadata ...");
-					           if (Settings.ProfileEntityMetadataCache.Any())
+					           if (metadataCache.ProfileEntityMetadataCache.Any())
 					           {
-						           EntityMetadataCache = Settings.ProfileEntityMetadataCache;
+						           EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 					           }
 					           else
 					           {
@@ -270,7 +261,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				var entityAsync = entity;
 
-				Dispatcher.Invoke(() =>
+				Dispatcher.Invoke(
+					() =>
 				                  {
 					                  var row = new EntitiesSelectionGridRow
 					                            {
@@ -460,8 +452,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RefreshEntityMetadata()
 		{
-			EntityHelper.RefreshSettingsEntityMetadata(Service, Settings);
-			EntityMetadataCache = Settings.ProfileEntityMetadataCache;
+			EntityHelper.RefreshSettingsEntityMetadata(Settings);
+			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 		}
 
 		#endregion
@@ -720,7 +712,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						// get logical name and re-init
 						var logicalName = rowData.Name;
 						new FilterDetails(this, logicalName, Settings,
-							new ObservableCollection<EntityGridRow>(Entities), true, service, true).ShowDialog();
+							new ObservableCollection<EntityGridRow>(Entities), true, true).ShowDialog();
 					}
 				}
 			}
@@ -907,11 +899,30 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// get entity names that match any regex from the fetched list
 				if (DisplayFilter)
 				{
-					customEntities = Settings.AppendText
-						.Where(keyValue => prefixes.Any(
-							prefix => Regex.IsMatch(keyValue.Value.ToLower().Replace("(", "").Replace(")", ""), prefix)))
-						.Select(keyValue => keyValue.Key)
-						.Distinct();
+					var defaultFiltered = Settings.EntityDataFilterArray.EntityFilters
+						.Where(filter => filter.IsDefault)
+						.SelectMany(filter => filter.EntityFilterList).ToArray();
+
+					customEntities =
+						EntityMetadataCache
+							.ToDictionary(key => key.LogicalName,
+								value =>
+								{
+									var rename =
+										defaultFiltered.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
+
+									return "("
+										+ (string.IsNullOrEmpty(rename)
+											? value.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+												? Naming.GetProperHybridName(value.SchemaName, value.LogicalName)
+												: Naming.Clean(value.DisplayName.UserLocalizedLabel.Label)
+											: rename)
+										+ ")";
+								})
+							.Where(keyValue => prefixes.Any(
+								prefix => Regex.IsMatch(keyValue.Value.ToLower().Replace("(", "").Replace(")", ""), prefix)))
+							.Select(keyValue => keyValue.Key)
+							.Distinct();
 				}
 				else
 				{

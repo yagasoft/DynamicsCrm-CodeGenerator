@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using Yagasoft.Libraries.Common;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {
@@ -59,6 +60,95 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 
 				child = parentObject;
 			}
+		}
+
+		public static IDictionary<TU, TV> RemoveDefaultValued<TU, TV>(this IDictionary<TU, TV> dictionary)
+		{
+			var keys = dictionary
+				.Where(p => p.Value.Equals(default(TV)))
+				.Select(p => p.Key).ToArray();
+
+			foreach (var key in keys)
+			{
+				dictionary.Remove(key);
+			}
+
+			return dictionary;
+		}
+
+		public static ICollection<TV> RemoveDefaultValued<TV>(this ICollection<TV> collection)
+		{
+			var emptyValues = collection.Where(e => e.Equals(default(TV))).ToArray();
+
+			foreach (var value in emptyValues)
+			{
+				collection.Remove(value);
+			}
+
+			return collection;
+		}
+
+		public static ICollection<TV> RemoveEmpty<TV>(this ICollection<TV> collection)
+		{
+			var values = collection.RemoveDefaultValued()
+				.Where(e => (e is string stringValue) && stringValue.IsEmpty()).ToArray();
+
+			foreach (var value in values)
+			{
+				collection.Remove(value);
+			}
+
+			return collection;
+		}
+
+		public static IDictionary<TU, TV> RemoveEmpty<TU, TV>(this IDictionary<TU, TV> dictionary)
+		{
+			var keys = dictionary.RemoveDefaultValued()
+				.Where(p => (p.Value is string stringValue) && stringValue.IsEmpty())
+				.Select(p => p.Key).ToArray();
+
+			foreach (var key in keys)
+			{
+				dictionary.Remove(key);
+			}
+
+			return dictionary;
+		}
+
+		public static ICollection<ICollection<TV>> RemoveEmpty<TV>(this ICollection<ICollection<TV>> collection)
+		{
+			var emptyValues = collection.Where(e => e.Equals(default(TV))).ToArray();
+
+			foreach (var value in emptyValues)
+			{
+				collection.Remove(value);
+			}
+
+			foreach (var value in collection.ToArray())
+			{
+				value.RemoveEmpty();
+			}
+
+			return collection;
+		}
+
+		public static IDictionary<TU, ICollection<TV>> RemoveEmpty<TU, TV>(this IDictionary<TU, ICollection<TV>> dictionary)
+		{
+			var keys = dictionary.RemoveDefaultValued()
+				.Where(p => p.Value.Count <= 0)
+				.Select(p => p.Key).ToArray();
+
+			foreach (var key in keys)
+			{
+				dictionary.Remove(key);
+			}
+
+			foreach (var value in dictionary.Select(p => p.Value).ToArray())
+			{
+				value.RemoveEmpty();
+			}
+
+			return dictionary;
 		}
 	}
 }

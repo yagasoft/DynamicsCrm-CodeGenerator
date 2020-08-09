@@ -43,18 +43,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public EntityDataFilter EntityDataFilter { get; set; }
 
-		public Settings Settings { get; set; }
-
-		private IOrganizationService service;
-
-		public IOrganizationService Service
-		{
-			get
-			{
-				return service ?? ConnectionHelper.GetConnection(Settings);
-			}
-			set { service = value; }
-		}
+		public SettingsNew Settings { get; set; }
 
 		public IDictionary<string, EntityMetadata> AttributeMetadataCache;
 
@@ -224,6 +213,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
+		private MetadataCache metadataCache;
+
 		#region Property events
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -237,9 +228,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Init
 
-		public FilterDetails(Window parentWindow, string logicalName, Settings settings,
-			ObservableCollection<EntityGridRow> entities, bool isChecked,
-			IOrganizationService service = null, bool isCrmEntities = false)
+		public FilterDetails(Window parentWindow, string logicalName, SettingsNew settings,
+			ObservableCollection<EntityGridRow> entities, bool isChecked, bool isCrmEntities = false)
 		{
 			InitializeComponent();
 
@@ -258,7 +248,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			RelationsNN = new ObservableCollection<RelationsNNGridRow>();
 
 			Settings = settings;
-			Service = service;
+			metadataCache = MetadataCacheHelpers.GetMetadataCache(settings.ConnectionString);
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -327,14 +317,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 					           if (AttributeMetadataCache == null)
 					           {
-						           AttributeMetadataCache = Settings.ProfileAttributeMetadataCache;
+						           AttributeMetadataCache = metadataCache.ProfileAttributeMetadataCache;
 					           }
 
 					           if (!AttributeMetadataCache.ContainsKey(LogicalName))
 					           {
 						           AttributeMetadataCache[LogicalName] =
 							           GetEntityMetadata().EntityMetadata.FirstOrDefault();
-						           Settings.ProfileAttributeMetadataCache = AttributeMetadataCache;
+						           metadataCache.ProfileAttributeMetadataCache = AttributeMetadataCache;
 					           }
 
 					           Dispatcher.Invoke(GenerateLists);
@@ -634,7 +624,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				                                     Query = entityQueryExpression,
 			                                     };
 
-			return (RetrieveMetadataChangesResponse) Service.Execute(retrieveMetadataChangesRequest);
+			using (var service = ConnectionHelper.GetConnection(Settings))
+			{
+				return (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
+			}
 		}
 
 		#endregion

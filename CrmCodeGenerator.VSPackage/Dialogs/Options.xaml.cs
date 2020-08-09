@@ -50,7 +50,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Properties
 
-		public Settings Settings { get; set; }
+		public SettingsNew Settings { get; set; }
 
 		private Style originalProgressBarStyle;
 
@@ -70,7 +70,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Init
 
-		public Options(Window parentWindow, Settings settings)
+		public Options(Window parentWindow, SettingsNew settings)
 		{
 			InitializeComponent();
 

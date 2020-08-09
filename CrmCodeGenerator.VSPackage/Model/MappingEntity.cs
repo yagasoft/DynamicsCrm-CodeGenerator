@@ -59,17 +59,16 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 
 			// update modified entities
-			var modifiedEntities =
-				entityMetadataList.Where(
-					entity => entity.MetadataId.HasValue && mappingEntities.ContainsKey(entity.MetadataId.Value)).ToList();
-			modifiedEntities.AsParallel().ForAll(
-				entity => GetMappingEntity(entity, serverStamp, mappingEntities[entity.MetadataId.Value], isTitleCaseLogicalName));
+			var modifiedEntities = entityMetadataList
+				.Where(entity => entity.MetadataId.HasValue && mappingEntities.ContainsKey(entity.MetadataId.Value)).ToList();
+			modifiedEntities.AsParallel().ForAll(entity =>
+				GetMappingEntity(entity, serverStamp, mappingEntities[entity.MetadataId.GetValueOrDefault()], isTitleCaseLogicalName));
 
 			var newEntities =
 				entityMetadataList.Where(
 					entity => entity.MetadataId.HasValue && !mappingEntities.ContainsKey(entity.MetadataId.Value)).ToList();
-			newEntities.AsParallel()
-				.ForAll(entity => mappingEntities.Add(entity.MetadataId.Value, GetMappingEntity(entity, serverStamp, null, isTitleCaseLogicalName)));
+			newEntities.AsParallel().ForAll(entity => mappingEntities
+				.Add(entity.MetadataId.GetValueOrDefault(), GetMappingEntity(entity, serverStamp, null, isTitleCaseLogicalName)));
 		}
 
 		private static void ParseDeleted(List<EntityMetadata> entityMetadataList,

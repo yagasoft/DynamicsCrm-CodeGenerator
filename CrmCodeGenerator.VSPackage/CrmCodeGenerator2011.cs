@@ -9,7 +9,6 @@ using CrmCodeGenerator.VSPackage.Dialogs;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model;
 using CrmCodeGenerator.VSPackage.T4;
-using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Designer.Interfaces;
@@ -18,6 +17,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
+using Yagasoft.Libraries.Common;
 //using VSLangProj80;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
@@ -35,35 +35,38 @@ namespace CrmCodeGenerator.VSPackage
 		public const string vsContextGuidVJSEditor = "{E6FDF88A-F3D1-11D4-8576-0002A516ECE8}";
 	}
 
-
 	// http://blogs.msdn.com/b/vsx/archive/2013/11/27/building-a-vsix-deployable-single-file-generator.aspx
 	[ComVisible(true)]
 	[Guid(GuidList.guidCrmCodeGenerator_SimpleGenerator)]
-	[ProvideObject(typeof (CrmCodeGenerator2011))]
-	[CodeGeneratorRegistration(typeof (CrmCodeGenerator2011), "CrmCodeGenerator2011",
+	[ProvideObject(typeof(CrmCodeGenerator2011))]
+	[CodeGeneratorRegistration(typeof(CrmCodeGenerator2011), "CrmCodeGenerator2011",
 		vsContextGuids.vsContextGuidVCSProject, GeneratesDesignTimeSource = true)]
-	[CodeGeneratorRegistration(typeof (CrmCodeGenerator2011), "CrmCodeGenerator2011", vsContextGuids.vsContextGuidVBProject,
+	[CodeGeneratorRegistration(typeof(CrmCodeGenerator2011), "CrmCodeGenerator2011", vsContextGuids.vsContextGuidVBProject,
 		GeneratesDesignTimeSource = true)]
 	public class CrmCodeGenerator2011 : IVsSingleFileGenerator, IObjectWithSite, IDisposable
 	{
-		private object site = null;
-		private CodeDomProvider codeDomProvider = null;
-		private ServiceProvider serviceProvider = null;
-		private string extension = null;
-		private Context context = null;
+		private object site;
+		private CodeDomProvider codeDomProvider;
+		private ServiceProvider serviceProvider;
+		private string extension;
+		private Context context;
 
 		private CodeDomProvider CodeProvider
 		{
 			get
 			{
-				if (codeDomProvider == null)
+				if (codeDomProvider != null)
 				{
-					var provider = (IVSMDCodeDomProvider) SiteServiceProvider.GetService(typeof (IVSMDCodeDomProvider).GUID);
-					if (provider != null)
-					{
-						codeDomProvider = (CodeDomProvider) provider.CodeDomProvider;
-					}
+					return codeDomProvider;
 				}
+
+				var provider = (IVSMDCodeDomProvider)SiteServiceProvider.GetService(typeof(IVSMDCodeDomProvider).GUID);
+
+				if (provider != null)
+				{
+					codeDomProvider = (CodeDomProvider)provider.CodeDomProvider;
+				}
+
 				return codeDomProvider;
 			}
 		}
@@ -72,26 +75,14 @@ namespace CrmCodeGenerator.VSPackage
 		{
 			get
 			{
-				if (serviceProvider == null)
+				if (serviceProvider != null)
 				{
-					var oleServiceProvider = site as IOleServiceProvider;
-					serviceProvider = new ServiceProvider(oleServiceProvider);
+					return serviceProvider;
 				}
-				return serviceProvider;
-			}
-		}
 
-		public void Dispose()
-		{
-			if (codeDomProvider != null)
-			{
-				codeDomProvider.Dispose();
-				codeDomProvider = null;
-			}
-			if (serviceProvider != null)
-			{
-				serviceProvider.Dispose();
-				serviceProvider = null;
+				var oleServiceProvider = site as IOleServiceProvider;
+				serviceProvider = new ServiceProvider(oleServiceProvider);
+				return serviceProvider;
 			}
 		}
 
@@ -100,73 +91,73 @@ namespace CrmCodeGenerator.VSPackage
 		public int DefaultExtension(out string pbstrDefaultExtension)
 		{
 			pbstrDefaultExtension = "." + CodeProvider.FileExtension;
+
 			if (extension != null)
 			{
 				pbstrDefaultExtension = extension;
 			}
+
 			return VSConstants.S_OK;
 		}
 
 		public int Generate(string wszInputFilePath, string bstrInputFileContents, string wszDefaultNamespace,
 			IntPtr[] rgbOutputFileContents, out uint pcbOutput, IVsGeneratorProgress pGenerateProgress)
 		{
-			if (bstrInputFileContents == null)
-			{
-				throw new ArgumentException(bstrInputFileContents);
-			}
+			bstrInputFileContents.Require(nameof(bstrInputFileContents));
+			wszInputFilePath.RequireNotEmpty(nameof(wszInputFilePath));
 
 			Status.Clear();
 
-			var originalFile = GetOriginalFile(wszInputFilePath);
-
-			var dte = Package.GetGlobalService(typeof (SDTE)) as DTE2;
+			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE2;
 
 			Configuration.FileName = Path.GetFileNameWithoutExtension(wszInputFilePath);
 
-			//var settingsNew = Configuration.LoadConfigs().GetSelectedSettings();
+			var project = dte.GetSelectedProject();
+			var file = $@"{project.GetPath()}\{Configuration.FileName}.dat";
 
-			//context = settingsNew.Context;
-
-			// use the 'cached' button instead
-			var refresh = true;//context == null || PromptToRefreshEntities();
-
-			if (refresh)
+			if (File.Exists(file))
 			{
-				var m = new Login(dte);
-				m.ShowModal();
-				context = m.Context;
-				m = null;
+				var isMigrate = DteHelper.IsConfirmed("Pre-v7 settings found, which will be converted to the current format.\r\n\r\n"
+					+ "Only the LAST selected profile will be migrated -- all other profiles will be DELETED.\r\n\r\n"
+					+ "If unsure, reinstall pre-v7 Generator and select the profile you would like migrated,"
+					+ " and then upgrade again.\r\n\r\n"
+					+ "Would you like to proceed?",
+					">> WARNING << Settings Migration");
+
+				if (isMigrate)
+				{
+					isMigrate = DteHelper.IsConfirmed("Only the LAST selected profile will be migrated"
+						+ " -- all other profiles will be DELETED.\r\n\r\n"
+						+ "Are you sure?",
+						">> WARNING << Settings Migration");
+				}
+
+				if (!isMigrate)
+				{
+					return Cancel(wszInputFilePath, rgbOutputFileContents, out pcbOutput);
+				}
 			}
+
+			var m = new Login(dte);
+			m.ShowModal();
+			context = m.Context;
 
 			if (context == null)
 			{
-				// TODO  pGenerateProgress.GeneratorError(1, (uint)1, "Code generation for CRM Template aborted", uint.MaxValue, uint.MaxValue);
-				if (Configuration.FileName != null)
-				{
-					var fileName = wszInputFilePath.Replace(".tt", ".cs");
-					if (File.Exists(fileName))
-						// http://social.msdn.microsoft.com/Forums/vstudio/en-US/d8d72da3-ddb9-4811-b5da-2a167bbcffed/ivssinglefilegenerator-cancel-code-generation
-						// I don't think a login failure would be considered a invalid model, so we'll restore what was there
-					{
-						SaveOutputContent(
-							rgbOutputFileContents, out pcbOutput, File.ReadAllText(fileName));
-					}
-					else
-					{
-						SaveOutputContent(rgbOutputFileContents, out pcbOutput, "");
-					}
-				}
-				else
-				{
-					SaveOutputContent(rgbOutputFileContents, out pcbOutput, "");
-				}
-				return VSConstants.S_OK;
+				return Cancel(wszInputFilePath, rgbOutputFileContents, out pcbOutput);
 			}
 
-			Status.Update("Generating code from template ... ", false);
+			Status.Update("Generating code from template ... ");
 
-			var t4 = Package.GetGlobalService(typeof (STextTemplating)) as ITextTemplating;
-			var sessionHost = t4 as ITextTemplatingSessionHost;
+			if (!(Package.GetGlobalService(typeof(STextTemplating)) is ITextTemplating t4))
+			{
+				throw new ArgumentNullException(nameof(t4), "Failed to build T4 object.");
+			}
+
+			if (!(t4 is ITextTemplatingSessionHost sessionHost))
+			{
+				throw new ArgumentNullException(nameof(sessionHost), "Failed to build Session Host object.");
+			}
 
 			context.Namespace = wszDefaultNamespace;
 			context.FileName = Configuration.FileName;
@@ -182,8 +173,7 @@ namespace CrmCodeGenerator.VSPackage
 			foreach (var err in cb.ErrorMessages)
 			{
 				// The templating system (eg t4.ProcessTemplate) will automatically add error/warning to the ErrorList 
-				Status.Update(string.Format("[{0}] {1} {2}, {3}",
-					(err.Warning ? "WARN" : "ERROR"), err.Message, err.Line, err.Column));
+				Status.Update($"[{(err.Warning ? "WARN" : "ERROR")}] {err.Message} {err.Line}, {err.Column}");
 			}
 
 			// If there was an output directive in the TemplateFile, then cb.SetFileExtension() will have been called.
@@ -192,13 +182,30 @@ namespace CrmCodeGenerator.VSPackage
 				extension = cb.FileExtension;
 			}
 
-			Status.Update("done!");
+			Status.Update(">>> Finished generating code.");
 
-			Status.Update("Writing code to disk ... ", false);
+			Status.Update("Writing code to disk ... ");
 
 			SaveOutputContent(rgbOutputFileContents, out pcbOutput, content);
 
-			Status.Update("done!");
+			Status.Update(">>> Finished writing code.");
+
+			return VSConstants.S_OK;
+		}
+
+		private static int Cancel(string wszInputFilePath, IntPtr[] rgbOutputFileContents, out uint pcbOutput)
+		{
+			var fileName = wszInputFilePath.Replace(".tt", ".cs");
+
+			// http://social.msdn.microsoft.com/Forums/vstudio/en-US/d8d72da3-ddb9-4811-b5da-2a167bbcffed/ivssinglefilegenerator-cancel-code-generation
+			if (File.Exists(fileName))
+			{
+				SaveOutputContent(rgbOutputFileContents, out pcbOutput, File.ReadAllText(fileName));
+			}
+			else
+			{
+				SaveOutputContent(rgbOutputFileContents, out pcbOutput, "");
+			}
 
 			return VSConstants.S_OK;
 		}
@@ -206,47 +213,9 @@ namespace CrmCodeGenerator.VSPackage
 		private static void SaveOutputContent(IntPtr[] rgbOutputFileContents, out uint pcbOutput, string content)
 		{
 			var bytes = Encoding.UTF8.GetBytes(content);
-
-			if (bytes == null)
-			{
-				rgbOutputFileContents[0] = IntPtr.Zero;
-				pcbOutput = 0;
-			}
-			else
-			{
-				rgbOutputFileContents[0] = Marshal.AllocCoTaskMem(bytes.Length);
-				Marshal.Copy(bytes, 0, rgbOutputFileContents[0], bytes.Length);
-				pcbOutput = (uint) bytes.Length;
-			}
-		}
-
-		private static string GetOriginalFile(string wszInputFilePath)
-		{
-			var dte = Package.GetGlobalService(typeof (SDTE)) as DTE;
-			var project = dte.GetSelectedProject();
-			var relFile = DteHelper.MakeRelative(wszInputFilePath, project.GetProjectDirectory());
-			var pi = project.GetProjectItem(relFile);
-			foreach (ProjectItem item in pi.ProjectItems)
-			{
-				// It possible for the project item to be corrupt. (ie project has a reference to a file, but the file is gone).  
-				//  when this happens the item will have a NULL document.
-				if (item.Document != null)
-				{
-					return item.Document.FullName;
-				}
-			}
-			return null;
-		}
-
-		private static bool PromptToRefreshEntities()
-		{
-			var results = VsShellUtilities.ShowMessageBox(ServiceProvider.GlobalProvider,
-				"Do you want to refresh the CRM entities from the Server?\n" +
-				" If 'no', the generator will use the cached entities of the latest run.",
-				"Refresh", OLEMSGICON.OLEMSGICON_QUERY,
-				OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-
-			return results == 6;
+			rgbOutputFileContents[0] = Marshal.AllocCoTaskMem(bytes.Length);
+			Marshal.Copy(bytes, 0, rgbOutputFileContents[0], bytes.Length);
+			pcbOutput = (uint)bytes.Length;
 		}
 
 		#endregion IVsSingleFileGenerator
@@ -278,5 +247,22 @@ namespace CrmCodeGenerator.VSPackage
 		}
 
 		#endregion IObjectWithSite
+
+		public void Dispose()
+		{
+			if (codeDomProvider != null)
+			{
+				codeDomProvider.Dispose();
+				codeDomProvider = null;
+			}
+
+			if (serviceProvider == null)
+			{
+				return;
+			}
+
+			serviceProvider.Dispose();
+			serviceProvider = null;
+		}
 	}
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 
 #endregion
 
@@ -28,6 +29,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
+		[JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
 		public ObservableCollection<EntityFilter> EntityFilters
 		{
 			get { return entityFilters; }

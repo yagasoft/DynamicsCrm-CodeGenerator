@@ -10,46 +10,26 @@ using System.Runtime.CompilerServices;
 namespace CrmCodeGenerator.VSPackage.Model
 {
 	[Serializable]
-	public class SettingsArray : INotifyPropertyChanged
+	public class SettingsArray
 	{
 		private int selectedSettingsIndex;
 		private ObservableCollection<Settings> settingsList = new ObservableCollection<Settings>();
 
 		public int SelectedSettingsIndex
 		{
-			get { return selectedSettingsIndex; }
-			set
-			{
-				selectedSettingsIndex = value;
-				OnPropertyChanged();
-			}
+			get => selectedSettingsIndex;
+			set => selectedSettingsIndex = value;
 		}
 
 		public ObservableCollection<Settings> SettingsList
 		{
-			get { return settingsList; }
-			set
-			{
-				settingsList = value;
-				OnPropertyChanged();
-			}
+			get => settingsList;
+			set => settingsList = value;
 		}
 
 		public Settings GetSelectedSettings()
 		{
 			return SettingsList[SelectedSettingsIndex];
 		}
-
-		#region Property events
-
-		[field: NonSerialized]
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		#endregion
 	}
 }

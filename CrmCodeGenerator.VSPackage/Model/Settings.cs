@@ -22,134 +22,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 
 namespace CrmCodeGenerator.VSPackage.Model
 {
-	public enum ClearModeEnum
-	{
-		Disabled,
-		Empty,
-		Convention,
-		Flag
-	}
-
-	[Serializable]
-	public class EntityDataFilter : INotifyPropertyChanged
-	{
-		private string entityRename;
-		private bool isExcluded = true;
-		private bool isGenerateMeta;
-		private bool isOptionsetLabels;
-		private bool isLookupLabels;
-		private ClearModeEnum? valueClearMode;
-		private string englishLabelField;
-
-		public string LogicalName { get; set; }
-
-		public string EntityRename
-		{
-			get { return entityRename; }
-			set
-			{
-				entityRename = string.IsNullOrEmpty(value) ? null : value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsGenerateMeta
-		{
-			get { return isGenerateMeta; }
-			set
-			{
-				isGenerateMeta = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsOptionsetLabels
-		{
-			get { return isOptionsetLabels; }
-			set
-			{
-				isOptionsetLabels = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsLookupLabels
-		{
-			get { return isLookupLabels; }
-			set
-			{
-				isLookupLabels = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public ClearModeEnum? ValueClearMode
-		{
-			get { return valueClearMode; }
-			set
-			{
-				valueClearMode = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsExcluded
-		{
-			get { return isExcluded; }
-			set
-			{
-				isExcluded = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public string EnglishLabelField
-		{
-			get { return englishLabelField; }
-			set
-			{
-				englishLabelField = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsFiltered => !string.IsNullOrEmpty(EntityRename)
-			|| Attributes.Length > 0 || OneToN.Length > 0 || NToOne.Length > 0 || NToN.Length > 0;
-
-		public string[] Attributes { get; set; } = new string[0];
-		public IDictionary<string, string> AttributeRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, string> AttributeLanguages { get; set; } = new Dictionary<string, string>();
-		public string[] ReadOnly { get; set; } = new string[0];
-		public string[] ClearFlag { get; set; } = new string[0];
-
-		public string[] OneToN { get; set; } = new string[0];
-		public IDictionary<string, string> OneToNRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> OneToNReadOnly { get; set; } = new Dictionary<string, bool>();
-
-		public string[] NToOne { get; set; } = new string[0];
-		public IDictionary<string, string> NToOneRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> NToOneFlatten { get; set; } = new Dictionary<string, bool>();
-		public IDictionary<string, bool> NToOneReadOnly { get; set; } = new Dictionary<string, bool>();
-
-		public string[] NToN { get; set; } = new string[0];
-		public IDictionary<string, string> NToNRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> NToNReadOnly { get; set; } = new Dictionary<string, bool>();
-
-		public EntityDataFilter(string logicalName)
-		{
-			LogicalName = logicalName;
-		}
-
-		[field: NonSerialized]
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			var handler = PropertyChanged;
-			handler?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-	}
-
 	[Serializable]
 	public class Settings : INotifyPropertyChanged, IDeserializationCallback
 	{
@@ -1066,46 +938,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
-		[field: NonSerialized] private IDictionary<string, string> appendText;
-
-		public IDictionary<string, string> AppendText
-		{
-			get
-			{
-				if (appendText != null)
-				{
-					return appendText;
-				}
-
-				if (ProfileEntityMetadataCache == null)
-				{
-					return new Dictionary<string, string>();
-				}
-
-				var defaultFiltered = EntityDataFilterArray.EntityFilters
-					.Where(filter => filter.IsDefault)
-					.SelectMany(filter => filter.EntityFilterList).ToArray();
-
-				return appendText =
-				       ProfileEntityMetadataCache
-					       .ToDictionary(key => key.LogicalName,
-						       value =>
-						       {
-							       var rename =
-								       defaultFiltered.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
-
-							       return "("
-							              + (string.IsNullOrEmpty(rename)
-								                 ? value.DisplayName?.UserLocalizedLabel == null || !UseDisplayNames
-									                   ? Naming.GetProperHybridName(value.SchemaName, value.LogicalName)
-									                   : Naming.Clean(value.DisplayName.UserLocalizedLabel.Label)
-								                 : rename)
-							              + ")";
-						       });
-			}
-		}
-
-
 		private void ReEvalReadOnly()
 		{
 			OnPropertyChanged("NeedServer");
@@ -1200,6 +1032,8 @@ namespace CrmCodeGenerator.VSPackage.Model
 		{
 			get
 			{
+				return null;
+
 				var entityMetadataCacheGuid = new Guid[EntityMetadataCache.Count];
 				var entityMetadataCacheMappingEntity = new MappingEntity[EntityMetadataCache.Count];
 
@@ -1344,27 +1178,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 			EntityMetadataCache = EntityMetadataCache ?? new Dictionary<Guid, MappingEntity>();
 			EntityDataFilterArray = EntityDataFilterArray ?? new EntityFilterArray();
 
-			if (EntityDataFilterList != null)
-			{
-				EntityDataFilterArray.EntityFilters.Clear();
-				EntityDataFilterArray.EntityFilters.Add(new EntityFilter
-				                                        {
-					                                        EntityFilterList = EntityDataFilterList
-				                                        });
-				EntityDataFilterList = null;
-			}
-
-			if (Context?.EntityDataFilterList != null)
-			{
-				Context.EntityDataFilterArray = Context.EntityDataFilterArray ?? new EntityFilterArray();
-				Context.EntityDataFilterArray.EntityFilters.Clear();
-				Context.EntityDataFilterArray.EntityFilters.Add(new EntityFilter
-				{
-					EntityFilterList = Context.EntityDataFilterList
-				});
-				Context.EntityDataFilterList = null;
-			}
-
 			OnLineServers = OnLineServers ?? new ObservableCollection<string>();
 			OrgList = OrgList ?? new ObservableCollection<string>();
 			EntitiesSelected = EntitiesSelected ?? new ObservableCollection<string>();
@@ -1389,17 +1202,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 				ServerName += string.IsNullOrWhiteSpace(CrmOrg) ? "" : $"/{CrmOrg}";
 				ServerPort = UseOffice365 ? "Office365" : (UseIFD ? "IFD" : "AD");
 			}
-
-			// append text events
-			PropertyChanged += (sender, args) =>
-			                   {
-				                   if (new List<string>(new[] {"EntityList", "FilteredEntities"})
-					                   .Contains(args.PropertyName))
-				                   {
-					                   appendText = null;
-					                   OnPropertyChanged("AppendText");
-				                   }
-			                   };
 		}
 
 		#endregion

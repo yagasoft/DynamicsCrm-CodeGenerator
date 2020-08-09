@@ -57,7 +57,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
             var dir = new DirectoryInfo(samplesPath);
             Props.TemplateList = new ObservableCollection<String>(dir.GetFiles().Select(x => x.Name).Where(x => !x.Equals("_Blank.tt")).ToArray());
             Props.Template = "CrmSchema.tt";
-            Props.Folder = project.GetProjectDirectory();
+            Props.Folder = project.GetPath();
         }
         protected override void OnSourceInitialized(EventArgs e)
         {

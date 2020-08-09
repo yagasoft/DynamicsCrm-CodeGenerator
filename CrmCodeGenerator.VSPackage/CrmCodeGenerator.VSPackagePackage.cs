@@ -169,7 +169,7 @@ namespace CrmCodeGenerator.VSPackage
 					            return;
 				            }
 
-				            var templatePath = Path.GetFullPath(Path.Combine(project.GetProjectDirectory(), m.Props.Template));
+				            var templatePath = Path.GetFullPath(Path.Combine(project.GetPath(), m.Props.Template));
 				            //GetFullpath removes un-needed relative paths  (ie if you are putting something in the solution directory)
 
 				            if (File.Exists(templatePath))

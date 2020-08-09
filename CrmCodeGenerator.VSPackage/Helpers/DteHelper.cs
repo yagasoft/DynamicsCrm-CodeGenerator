@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Window = EnvDTE.Window;
@@ -92,7 +93,11 @@ namespace CrmCodeGenerator.VSPackage.Helpers
         {
             return project.Properties.Item("DefaultNamespace").Value.ToString();
         }
-        public static string GetProjectDirectory(this Project project)
+        public static string GetPath(this Solution solution)
+        {
+            return System.IO.Path.GetDirectoryName(solution.FullName);
+        }
+        public static string GetPath(this Project project)
         {
             return System.IO.Path.GetDirectoryName(project.FullName);
         }
@@ -146,7 +151,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 				text, title, OLEMSGICON.OLEMSGICON_WARNING,
 				OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND);
 
-			return results == 6;
+			return results == DialogResult.Yes;
 		}
 
 	    internal static void ShowInfo(string text, string title)

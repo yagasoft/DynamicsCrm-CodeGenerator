@@ -23,6 +23,8 @@ using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
+using Yagasoft.Libraries.Common;
+using static CrmCodeGenerator.VSPackage.Helpers.MetadataCacheHelpers;
 using Application = System.Windows.Forms.Application;
 
 #endregion
@@ -34,30 +36,16 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	/// </summary>
 	public partial class Login
 	{
+		public Context Context;
+
 		private Style originalProgressBarStyle;
 
+		private SettingsNew settings;
 
-		public Context Context;
-		private Settings settings;
 		private Mapper mapper;
 
-		private IOrganizationService service;
-
-		private readonly SettingsArray settingsArray;
-
 		private bool _StillOpen = true;
-
 		public bool StillOpen => _StillOpen;
-
-		private IOrganizationService Service
-		{
-			get
-			{
-				//return service = new OrganizationService(CrmConnection
-				//	.Parse(settings.GetOrganizationCrmConnectionString()));
-				return null;
-			}
-		}
 
 		#region Init
 
@@ -70,49 +58,28 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			var main = dte.GetMainWindow();
 			Owner = main;
 
-			settingsArray = Configuration.LoadConfigs();
+			settings = Configuration.LoadSettings();
 
-			EventManager.RegisterClassHandler(typeof(TextBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
-			EventManager.RegisterClassHandler(typeof(TextBox), GotKeyboardFocusEvent, new RoutedEventHandler(SelectAddress));
-			EventManager.RegisterClassHandler(typeof(TextBox), PreviewMouseLeftButtonDownEvent,
-				new MouseButtonEventHandler(SelectivelyIgnoreMouseButton));
-			EventManager.RegisterClassHandler(typeof(PasswordBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
-			EventManager.RegisterClassHandler(typeof(PasswordBox), GotKeyboardFocusEvent, new RoutedEventHandler(SelectAddress));
-			EventManager.RegisterClassHandler(typeof(PasswordBox), PreviewMouseLeftButtonDownEvent,
-				new MouseButtonEventHandler(SelectivelyIgnoreMouseButton));
+			if (!settings.ConnectionString.IsEmpty())
+			{
+				// warm up the cache.
+				new Thread(() => GetMetadataCache(settings.ConnectionString)).Start();
+			}
+
+			////EventManager.RegisterClassHandler(typeof(TextBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
+			////EventManager.RegisterClassHandler(typeof(TextBox), GotKeyboardFocusEvent, new RoutedEventHandler(SelectAddress));
+			////EventManager.RegisterClassHandler(typeof(TextBox), PreviewMouseLeftButtonDownEvent,
+			////	new MouseButtonEventHandler(SelectivelyIgnoreMouseButton));
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			InitSettingsChange();
+			Initialise();
 		}
 
-		private void InitSettingsChange()
+		private void Initialise()
 		{
-			service = null;
-
-			// make sure something valid is selected
-			settingsArray.SelectedSettingsIndex = Math.Max(0, settingsArray.SelectedSettingsIndex);
-
-			settings = settingsArray.GetSelectedSettings();
-
-			txtPassword.Password = settings.Password; // PasswordBox doesn't allow 2 way binding
 			DataContext = settings;
-
-			ComboBoxSettings.DataContext = settingsArray;
-			ComboBoxSettings.DisplayMemberPath = "DisplayName";
-
-			if (settings.OrgList.Contains(settings.CrmOrg) == false)
-			{
-				settings.OrgList.Add(settings.CrmOrg);
-			}
-			Organization.SelectedItem = settings.CrmOrg;
-
-			if (settings.OrgList.Contains(settings.CrmOrg) == false)
-			{
-				settings.OrgList.Add(settings.CrmOrg);
-			}
-			Organization.SelectedItem = settings.CrmOrg;
 
 			settings.EntityDataFilterArray = settings.EntityDataFilterArray ?? new EntityFilterArray();
 			settings.FiltersChanged();
@@ -186,14 +153,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 									   Context.ActionEntities = settings.ActionEntitiesSelected.ToList();
 									   Context.ClearMode = settings.ClearMode;
 
-									   settings.Context = Context;
-
 									   if (settings.LockNamesOnGenerate)
 									   {
-										   LockNames();
+										   LockNames(Context);
 									   }
 
-									   Configuration.SaveConfigs(settingsArray);
+									   GetMetadataCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
 
 									   _StillOpen = false;
 									   Dispatcher.InvokeAsync(Close);
@@ -212,47 +177,25 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region CRM
 
-		private void RefreshOrgs(object sender, RoutedEventArgs e)
-		{
-			settings.Password = ((PasswordBox) ((Button) sender).CommandParameter).Password;
-			// PasswordBox doesn't allow 2 way binding, so we have to manually read it
-			new Thread(() =>
-			           {
-				           try
-				           {
-					           UpdateStatus("Refreshing organisations ...", true);
-					           var newOrgs = ConnectionHelper.GetOrgList(settings);
-					           settings.OrgList = newOrgs;
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-				           }
-				           finally
-				           {
-					           UpdateStatus(">>> Finished refreshing organisations.", false);
-				           }
-			           }).Start();
-		}
-
 		private void IncludeNonStandardEntities_Click(object sender, RoutedEventArgs e)
 		{
-			new Thread(() =>
-				        {
-					        try
-					        {
-						        UpdateStatus("Processing non-standard inclusion/exclusion ... ", true);
-								EntityHelper.RefreshSettingsEntityMetadata(Service, settings);
-							}
-							catch (Exception ex)
-					        {
-						        PopException(ex);
-					        }
-					        finally
-					        {
-						        UpdateStatus(">>> Finished processing.", false);
-					        }
-				        }).Start();
+			new Thread(
+				() =>
+				{
+					try
+					{
+						UpdateStatus("Processing non-standard inclusion/exclusion ... ", true);
+						EntityHelper.RefreshSettingsEntityMetadata(settings);
+					}
+					catch (Exception ex)
+					{
+						PopException(ex);
+					}
+					finally
+					{
+						UpdateStatus(">>> Finished processing.", false);
+					}
+				}).Start();
 		}
 
 		#endregion
@@ -356,27 +299,19 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				settings.Password = ((PasswordBox) ((Button) sender).CommandParameter).Password;
-				// PasswordBox doesn't allow 2 way binding, so we have to manually read it
 				settings.Dirty = true;
 
-				//  TODO Because the EntitiesSelected is a collection, the Settings class can't see when an item is added or removed.  when I have more time need to get the observable to bubble up.
-
-				// in case of a re-run (while GUI is still open), reset the metadata cache to solve the problem of corrupt data
-				var settingsNew = Configuration.LoadConfigs().GetSelectedSettings();
-				settings.EntityMetadataCache = settingsNew.EntityMetadataCache;
-
-				Configuration.SaveConfigs(settingsArray);
+				settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
+				Configuration.SaveSettings(settings);
 
 				// if user indicated 'clear cache'
 				if (CheckBoxClearCache.IsChecked == true)
 				{
 					UpdateStatus("Clearing cache ... ", true, true, false);
-					settings.EntityMetadataCache.Clear();
-					settings.LookupEntitiesMetadataCache = null;
+					ClearMetadataCache(settings.ConnectionString);
 					UpdateStatus("done!", false);
 				}
-
+				
 				UpdateStatus("Mapping entities, this might take a while depending on CRM server/connection speed ... ", true);
 
 				// check user's 'split files'
@@ -391,6 +326,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						try
 						{
 							mapper.MapContext();
+							Configuration.SaveCache();
 						}
 						catch (Exception ex)
 						{
@@ -420,24 +356,29 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				if (settings.EntitiesSelected
-					    .Intersect(settings.Context.Entities.Select(entity => entity.LogicalName))
-					    .Count() < settings.EntitiesSelected.Count)
+				var metadataCache = GetMetadataCache(settings.ConnectionString);
+				var context = metadataCache.GetCachedContext(settings.Id);
+
+				var excludeEntities = new[] { "", "activityparty" };
+				var selected = settings.EntitiesSelected.Where(s => !excludeEntities.Contains(s)).ToArray();
+				var isNewModifiedEntities = context != null
+					&& selected
+						.Intersect(context.Entities
+							.Where(s => !excludeEntities.Contains(s.LogicalName))
+							.Select(entity => entity.LogicalName))
+						.Count() < selected.Length;
+
+				if (context == null || isNewModifiedEntities)
 				{
 					throw new Exception("There are new entities selected that need to be fetched from CRM. " +
 					                    "Either deselect the new entities and use the cache; " +
 					                    "connect and try again using the 'generate' button; or cancel, reopen, and then reconfigure.");
 				}
 
-				settings.Password = ((PasswordBox)((Button)sender).CommandParameter).Password;
-				// PasswordBox doesn't allow 2 way binding, so we have to manually read it
 				settings.Dirty = true;
 
-				// in case of a re-run (while GUI is still open), reset the metadata cache to solve the problem of corrupt data
-				var settingsNew = Configuration.LoadConfigs().GetSelectedSettings();
-				settings.EntityMetadataCache = settingsNew.EntityMetadataCache;
-
-				Configuration.SaveConfigs(settingsArray);
+				settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
+				Configuration.SaveSettings(settings);
 
 				UpdateStatus("Mapping entities using cache ... ", true);
 
@@ -452,7 +393,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					{
 						try
 						{
-							mapper.MapContext(true, settings.Context);
+							mapper.MapContext(true);
 						}
 						catch (Exception ex)
 						{
@@ -469,9 +410,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			mapper.CancelMapping = true;
-			//UpdateStatus("Cancelled generator!", false);
-			//_StillOpen = false;
-			//Close();
+			Configuration.SaveCache();
 		}
 
 		private void ButtonCredits_Click(object sender, RoutedEventArgs e)
@@ -491,59 +430,25 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)
 		{
-			var newSettings = new Settings();
-			settingsArray.SettingsList.Add(newSettings);
-			settingsArray.SelectedSettingsIndex = settingsArray.SettingsList.IndexOf(newSettings);
-			//InitSettingsChange();
-		}
-
-		private void ButtonDuplicateSettings_Click(object sender, RoutedEventArgs e)
-		{
-			var newSettings = ObjectCopier.Clone(settingsArray.GetSelectedSettings());
-			settingsArray.SettingsList.Add(newSettings);
-			settingsArray.SelectedSettingsIndex = settingsArray.SettingsList.IndexOf(newSettings);
-
-			DteHelper.ShowInfo("The profile chosen has been duplicated, and the duplicate is now the " +
-			                   "selected profile.", "Profile duplicated!");
-		}
-
-		private void ButtonDeleteSettings_Click(object sender, RoutedEventArgs e)
-		{
-			if (settingsArray.SettingsList.Count <= 1)
-			{
-				PopException(new Exception("Can't delete the last settings profile."));
-				return;
-			}
-
-			if (DteHelper.IsConfirmed("Are you sure you want to delete this settings profile?",
-				"Confirm delete action ..."))
-			{
-				settingsArray.SettingsList.Remove(settingsArray.GetSelectedSettings());
-				settingsArray.SelectedSettingsIndex = 0; 
-			}
+			settings = new SettingsNew();
+			Initialise();
 		}
 
 		private void ButtonSaveSettings_Click(object sender, RoutedEventArgs e)
 		{
-			Configuration.SaveConfigs(settingsArray);
+			settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
+			Configuration.SaveSettings(settings);
 			DteHelper.ShowInfo("All settings profiles have been saved to disk.", "Settings saved!");
-		}
-
-		private void ComboBoxSettings_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-			InitSettingsChange();
 		}
 
 		private void EntitiesRefresh_Click(object sender, RoutedEventArgs events)
 		{
-			settings.Password = ((PasswordBox)((Button)sender).CommandParameter).Password;
-			new EntitySelection(this, settings, service).ShowDialog();
+			new EntitySelection(this, settings).ShowDialog();
 		}
 
 		private void EntitiesProfiling_Click(object sender, RoutedEventArgs e)
 		{
-			settings.Password = ((PasswordBox)((Button)sender).CommandParameter).Password;
-			new Filter(this, settings, service).ShowDialog();
+			new Filter(this, settings).ShowDialog();
 		}
 
 		// credit: https://social.msdn.microsoft.com/Forums/vstudio/en-US/564b5731-af8a-49bf-b297-6d179615819f/how-to-selectall-in-textbox-when-textbox-gets-focus-by-mouse-click?forum=wpf&prof=required
@@ -580,7 +485,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		private void LockNames()
+		private void LockNames(Context context)
 		{
 			try
 			{
@@ -590,7 +495,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					.SelectMany(filter => filter.EntityFilterList))
 				{
 					// if filter's entity exists in selected entities
-					var entity = Context.Entities.FirstOrDefault(entityQ => entityQ.LogicalName == filter.LogicalName);
+					var entity = context.Entities.FirstOrDefault(entityQ => entityQ.LogicalName == filter.LogicalName);
 
 					if (entity == null)
 					{
