@@ -13,24 +13,37 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 {
 	public class ConnectionHelper
 	{
+		private static readonly object lockObj = new object();
 		private static IEnhancedServicePool<EnhancedOrgService> connectionPool;
 
 		public static IEnhancedOrgService GetConnection(SettingsNew settings)
 		{
-			if (connectionPool == null)
+			lock (lockObj)
 			{
-				Status.Update($"Creating connection pool to CRM ... ");
-				Status.Update($"Connection String:"
-					+ $" '{Regex.Replace(settings.ConnectionString, @"Password\s*?=.*?(?:;{0,1}$|;)", "Password=********;").Replace("\r\n", " ")}'.");
+				if (connectionPool == null)
+				{
+					Status.Update($"Creating connection pool to CRM ... ");
+					Status.Update($"Connection String: '{SecureConnectionString(settings.ConnectionString)}'.");
 
-				connectionPool = EnhancedServiceHelper.GetPool(settings.ConnectionString, 10);
+					connectionPool = EnhancedServiceHelper.GetPool(settings.ConnectionString, 10);
 
-				Status.Update($"Created connection pool.");
+					Status.Update($"Created connection pool.");
+				} 
 			}
 
 			var service = connectionPool.GetService();
 
 			return service;
+		}
+
+		public static string SecureConnectionString(string connectionString)
+		{
+			return Regex
+				.Replace(Regex
+					.Replace(connectionString, @"Password\s*?=.*?(?:;{0,1}$|;)", "Password=********;")
+					.Replace("\r\n", " "),
+					@"\s+", " ")
+				.Replace(" = ", "=");
 		}
 	}
 }
