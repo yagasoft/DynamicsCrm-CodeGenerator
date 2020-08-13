@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 8.1.1
+### Version: 8.1.2
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -92,7 +92,7 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
-#### _v8.1.1 (2020-08-14)_
+#### _v8.1.2 (2020-08-14)_
 + Added: Multi-option Option-set and Image support (File Field requires a special SDK Message to handle)
 + Added: new Annotation Attributes for Image Fields
 + Added: Custom multi-typed EntityReference type (Customer, Owner ... etc.)
