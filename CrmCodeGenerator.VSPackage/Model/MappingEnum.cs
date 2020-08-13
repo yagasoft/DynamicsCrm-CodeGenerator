@@ -17,14 +17,16 @@ namespace CrmCodeGenerator.VSPackage.Model
 		public string DisplayName { get; set; }
 		public string FriendlyName { get; set; }
 		public string LogicalName { get; set; }
+		public bool IsMultiSelect { get; set; }
 		public MapperEnumItem[] Items { get; set; }
 
 		public static MappingEnum GetMappingEnum(AttributeMetadata picklist, MappingEnum mappingEnum, bool isTitleCaseLogicalName)
 		{
-			mappingEnum = mappingEnum ?? new MappingEnum
-			                             {
-				                             MetadataId = picklist.MetadataId
-			                             };
+			mappingEnum = mappingEnum
+				?? new MappingEnum
+				   {
+					   MetadataId = picklist.MetadataId
+				   };
 
 			if (picklist.SchemaName != null)
 			{
@@ -51,25 +53,25 @@ namespace CrmCodeGenerator.VSPackage.Model
 				var attributeAsBool = picklist as BooleanAttributeMetadata;
 
 				if (attributeAsBool?.OptionSet != null)
-			{
-				var newItems = new List<MapperEnumItem>();
-
-				var trueOption = attributeAsBool.OptionSet.TrueOption;
-
-				if (trueOption.Label.UserLocalizedLabel != null)
 				{
-					newItems.Add(GetEnumItem(trueOption, isTitleCaseLogicalName));
+					var newItems = new List<MapperEnumItem>();
+
+					var trueOption = attributeAsBool.OptionSet.TrueOption;
+
+					if (trueOption.Label.UserLocalizedLabel != null)
+					{
+						newItems.Add(GetEnumItem(trueOption, isTitleCaseLogicalName));
+					}
+
+					var falseOption = attributeAsBool.OptionSet.FalseOption;
+
+					if (falseOption.Label.UserLocalizedLabel != null)
+					{
+						newItems.Add(GetEnumItem(falseOption, isTitleCaseLogicalName));
+					}
+
+					mappingEnum.Items = newItems.ToArray();
 				}
-
-				var falseOption = attributeAsBool.OptionSet.FalseOption;
-
-				if (falseOption.Label.UserLocalizedLabel != null)
-				{
-					newItems.Add(GetEnumItem(falseOption, isTitleCaseLogicalName));
-				}
-
-				mappingEnum.Items = newItems.ToArray();
-			}
 			}
 
 			var duplicates = new Dictionary<string, int>();
@@ -87,26 +89,31 @@ namespace CrmCodeGenerator.VSPackage.Model
 				}
 			}
 
+			mappingEnum.IsMultiSelect = picklist is MultiSelectPicklistAttributeMetadata;
+
 			return mappingEnum;
 		}
 
 		private static MapperEnumItem GetEnumItem(OptionMetadata metadata, bool isTitleCaseLogicalName)
 		{
-			return new MapperEnumItem
-			       {
-				       Attribute = new CrmPicklistAttribute
-				                   {
-					                   DisplayName = metadata.Label.UserLocalizedLabel.Label,
-					                   Value = metadata.Value ?? 1,
-					                   LocalizedLabels = metadata.Label.LocalizedLabels
-						                   .Select(label => new LocalizedLabelSerialisable
-						                                    {
-							                                    LanguageCode = label.LanguageCode,
-							                                    Label = label.Label
-						                                    }).ToArray()
-				                   },
-				       Name = Naming.GetProperVariableName(metadata.Label.UserLocalizedLabel.Label, isTitleCaseLogicalName)
-			       };
+			return
+				new MapperEnumItem
+				{
+					Attribute =
+						new CrmPicklistAttribute
+						{
+							DisplayName = metadata.Label.UserLocalizedLabel.Label,
+							Value = metadata.Value ?? 1,
+							LocalizedLabels = metadata.Label.LocalizedLabels
+								.Select(label =>
+								new LocalizedLabelSerialisable
+								{
+									LanguageCode = label.LanguageCode,
+									Label = label.Label
+								}).ToArray()
+						},
+					Name = Naming.GetProperVariableName(metadata.Label.UserLocalizedLabel.Label, isTitleCaseLogicalName)
+				};
 		}
 	}
 
@@ -117,19 +124,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 
 		public string Name { get; set; }
 
-		public int Value
-		{
-			get { return Attribute.Value; }
-		}
+		public int Value => Attribute.Value;
 
-		public string DisplayName
-		{
-			get { return Attribute.DisplayName; }
-		}
+		public string DisplayName => Attribute.DisplayName;
 
-		public LocalizedLabelSerialisable[] LocalizedLabels
-		{
-			get { return Attribute.LocalizedLabels; }
-		}
+		public LocalizedLabelSerialisable[] LocalizedLabels => Attribute.LocalizedLabels;
 	}
 }

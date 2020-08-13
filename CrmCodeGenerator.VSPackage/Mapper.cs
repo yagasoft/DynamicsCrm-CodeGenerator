@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -13,6 +14,7 @@ using CrmCodeGenerator.VSPackage.Model;
 using CrmPluginEntities;
 using LinkDev.WebService.LogQueue;
 using Microsoft.Crm.Sdk.Messages;
+using Microsoft.Xrm.Client.Collections.Generic;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
@@ -116,7 +118,10 @@ namespace CrmCodeGenerator.VSPackage
 		#endregion
 
 		private MetadataCache metadataCache;
-
+		private Thread langThread;
+		private Thread lookupKeysThread;
+		private Thread actionsThread;
+		
 		#region event handler
 
 		public event MapperHandler Message;
@@ -164,26 +169,127 @@ namespace CrmCodeGenerator.VSPackage
 					return;
 				}
 
+				if (CancelMapping)
+				{
+					return;
+				}
+
 				var contextT = new Context();
 
-				Thread langThread = null;
+				langThread = null;
 
 				if (Settings.LookupLabelsEntitiesSelected.Any())
 				{
 					langThread = new Thread(
 						() =>
 						{
+							Status.Update("Fetching languages ... ");
+
 							using (var service = ConnectionHelper.GetConnection(Settings))
 							{
 								Languages = ((RetrieveAvailableLanguagesResponse)
 									service.Execute(new RetrieveAvailableLanguagesRequest()))
 									.LocaleIds.ToList();
 							}
+
+							Status.Update(">>> Finished fetching languages.");
 						});
 					langThread.Start();
 				}
+				
+				if (CancelMapping)
+				{
+					return;
+				}
 
-				contextT.Entities = GetEntities();
+				var originalSelectedEntities = Settings.EntitiesSelected
+					.Where(entity => !string.IsNullOrEmpty(entity)).ToList();
+
+				#region Actions
+
+				actionsThread = null;
+
+				if (Settings.GenerateGlobalActions
+					|| Settings.SelectedActions?.Any(e => e.Value?.Any() == true) == true)
+				{
+					actionsThread = new Thread(
+						() =>
+						{
+							Status.Update("Fetching Actions ... ");
+
+							Actions = RetrieveActions(originalSelectedEntities
+								.Select(entity => Settings.SelectedActions.FirstNotNullOrDefault(entity))
+								.Where(e => e?.Any() == true)
+								.SelectMany(e => e)
+								.Distinct().ToArray()).ToList();
+
+							Status.Update(">>> Finished fetching Actions.");
+						});
+					actionsThread.Start();
+				}
+
+				#endregion
+
+				if (CancelMapping)
+				{
+					return;
+				}
+
+				contextT.Entities = GetEntities(originalSelectedEntities);
+
+				if (CancelMapping)
+				{
+					return;
+				}
+
+				if (actionsThread?.IsAlive == true)
+				{
+					Status.Update("Waiting for Actions thread ... ");
+				}
+
+				// wait for retrieving actions to finish
+				actionsThread?.Join();
+
+				if (CancelMapping)
+				{
+					return;
+				}
+
+				Status.Update("Parsing Entity Actions ... ");
+
+				foreach (var entity in originalSelectedEntities)
+				{
+					var mappingEntity = contextT.Entities.FirstOrDefault(e => e.LogicalName == entity);
+
+					if (mappingEntity == null)
+					{
+						continue;
+					}
+
+					mappingEntity.Actions = Actions.Where(action => entity == action.TargetEntityName).ToArray();
+				}
+
+				Status.Update(">>> Finished parsing Entity Actions.");
+
+				if (CancelMapping)
+				{
+					return;
+				}
+
+				// add actions
+				Status.Update("Parsing Global Actions ... ");
+				contextT.GlobalActions = Actions.Where(action => action.TargetEntityName == "none").ToArray();
+				Status.Update(">>> Finished parsing Global Actions.");
+
+				if (CancelMapping)
+				{
+					return;
+				}
+
+				if (langThread?.IsAlive == true)
+				{
+					Status.Update("Waiting for Languages thread ... ");
+				}
 
 				// wait for retrieving languages to finish
 				langThread?.Join();
@@ -195,10 +301,13 @@ namespace CrmCodeGenerator.VSPackage
 					return;
 				}
 
-				// add actions
-				Status.Update("Parsing global actions ... ", false);
-				contextT.GlobalActions = Actions.Where(action => action.TargetEntityName == "none").ToArray();
-				Status.Update("done!");
+				if (lookupKeysThread?.IsAlive == true)
+				{
+					Status.Update("Waiting for Alternate Keys thread ... ");
+				}
+
+				// wait for retrieving Alternate Keys to finish
+				lookupKeysThread?.Join();
 
 				if (CancelMapping)
 				{
@@ -232,22 +341,16 @@ namespace CrmCodeGenerator.VSPackage
 			}
 		}
 
-		internal MappingEntity[] GetEntities()
+		internal MappingEntity[] GetEntities(List<string> originalSelectedEntities)
 		{
 			OnMessage("Gathering metadata, this may take a few minutes...");
-
-			var originalSelectedEntities = Settings.EntitiesSelected
-				.Where(entity => !string.IsNullOrEmpty(entity)).ToList();
-			if (originalSelectedEntities.All(q => q != "activityparty"))
-			{
-				originalSelectedEntities.Add("activityparty");
-			}
 
 			var threadCount = Settings.Threads;
 
 			// group entities by their server stamp to fetch them together in bulk
 			// if not stamp is found, mark it
-			Status.Update("Grouping entities by last server stamp ... ", false);
+			Status.Update("Grouping entities by last server stamp ... ");
+
 			var groupedEntities =
 				originalSelectedEntities.GroupBy(
 					entity =>
@@ -267,19 +370,19 @@ namespace CrmCodeGenerator.VSPackage
 						}
 					}).ToList();
 
-			Status.Update("done!");
+			Status.Update(">>> Finished grouping entities.");
 
 			#region Get metadata
 
 			var totalTaken = 0;
 
 			// go over each group of entities
-			Parallel.ForEach(groupedEntities
-				, new ParallelOptions
+			Parallel.ForEach(groupedEntities,
+				new ParallelOptions
 				  {
 					  MaxDegreeOfParallelism = threadCount
-				  }
-				, group =>
+				  },
+				group =>
 				  {
 					  try
 					  {
@@ -311,13 +414,12 @@ namespace CrmCodeGenerator.VSPackage
 						  #region Fetch metadata
 
 						  // parallelise the fetch process
-						  Parallel.For(
-							  0, takeCount
-							  , new ParallelOptions
+						  Parallel.For(0, takeCount,
+							  new ParallelOptions
 								{
 									MaxDegreeOfParallelism = threadCount
-								}
-							  , (index, state) =>
+								},
+							  (index, state) =>
 								{
 									if (CancelMapping || Error != null)
 									{
@@ -427,9 +529,16 @@ namespace CrmCodeGenerator.VSPackage
 			var filteredEntities =
 				cachedEntities.Where(entity => originalSelectedEntities.Contains(entity.LogicalName)).ToArray();
 
-			OnMessage("Finished gathering metadata.");
+			OnMessage(">>> Finished gathering metadata.");
 
-			Status.Update("Creating missing filters ... ", false);
+			if (CancelMapping)
+			{
+				throw new OperationCanceledException("Mapping cancelled.");
+			}
+
+			BuildLookupKeysData(filteredEntities);
+
+			Status.Update("Creating missing filters ... ");
 
 			foreach (var filterList in Settings.EntityDataFilterArray.EntityFilters.Select(filter => filter))
 			{
@@ -438,48 +547,249 @@ namespace CrmCodeGenerator.VSPackage
 					.Select(unfiltered => new EntityDataFilter(unfiltered)));
 			}
 			
-			Status.Update("done!");
+			Status.Update(">>> Finished creating missing filters.");
 
 			if (CancelMapping)
 			{
 				throw new OperationCanceledException("Mapping cancelled.");
 			}
 
-			#region Actions
-
-			Status.Update("Fetching actions ... ", false);
-
-			if (Settings.GenerateGlobalActions || Settings.ActionEntitiesSelected.Any())
-			{
-				Actions = GetActions(filteredEntities
-					.Where(entity => Settings.ActionEntitiesSelected.Contains(entity.LogicalName))
-					.Select(entity => entity.LogicalName).ToArray()).ToList();
-			}
-
-			foreach (var entity in filteredEntities)
-			{
-				entity.Actions = Actions.Where(action => entity.LogicalName == action.TargetEntityName).ToArray();
-			}
-
-			Status.Update("done!");
-
-			#endregion
-
-			if (CancelMapping)
-			{
-				throw new OperationCanceledException("Mapping cancelled.");
-			}
-
-			Status.Update("Building lookup labels info ... ", false);
+			Status.Update("Building lookup labels info ... ");
 
 			if (Settings.LookupLabelsEntitiesSelected.Any())
 			{
 				ProcessLookupLabels(filteredEntities, threadCount);
 			}
 
-			Status.Update("done!");
+			Status.Update(">>> Finished building lookup labels info.");
 
 			return filteredEntities;
+		}
+
+		private void BuildLookupKeysData(MappingEntity[] filteredEntities)
+		{
+			lookupKeysThread = null;
+
+			var entityGroupedLookups = filteredEntities
+				.SelectMany(e => e.Fields)
+				.Where(e => e?.LookupData?.LookupSingleType != null)
+				.GroupBy(e => e.LookupData.LookupSingleType).ToArray();
+
+			if (entityGroupedLookups.Any())
+			{
+				lookupKeysThread = new Thread(
+					() =>
+					{
+						Status.Update("Retrieving Alternate Key information ... ");
+
+						var entities = entityGroupedLookups.Select(e => e.Key).ToArray();
+
+						var cacheKey = entities.StringAggregate(",");
+						var result = GetKeysMetadata(entities, cacheKey);
+
+						var keysMetadata = result.Metadata;
+
+						foreach (var group in entityGroupedLookups
+							.Where(e => keysMetadata.Any(s => s.LogicalName == e.Key)))
+						{
+							var lookupEntity = keysMetadata.First(e => e.LogicalName == group.Key);
+
+							foreach (var mappingField in group)
+							{
+								var mappingEntity = MappingEntity.GetMappingEntity(lookupEntity, null, null, Settings.TitleCaseLogicalNames);
+								var mappingFields = mappingEntity.Fields;
+								mappingEntity.Fields = null;
+
+								mappingField.LookupData.LookupKeys =
+									new LookupKeys
+									{
+										Entity = mappingEntity,
+										Fields = mappingFields
+									};
+							}
+						}
+
+						Status.Update(">>> Finished retrieving Alternate Key information.");
+					});
+				lookupKeysThread.Start();
+			}
+		}
+
+		private LookupMetadata GetKeysMetadata(IEnumerable<string> entitiesParam, string cacheKey, LookupMetadata lookupMetadata = null)
+		{
+			if (lookupMetadata == null)
+			{
+				if (metadataCache.LookupKeysMetadataCache == null)
+				{
+					metadataCache.LookupKeysMetadataCache = new Dictionary<string, LookupMetadata>();
+				}
+
+				metadataCache.LookupKeysMetadataCache.TryGetValue(cacheKey, out lookupMetadata);
+			}
+
+			var entities = entitiesParam.ToArray();
+
+			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
+			entityFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.In, entities.ToArray()));
+
+			var entityProperties = new MetadataPropertiesExpression { AllProperties = false };
+			entityProperties.PropertyNames.AddRange("LogicalName", "Keys");
+
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties
+				};
+
+			try
+			{
+				var retrieveMetadataChangesRequest =
+					new RetrieveMetadataChangesRequest
+					{
+						Query = entityQueryExpression,
+						ClientVersionStamp = lookupMetadata?.Stamp,
+						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
+					};
+
+				RetrieveMetadataChangesResponse result;
+
+				using (var service = ConnectionHelper.GetConnection(Settings))
+				{
+					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
+				}
+
+				var isModified = result.DeletedMetadata?.Any() != true
+					|| result.EntityMetadata?
+						.Any(e => e.Keys?
+							.Any(s => s.KeyAttributes?
+								.Any() == true) == true) == true;
+				
+				if (isModified)
+				{
+					lookupMetadata = lookupMetadata == null
+						? new LookupMetadata
+						  {
+							  Metadata = result.EntityMetadata,
+							  Stamp = result.ServerVersionStamp
+						  }
+						: GetKeysMetadata(entities, cacheKey);
+				}
+			}
+			catch (FaultException<OrganizationServiceFault> ex)
+			{
+				// Check for ErrorCodes.ExpiredVersionStamp (0x80044352)
+				// Will occur when the timestamp exceeds the Organization.ExpireSubscriptionsInDays value, which is 90 by default.
+				if (ex.Detail.ErrorCode == unchecked((int)0x80044352))
+				{
+					lookupMetadata = GetKeysMetadata(entities, cacheKey);
+				}
+				else
+				{
+					throw;
+				}
+			}
+			
+			metadataCache.LookupKeysMetadataCache[cacheKey] = lookupMetadata;
+
+			if (lookupMetadata == null)
+			{
+				return null;
+			}
+
+			var entityFields = lookupMetadata.Metadata
+				.Where(e => e.Keys?.Any(s => s.KeyAttributes?.Any() == true) == true)
+				.ToDictionary(e => e.LogicalName,
+					e => e.Keys.SelectMany(s => s.KeyAttributes.Select(t => t)));
+
+			return GetBasicAttributesMetadata(entityFields, cacheKey);
+		}
+
+		private LookupMetadata GetBasicAttributesMetadata(IDictionary<string, IEnumerable<string>> entityFields, string cacheKey,
+			LookupMetadata lookupMetadata = null)
+		{
+			if (lookupMetadata == null)
+			{
+				if (metadataCache.BasicAttributesMetadataCache == null)
+				{
+					metadataCache.BasicAttributesMetadataCache = new Dictionary<string, LookupMetadata>();
+				}
+
+				metadataCache.BasicAttributesMetadataCache.TryGetValue(cacheKey, out var basicCache);
+			}
+
+			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
+			entityFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.In, entityFields.Keys.ToArray()));
+
+			var entityProperties = new MetadataPropertiesExpression { AllProperties = false };
+			entityProperties.PropertyNames.AddRange("LogicalName", "DisplayName", "SchemaName", "Attributes");
+
+			var attributeFilter = new MetadataFilterExpression(LogicalOperator.And);
+			attributeFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.In, entityFields.Values.SelectMany(e => e.Select(s => s)).Distinct().ToArray()));
+
+			var attributeProperties = new MetadataPropertiesExpression { AllProperties = false };
+			attributeProperties.PropertyNames.AddRange("LogicalName", "DisplayName", "SchemaName", "AttributeType");
+
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties,
+					AttributeQuery =
+						new AttributeQueryExpression
+						{
+							Criteria = attributeFilter,
+							Properties = attributeProperties
+						}
+				};
+
+			try
+			{
+				var retrieveMetadataChangesRequest =
+					new RetrieveMetadataChangesRequest
+					{
+						Query = entityQueryExpression,
+						ClientVersionStamp = lookupMetadata?.Stamp,
+						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
+					};
+
+				RetrieveMetadataChangesResponse result;
+
+				using (var service = ConnectionHelper.GetConnection(Settings))
+				{
+					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
+				}
+
+				var isModified = result.DeletedMetadata?.Any() != true
+					|| result.EntityMetadata?.Any(e => e.Attributes.Any()) == true;
+				
+				if (isModified)
+				{
+					lookupMetadata = lookupMetadata == null
+						? new LookupMetadata
+						  {
+							  Metadata = result.EntityMetadata,
+							  Stamp = result.ServerVersionStamp
+						  }
+						: GetBasicAttributesMetadata(entityFields, cacheKey);
+				}
+			}
+			catch (FaultException<OrganizationServiceFault> ex)
+			{
+				// Check for ErrorCodes.ExpiredVersionStamp (0x80044352)
+				// Will occur when the timestamp exceeds the Organization.ExpireSubscriptionsInDays value, which is 90 by default.
+				if (ex.Detail.ErrorCode == unchecked((int)0x80044352))
+				{
+					return GetBasicAttributesMetadata(entityFields, cacheKey);
+				}
+
+				throw;
+			}
+			
+			return metadataCache.BasicAttributesMetadataCache[cacheKey] = lookupMetadata;
 		}
 
 		private void ProcessLookupLabels(MappingEntity[] filteredEntities, int threadCount)
@@ -493,128 +803,146 @@ namespace CrmCodeGenerator.VSPackage
 				Parallel.ForEach(entity.Fields
 					.Where(fieldQ => !fieldQ.Attribute.IsEntityReferenceHelper && fieldQ.IsValidForRead
 						&& fieldQ.TargetTypeForCrmSvcUtil.Contains("EntityReference")
-						&& fieldQ.LookupSingleType != null)
-					, new ParallelOptions
-					  {
-						  MaxDegreeOfParallelism = Settings.Threads
-					  }
-					, field =>
-					  {
-						  var label = new LookupLabel
-									  {
-										  LogicalName = field.LookupSingleType
-									  };
+						&& fieldQ.LookupData?.LookupSingleType != null),
+					new ParallelOptions
+					{
+						MaxDegreeOfParallelism = Settings.Threads
+					},
+					field =>
+					{
+						var label =
+							new LookupLabel
+							{
+								LogicalName = field.LookupData.LookupSingleType
+							};
 
-						  var lookupEntity = filteredEntities.FirstOrDefault(entityQ => entityQ.LogicalName == field.LookupSingleType);
+						var lookupData = field.LookupData;
 
-						  if (lookupEntity == null)
-						  {
-							  LookupMetadata lookupEntitySessionCached;
+						var lookupEntity = filteredEntities
+							.FirstOrDefault(entityQ => entityQ.LogicalName == lookupData.LookupSingleType);
 
-							  lock (lookupEntitiesCache)
-							  {
-								  lookupEntitySessionCached =
-									  lookupEntitiesSessionCache.FirstOrDefault(keyVal => keyVal.Key == field.LookupSingleType).Value;
-							  }
+						if (lookupEntity == null)
+						{
+							LookupMetadata lookupEntitySessionCached;
 
-							  if (lookupEntitySessionCached == null)
-							  {
-								  LookupMetadata lookupEntityCached;
-								  lock (lookupEntitiesCache)
-								  {
-									  lookupEntityCached =
-										  lookupEntitiesCache.FirstOrDefault(keyVal => keyVal.Key == field.LookupSingleType).Value;
-								  }
+							lock (lookupEntitiesCache)
+							{
+								lookupEntitySessionCached = lookupEntitiesSessionCache
+									.FirstOrDefault(keyVal => keyVal.Key == lookupData.LookupSingleType).Value;
+							}
 
-								  lookupEntityCached = GetLookupEntityForLabel(field.LookupSingleType, lookupEntityCached);
+							if (lookupEntitySessionCached == null)
+							{
+								LookupMetadata lookupEntityCached;
+								lock (lookupEntitiesCache)
+								{
+									lookupEntityCached = lookupEntitiesCache
+										.FirstOrDefault(keyVal => keyVal.Key == lookupData.LookupSingleType).Value;
+								}
 
-								  lock (lookupEntitiesCache)
-								  {
-									  lookupEntitySessionCached =
-										  lookupEntitiesSessionCache[field.LookupSingleType] =
-											  lookupEntitiesCache[field.LookupSingleType] = lookupEntityCached;
-								  }
-							  }
+								lookupEntityCached = GetLookupEntityForLabel(lookupData.LookupSingleType, lookupEntityCached);
 
-							  var lookupEntityFetched = lookupEntitySessionCached.Metadata.FirstOrDefault();
+								lock (lookupEntitiesCache)
+								{
+									lookupEntitySessionCached =
+										lookupEntitiesSessionCache[lookupData.LookupSingleType] =
+											lookupEntitiesCache[lookupData.LookupSingleType] = lookupEntityCached;
+								}
+							}
 
-							  if (lookupEntityFetched == null)
-							  {
-								  return;
-							  }
+							var lookupEntityFetched = lookupEntitySessionCached.Metadata.FirstOrDefault();
 
-							  label.IdFieldName = lookupEntityFetched.PrimaryIdAttribute;
+							if (lookupEntityFetched == null)
+							{
+								return;
+							}
 
-							  var attributeLangs = Settings.EntityDataFilterArray.EntityFilters
-								  .FirstOrDefault(filter => filter.IsDefault)?.EntityFilterList
-								  .FirstOrDefault(list => list.LogicalName == label.LogicalName)?.AttributeLanguages;
+							label.IdFieldName = lookupEntityFetched.PrimaryIdAttribute;
 
-							  foreach (var language in Languages)
-							  {
-								  var labelField = attributeLangs?.FirstOrDefault(pair => int.Parse(pair.Value) == language).Key;
+							var attributeLangs = Settings.EntityDataFilterArray.EntityFilters
+								.FirstOrDefault(filter => filter.IsDefault)?.EntityFilterList
+								.FirstOrDefault(list => list.LogicalName == label.LogicalName)?.AttributeLanguages;
 
-								  if (language == 1033)
-								  {
-									  labelField = labelField ?? lookupEntityFetched.PrimaryNameAttribute;
-								  }
+							if (langThread?.IsAlive == true)
+							{
+								Status.Update("Waiting for Languages thread ... ");
+							}
 
-								  labelField = labelField ?? lookupEntityFetched.Attributes
-									  .FirstOrDefault(fieldQ => Languages.Any(lang => fieldQ.LogicalName?
-										  .EndsWith($"_name{lang}") == true))?
-									  .LogicalName;
+							langThread?.Join();
 
-								  // couldn't find field
-								  if (string.IsNullOrEmpty(labelField))
-								  {
-									  continue;
-								  }
+							foreach (var language in Languages)
+							{
+								var labelField = attributeLangs?.FirstOrDefault(pair => int.Parse(pair.Value) == language).Key;
 
-								  label.LabelFieldNames = (string.IsNullOrEmpty(label.LabelFieldNames)
-									  ? ""
-									  : label.LabelFieldNames + ",") +
-									  language + "_" + labelField;
-							  }
-						  }
-						  else
-						  {
-							  label.IdFieldName = lookupEntity.PrimaryKey.LogicalName;
+								if (language == 1033)
+								{
+									labelField = labelField ?? lookupEntityFetched.PrimaryNameAttribute;
+								}
 
-							  var attributeLangs = Settings.EntityDataFilterArray.EntityFilters
-								  .FirstOrDefault(filter => filter.IsDefault)?.EntityFilterList
-								  .FirstOrDefault(list => list.LogicalName == label.LogicalName)?.AttributeLanguages;
+								labelField = labelField ?? lookupEntityFetched.Attributes
+									.FirstOrDefault(fieldQ => Languages.Any(lang => fieldQ.LogicalName?
+										.EndsWith($"_name{lang}") == true))?
+									.LogicalName;
 
-							  foreach (var language in Languages)
-							  {
-								  var labelField = attributeLangs?.FirstOrDefault(pair => int.Parse(pair.Value) == language).Key;
+								// couldn't find field
+								if (string.IsNullOrEmpty(labelField))
+								{
+									continue;
+								}
 
-								  if (language == 1033)
-								  {
-									  labelField = labelField ?? lookupEntity.PrimaryNameAttribute;
-								  }
+								label.LabelFieldNames = (string.IsNullOrEmpty(label.LabelFieldNames)
+									? ""
+									: label.LabelFieldNames + ",") +
+									language + "_" + labelField;
+							}
+						}
+						else
+						{
+							label.IdFieldName = lookupEntity.PrimaryKey?.LogicalName;
 
-								  labelField = labelField ?? lookupEntity.Fields
-									  .FirstOrDefault(fieldQ => Languages.Any(lang => fieldQ.LogicalName?
-										  .EndsWith($"_name{lang}") == true))?
-									  .LogicalName;
+							var attributeLangs = Settings.EntityDataFilterArray.EntityFilters
+								.FirstOrDefault(filter => filter.IsDefault)?.EntityFilterList
+								.FirstOrDefault(list => list.LogicalName == label.LogicalName)?.AttributeLanguages;
 
-								  // couldn't find field
-								  if (string.IsNullOrEmpty(labelField))
-								  {
-									  continue;
-								  }
+							if (langThread?.IsAlive == true)
+							{
+								Status.Update("Waiting for Languages thread ... ");
+							}
 
-								  label.LabelFieldNames = (string.IsNullOrEmpty(label.LabelFieldNames)
-									  ? ""
-									  : label.LabelFieldNames + ",") +
-									  language + "_" + labelField;
-							  }
-						  }
+							langThread?.Join();
 
-						  if (!string.IsNullOrEmpty(label.LabelFieldNames))
-						  {
-							  field.LookupLabel = label;
-						  }
-					  });
+							foreach (var language in Languages)
+							{
+								var labelField = attributeLangs?.FirstOrDefault(pair => int.Parse(pair.Value) == language).Key;
+
+								if (language == 1033)
+								{
+									labelField = labelField ?? lookupEntity.PrimaryNameAttribute;
+								}
+
+								labelField = labelField ?? lookupEntity.Fields
+									.FirstOrDefault(fieldQ => Languages.Any(lang => fieldQ.LogicalName?
+										.EndsWith($"_name{lang}") == true))?
+									.LogicalName;
+
+								// couldn't find field
+								if (string.IsNullOrEmpty(labelField))
+								{
+									continue;
+								}
+
+								label.LabelFieldNames = (string.IsNullOrEmpty(label.LabelFieldNames)
+									? ""
+									: label.LabelFieldNames + ",") +
+									language + "_" + labelField;
+							}
+						}
+
+						if (!string.IsNullOrEmpty(label.LabelFieldNames))
+						{
+							lookupData.LookupLabel = label;
+						}
+					});
 			}
 
 			// reserialise
@@ -624,45 +952,50 @@ namespace CrmCodeGenerator.VSPackage
 		private LookupMetadata GetLookupEntityForLabel(string lookupType, LookupMetadata lookupMetadata)
 		{
 			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
-			entityFilter.Conditions
-				.Add(new MetadataConditionExpression("LogicalName", MetadataConditionOperator.Equals, lookupType));
+			entityFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.Equals, lookupType));
 
-			var entityProperties = new MetadataPropertiesExpression
-			                       {
-				                       AllProperties = false
-			                       };
+			var entityProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			entityProperties.PropertyNames
 				.AddRange("LogicalName", "PrimaryIdAttribute", "Attributes", "PrimaryNameAttribute");
 
 			var attributeFilter = new MetadataFilterExpression(LogicalOperator.And);
 			attributeFilter.Conditions
 				.Add(new MetadataConditionExpression("AttributeType", MetadataConditionOperator.Equals, AttributeTypeCode.String));
-			
-			var attributeProperties = new MetadataPropertiesExpression
-			                          {
-				                          AllProperties = false
-			                          };
+
+			var attributeProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			attributeProperties.PropertyNames.AddRange("LogicalName");
 
-			var entityQueryExpression = new EntityQueryExpression
-			                            {
-				                            Criteria = entityFilter,
-				                            Properties = entityProperties,
-				                            AttributeQuery = new AttributeQueryExpression
-				                                             {
-					                                             Properties = attributeProperties,
-																 Criteria = attributeFilter
-											}
-			                            };
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties,
+					AttributeQuery =
+						new AttributeQueryExpression
+						{
+							Properties = attributeProperties,
+							Criteria = attributeFilter
+						}
+				};
 
 			try
 			{
-				var retrieveMetadataChangesRequest = new RetrieveMetadataChangesRequest
-				{
-					Query = entityQueryExpression,
-					ClientVersionStamp = lookupMetadata?.Stamp,
-					DeletedMetadataFilters = DeletedMetadataFilters.Attribute
-				};
+				var retrieveMetadataChangesRequest =
+					new RetrieveMetadataChangesRequest
+					{
+						Query = entityQueryExpression,
+						ClientVersionStamp = lookupMetadata?.Stamp,
+						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
+					};
 
 				RetrieveMetadataChangesResponse result;
 
@@ -671,26 +1004,19 @@ namespace CrmCodeGenerator.VSPackage
 					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
 				}
 
-				var isUnmodified =
-					(result.DeletedMetadata == null || !result.DeletedMetadata.Any())
-					&& (result.EntityMetadata?.FirstOrDefault()?.Attributes == null
-					|| result.EntityMetadata.First().Attributes.Length == 0);
+				var isModified = result.DeletedMetadata?.Any() != true
+					|| result.EntityMetadata?.Any(e => e.Attributes.Any()) == true;
 
-				if (isUnmodified)
+				if (isModified)
 				{
-					return lookupMetadata;
+					lookupMetadata = lookupMetadata == null
+						? new LookupMetadata
+						  {
+							  Metadata = result.EntityMetadata,
+							  Stamp = result.ServerVersionStamp
+						  }
+						: GetLookupEntityForLabel(lookupType, null);
 				}
-
-				if (lookupMetadata != null)
-				{
-					return GetLookupEntityForLabel(lookupType, null);
-				}
-
-				return new LookupMetadata
-				       {
-					       Metadata = result.EntityMetadata,
-					       Stamp = result.ServerVersionStamp
-				       };
 			}
 			catch (FaultException<OrganizationServiceFault> ex)
 			{
@@ -698,13 +1024,15 @@ namespace CrmCodeGenerator.VSPackage
 				// Will occur when the timestamp exceeds the Organization.ExpireSubscriptionsInDays value, which is 90 by default.
 				if (ex.Detail.ErrorCode == unchecked((int)0x80044352))
 				{
-					return GetLookupEntityForLabel(lookupType, null);
+					lookupMetadata = GetLookupEntityForLabel(lookupType, null);
 				}
 				else
 				{
 					throw;
 				}
 			}
+
+			return lookupMetadata;
 		}
 
 		private static void ParseRelationshipNames(List<MappingEntity> cachedEntities)
@@ -840,46 +1168,53 @@ namespace CrmCodeGenerator.VSPackage
 			entityFilter.Conditions.Add(
 				new MetadataConditionExpression("LogicalName", MetadataConditionOperator.In, entities));
 
-			var entityProperties = new MetadataPropertiesExpression
-								   {
-									   AllProperties = false
-								   };
-			entityProperties.PropertyNames.AddRange(
-				"ObjectTypeCode", "LogicalName", "IsIntersect", "PrimaryIdAttribute", "DisplayName"
-				, "SchemaName", "Description", "Attributes", "PrimaryNameAttribute", "OneToManyRelationships"
-				, "ManyToOneRelationships", "ManyToManyRelationships");
+			var entityProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
+			entityProperties.PropertyNames
+				.AddRange("ObjectTypeCode", "LogicalName", "IsIntersect", "PrimaryIdAttribute", "DisplayName",
+					"SchemaName", "Description", "Attributes", "PrimaryNameAttribute", "OneToManyRelationships",
+					"ManyToOneRelationships", "ManyToManyRelationships", "Keys");
 
-			var attributeProperties = new MetadataPropertiesExpression
-									  {
-										  AllProperties = false
-									  };
-			attributeProperties.PropertyNames.AddRange(
-				"AttributeOf", "IsValidForCreate", "IsValidForRead", "IsValidForUpdate"
-				, "AttributeType", "DeprecatedVersion", "Targets", "IsPrimaryId", "LogicalName", "SchemaName", "Description"
-				, "DisplayName", "RequiredLevel", "MaxLength", "MinValue", "MaxValue", "OptionSet", "DateTimeBehavior");
+			var attributeProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
+			attributeProperties.PropertyNames
+				.AddRange("AttributeOf", "IsValidForCreate", "IsValidForRead", "IsValidForUpdate",
+					"AttributeType", "DeprecatedVersion", "Targets", "IsPrimaryId", "LogicalName", "SchemaName", "Description",
+					"DisplayName", "RequiredLevel", "MaxLength", "MinValue", "MaxValue", "MaxWidth", "MaxHeight", "MaxSizeInKB",
+					"OptionSet", "DateTimeBehavior");
 
-			var relationshipProperties = new MetadataPropertiesExpression
-										 {
-											 AllProperties = false
-										 };
-			relationshipProperties.PropertyNames.AddRange(
-				"ReferencedAttribute", "ReferencedEntity", "ReferencingEntity"
-				, "ReferencingAttribute", "SchemaName", "Entity1LogicalName", "Entity1IntersectAttribute", "Entity2LogicalName"
-				, "Entity2IntersectAttribute", "IntersectEntityName");
+			var relationshipProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
+			relationshipProperties.PropertyNames
+				.AddRange("ReferencedAttribute", "ReferencedEntity", "ReferencingEntity",
+					"ReferencingAttribute", "SchemaName", "Entity1LogicalName", "Entity1IntersectAttribute", "Entity2LogicalName",
+					"Entity2IntersectAttribute", "IntersectEntityName");
 
-			var entityQueryExpression = new EntityQueryExpression
-										{
-											Criteria = entityFilter,
-											Properties = entityProperties,
-											AttributeQuery = new AttributeQueryExpression
-															 {
-																 Properties = attributeProperties
-															 },
-											RelationshipQuery = new RelationshipQueryExpression
-																{
-																	Properties = relationshipProperties
-																}
-										};
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties,
+					AttributeQuery =
+						new AttributeQueryExpression
+						{
+							Properties = attributeProperties
+						},
+					RelationshipQuery =
+						new RelationshipQueryExpression
+						{
+							Properties = relationshipProperties
+						}
+				};
 
 			try
 			{
@@ -911,161 +1246,167 @@ namespace CrmCodeGenerator.VSPackage
 			}
 		}
 
-		private MappingAction[] GetActions(params string[] typeCodes)
+		private MappingAction[] RetrieveActions(params string[] selectedActionNames)
 		{
-			MappingAction[] actions;
+			var actions = Array.Empty<MappingAction>();
 
-			using (var service = ConnectionHelper.GetConnection(Settings))
-			using (var xrmService = new XrmServiceContext(service) {MergeOption = MergeOption.NoTracking})
+			if (!selectedActionNames.Any() && Settings.SelectedGlobalActions?.Any() != true)
 			{
-				var messages = (from sm in xrmService.SdkMessageSet
-								join smp in xrmService.SdkMessagePairSet
-									on sm.SdkMessageId equals smp.SdkMessageId.Id
-								join smreq in xrmService.SdkMessageRequestSet
-									on smp.SdkMessagePairId equals smreq.SdkMessagePairId.Id
-								join smresp in xrmService.SdkMessageResponseSet
-									on smreq.SdkMessageRequestId equals smresp.SdkMessageRequestId.Id
-								join wkflw in xrmService.WorkflowSet
-									on sm.SdkMessageId equals wkflw.SdkMessageId.Id
-								where smreq.CustomizationLevel.Equals(1)
-									  && sm.Template.Equals(false)
-									  && wkflw.Type.Equals(1)
-								select new
-									   {
-										   sm.Name,
-										   smreq.PrimaryObjectTypeCode,
-										   wkflw.Description,
-										   smreq.SdkMessageRequestId,
-										   smresp.SdkMessageResponseId
-									   }).ToList();
-
-				if (typeCodes.Length > 0)
-				{
-					messages = messages.Where(message => typeCodes.Contains(message.PrimaryObjectTypeCode)
-						|| message.PrimaryObjectTypeCode == "none").ToList();
-				}
-
-				#region Mapping actions
-
-				// TODO optimise
-				actions = messages.Select(message =>
-					new MappingAction
-					{
-						Name = message.Name,
-						VarName = Naming.GetProperVariableName(message.Name, false),
-						Description = Naming.XmlEscape(message.Description),
-						TargetEntityName = message.PrimaryObjectTypeCode,
-						InputFields = (from input in xrmService.SdkMessageRequestFieldSet
-									   where
-										   input.SdkMessageRequestId.Id.Equals(
-											   message.SdkMessageRequestId)
-										   && !input.FieldMask.Equals(4)
-									   orderby input.Position
-									   select new MappingAction.InputField
-											   {
-												   Name = input.Name,
-												   VarName = Naming.GetProperVariableName(input.Name, false),
-												   TypeName =
-													   input.ClrParser.Substring(0,
-														   input.ClrParser.IndexOf(",",
-															   StringComparison.Ordinal)),
-												   Position = input.Position ?? 0,
-												   JavaScriptValidationType = (
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Boolean") ? "Boolean" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.DateTime") ? "Date" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Decimal") ? "Number" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Entity" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.EntityCollection" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.EntityReference" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Double") ? "Number" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Int32") ? "Number" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Money") ? "Number" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.OptionSetValue") ? "Number" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.String") ? "String" : "UnexpectedType"
-
-												   ),
-												   JavaScriptValidationExpression = (
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Boolean") ? "typeof value == \"boolean\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.DateTime") ? "value instanceof Date" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Decimal") ? "typeof value == \"number\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? "value instanceof Sdk.Entity" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? "value instanceof Sdk.EntityCollection" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? "value instanceof Sdk.EntityReference" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Double") ? "typeof value == \"number\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Int32") ? "typeof value == \"number\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Money") ? "typeof value == \"number\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.OptionSetValue") ? "typeof value == \"number\"" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.String") ? "typeof value == \"string\"" : "UnexpectedType"
-
-												   ),
-												   NamespacedType = (
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Boolean") ? "c:boolean" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.DateTime") ? "c:dateTime" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Decimal") ? "c:decimal" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? "a:Entity" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? "a:EntityCollection" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? "a:EntityReference" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Double") ? "c:double" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.Int32") ? "c:int" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Money") ? "a:Money" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.OptionSetValue") ? "a:OptionSetValue" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.String") ? "c:string" : "UnexpectedType"
-
-												   ),
-												   SerializeExpression = (
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "System.DateTime") ? ".toISOString()" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? ".toValueXml()" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? ".toValueXml()" :
-													   (input.ClrParser.Substring(0, input.ClrParser.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? ".toValueXml()" : ""
-
-												   ),
-												   Optional =
-													   !input.Optional.HasValue || input.Optional.Value
-											   }).ToArray(),
-						OutputFields = (from output in xrmService.SdkMessageResponseFieldSet
-										where
-											output.SdkMessageResponseId.Id.Equals(
-												message.SdkMessageResponseId)
-										orderby output.Position
-										select new MappingAction.OutputField
-											{
-												Name = output.Name,
-												VarName = Naming.GetProperVariableName(output.Name, false),
-												TypeName =
-													output.ClrFormatter.Substring(0,
-														output.ClrFormatter.IndexOf(",",
-															StringComparison.Ordinal)),
-												Position = output.Position ?? 0,
-												ValueNodeParser = (
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Boolean") ? "(Sdk.Xml.getNodeText(valueNode) == \"true\") ? true : false" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.DateTime") ? "new Date(Sdk.Xml.getNodeText(valueNode))" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Decimal") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Util.createEntityFromNode(valueNode)" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.Util.createEntityCollectionFromNode(valueNode)" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.Util.createEntityReferenceFromNode(valueNode)" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Double") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Int32") ? "parseInt(Sdk.Xml.getNodeText(valueNode), 10)" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.Money") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.OptionSetValue") ? "parseInt(Sdk.Xml.getNodeText(valueNode), 10)" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.String") ? "Sdk.Xml.getNodeText(valueNode)" : "UnexpectedType"
-												),
-												JavaScriptType = (
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Boolean") ? "Boolean" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.DateTime") ? "Date" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Decimal") ? "Number" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Entity" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.EntityCollection" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.EntityReference" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Double") ? "Number" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.Int32") ? "Number" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.Money") ? "Number" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "Microsoft.Xrm.Sdk.OptionSetValue") ? "Number" :
-												(output.ClrFormatter.Substring(0, output.ClrFormatter.IndexOf(",")) == "System.String") ? "String" : "UnexpectedType"
-												)
-											}).ToArray()
-					}).ToArray();
+				return actions;
 			}
 
+			selectedActionNames = selectedActionNames.Union(Settings.SelectedGlobalActions ?? Array.Empty<string>()).Distinct().ToArray();
+
+			var groupedActionNames = Enumerable
+				.Range(0, (int)Math.Ceiling(selectedActionNames.Length / 190.0))
+				.Select(i => selectedActionNames.Skip(i * 190).Take(190));
+
+			var threadCount = Settings.Threads;
+
+			var rawActions = new ConcurrentBag<IEnumerable<Entity>>();
+
+			Parallel.ForEach(groupedActionNames,
+				new ParallelOptions { MaxDegreeOfParallelism = threadCount },
+				group => rawActions.Add(RetrieveActions(group)));
+
+			var messages = rawActions.SelectMany(e => e)
+				.Select(e =>
+					new
+					{
+						e.Id,
+						Name = e.GetAttributeValue<string>("name"),
+						PrimaryObjectTypeCode = e.GetAttributeValue<string>("primaryobjecttypecode"),
+						Description = e.GetAttributeValue<string>("description"),
+						SdkMessageRequestId = e.GetAttributeValue<Guid?>("sdkmessagerequestid"),
+						SdkMessageResponseId = e.GetAttributeValue<Guid?>("sdkmessageresponseid"),
+						InputName = (string)e.GetAttributeValue<AliasedValue>("inputname")?.Value,
+						ClrParser = e.GetAttributeValue<string>("clrparser"),
+						Optional = e.GetAttributeValue<bool?>("optional"),
+						InputPosition = (int?)e.GetAttributeValue<AliasedValue>("inputposition")?.Value,
+						OutputName = (string)e.GetAttributeValue<AliasedValue>("outputname")?.Value,
+						ClrFormatter = e.GetAttributeValue<string>("clrformatter"),
+						OutputPosition = (int?)e.GetAttributeValue<AliasedValue>("outputposition")?.Value,
+					});
+			
+			#region Mapping actions
+
+			actions = messages
+				.GroupBy(m => m.Id)
+				.Select(
+					grp =>
+					{
+						var message = grp.First();
+						return 
+							new MappingAction
+							{
+								Name = message.Name,
+								VarName = Naming.GetProperVariableName(message.Name, false),
+								Description = Naming.XmlEscape(message.Description),
+								TargetEntityName = message.PrimaryObjectTypeCode,
+								InputFields = grp.GroupBy(g => g.InputName)
+									.Select(g =>
+									{
+									   var input = g.First();
+										var substring = input.ClrParser.Substring(0,
+											input.ClrParser.IndexOf(",", StringComparison.Ordinal));
+									   return
+											new MappingAction.InputField
+										   {
+											   Name = input.InputName,
+											   VarName = Naming.GetProperVariableName(input.InputName, false),
+											   TypeName = substring,
+											   Position = input.InputPosition ?? 0,
+											   JavaScriptValidationType = (
+												   (substring == "System.Boolean") ? "Boolean" :
+												   (substring == "System.DateTime") ? "Date" :
+												   (substring == "System.Decimal") ? "Number" :
+												   (substring == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Entity" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.EntityCollection" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.EntityReference" :
+												   (substring == "System.Double") ? "Number" :
+												   (substring == "System.Int32") ? "Number" :
+												   (substring == "Microsoft.Xrm.Sdk.Money") ? "Number" :
+												   (substring == "Microsoft.Xrm.Sdk.OptionSetValue") ? "Number" :
+												   (substring == "System.String") ? "String" : "UnexpectedType"
+											   ),
+											   JavaScriptValidationExpression = (
+												   (substring == "System.Boolean") ? "typeof value == \"boolean\"" :
+												   (substring == "System.DateTime") ? "value instanceof Date" :
+												   (substring == "System.Decimal") ? "typeof value == \"number\"" :
+												   (substring == "Microsoft.Xrm.Sdk.Entity") ? "value instanceof Sdk.Entity" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityCollection") ? "value instanceof Sdk.EntityCollection" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityReference") ? "value instanceof Sdk.EntityReference" :
+												   (substring == "System.Double") ? "typeof value == \"number\"" :
+												   (substring == "System.Int32") ? "typeof value == \"number\"" :
+												   (substring == "Microsoft.Xrm.Sdk.Money") ? "typeof value == \"number\"" :
+												   (substring == "Microsoft.Xrm.Sdk.OptionSetValue") ? "typeof value == \"number\"" :
+												   (substring == "System.String") ? "typeof value == \"string\"" : "UnexpectedType"
+											   ),
+											   NamespacedType = (
+												   (substring == "System.Boolean") ? "c:boolean" :
+												   (substring == "System.DateTime") ? "c:dateTime" :
+												   (substring == "System.Decimal") ? "c:decimal" :
+												   (substring == "Microsoft.Xrm.Sdk.Entity") ? "a:Entity" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityCollection") ? "a:EntityCollection" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityReference") ? "a:EntityReference" :
+												   (substring == "System.Double") ? "c:double" :
+												   (substring == "System.Int32") ? "c:int" :
+												   (substring == "Microsoft.Xrm.Sdk.Money") ? "a:Money" :
+												   (substring == "Microsoft.Xrm.Sdk.OptionSetValue") ? "a:OptionSetValue" :
+												   (substring == "System.String") ? "c:string" : "UnexpectedType"
+											   ),
+											   SerializeExpression = (
+												   (substring == "System.DateTime") ? ".toISOString()" :
+												   (substring == "Microsoft.Xrm.Sdk.Entity") ? ".toValueXml()" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityCollection") ? ".toValueXml()" :
+												   (substring == "Microsoft.Xrm.Sdk.EntityReference") ? ".toValueXml()" : ""
+											   ),
+											   Optional = input.Optional == true
+										   };
+										}).ToArray(),
+								OutputFields = grp.Where(e => e.OutputName.IsFilled()).GroupBy(g => g.OutputName)
+									.Select(g =>
+									{
+										var output = g.First();
+										var substring = output.ClrFormatter?.Substring(0,
+											output.ClrFormatter.IndexOf(",", StringComparison.Ordinal));
+										return
+											new MappingAction.OutputField
+											{
+												Name = output.OutputName,
+												VarName = Naming.GetProperVariableName(output.OutputName, false),
+												TypeName = substring,
+												Position = output.OutputPosition ?? 0,
+												ValueNodeParser = (
+													(substring == "System.Boolean") ? "(Sdk.Xml.getNodeText(valueNode) == \"true\") ? true : false" :
+													(substring == "System.DateTime") ? "new Date(Sdk.Xml.getNodeText(valueNode))" :
+													(substring == "System.Decimal") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
+													(substring == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Util.createEntityFromNode(valueNode)" :
+													(substring == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.Util.createEntityCollectionFromNode(valueNode)" :
+													(substring == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.Util.createEntityReferenceFromNode(valueNode)" :
+													(substring == "System.Double") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
+													(substring == "System.Int32") ? "parseInt(Sdk.Xml.getNodeText(valueNode), 10)" :
+													(substring == "Microsoft.Xrm.Sdk.Money") ? "parseFloat(Sdk.Xml.getNodeText(valueNode))" :
+													(substring == "Microsoft.Xrm.Sdk.OptionSetValue") ? "parseInt(Sdk.Xml.getNodeText(valueNode), 10)" :
+													(substring == "System.String") ? "Sdk.Xml.getNodeText(valueNode)" : "UnexpectedType"
+												),
+												JavaScriptType = (
+													(substring == "System.Boolean") ? "Boolean" :
+													(substring == "System.DateTime") ? "Date" :
+													(substring == "System.Decimal") ? "Number" :
+													(substring == "Microsoft.Xrm.Sdk.Entity") ? "Sdk.Entity" :
+													(substring == "Microsoft.Xrm.Sdk.EntityCollection") ? "Sdk.EntityCollection" :
+													(substring == "Microsoft.Xrm.Sdk.EntityReference") ? "Sdk.EntityReference" :
+													(substring == "System.Double") ? "Number" :
+													(substring == "System.Int32") ? "Number" :
+													(substring == "Microsoft.Xrm.Sdk.Money") ? "Number" :
+													(substring == "Microsoft.Xrm.Sdk.OptionSetValue") ? "Number" :
+													(substring == "System.String") ? "String" : "UnexpectedType"
+												)
+											};
+										}).ToArray()
+							};
+						}).ToArray();
 			#endregion
 
 			foreach (var action in actions)
@@ -1078,28 +1419,64 @@ namespace CrmCodeGenerator.VSPackage
 				}
 
 				target.Position = -1;
-				action.InputFields = action.InputFields.ToList().OrderBy(input => input.Position).ToArray();
+				action.InputFields = action.InputFields.OrderBy(i => i.Position).ToArray();
+				action.OutputFields = action.OutputFields.OrderBy(o => o.Position).ToArray();
 			}
 
 			return actions;
 		}
 
-		private static void ExcludeRelationshipsNotIncluded(List<MappingEntity> mappedEntities)
+		private IEnumerable<Entity> RetrieveActions(IEnumerable<string> actionNamesParam)
 		{
-			foreach (var ent in mappedEntities)
+			var actionNames = actionNamesParam?.ToArray();
+
+			var fetchXml =
+				$@"
+<fetch no-lock='true' >
+  <entity name='sdkmessage' >
+    <attribute name='sdkmessageid' />
+    <attribute name='name' />
+    <filter>
+	  <condition attribute='name' operator='in' >
+        <value>{actionNames.StringAggregate("</value><value>")}</value>
+      </condition>
+      <condition entityname='workflow' attribute='category' operator='eq' value='3' />
+      <condition entityname='workflow' attribute='type' operator='neq' value='3' />
+    </filter>
+    <link-entity name='sdkmessagepair' from='sdkmessageid' to='sdkmessageid' >
+      <link-entity name='sdkmessagerequest' from='sdkmessagepairid' to='sdkmessagepairid' >
+        <attribute name='primaryobjecttypecode' alias='primaryobjecttypecode' />
+        <attribute name='sdkmessagerequestid' alias='sdkmessagerequestid' />
+        <link-entity name='sdkmessageresponse' from='sdkmessagerequestid' to='sdkmessagerequestid' >
+          <attribute name='sdkmessageresponseid' alias='sdkmessageresponseid' />
+          <link-entity name='sdkmessageresponsefield' from='sdkmessageresponseid' to='sdkmessageresponseid' link-type='outer'>
+            <attribute name='clrformatter' alias='clrformatter' />
+            <attribute name='name' alias='outputname' />
+            <attribute name='position' alias='outputposition' />
+          </link-entity>
+        </link-entity>
+        <link-entity name='sdkmessagerequestfield' from='sdkmessagerequestid' to='sdkmessagerequestid' >
+          <attribute name='name' alias='inputname' />
+          <attribute name='clrparser' alias='clrparser' />
+          <attribute name='optional' alias='optional' />
+          <attribute name='position' alias='inputposition' />
+          <filter>
+            <condition attribute='fieldmask' operator='neq' value='4' />
+          </filter>
+        </link-entity>
+      </link-entity>
+    </link-entity>
+    <link-entity name='workflowdependency' from='sdkmessageid' to='sdkmessageid' >
+      <link-entity name='workflow' from='workflowid' to='workflowid' >
+        <attribute name='description' alias='description' />
+      </link-entity>
+    </link-entity>
+  </entity>
+</fetch>";
+
+			using (var service = ConnectionHelper.GetConnection(Settings))
 			{
-				ent.RelationshipsOneToMany =
-					ent.RelationshipsOneToMany.ToList()
-						.Where(r => mappedEntities.Select(m => m.LogicalName).Contains(r.Type))
-						.ToArray();
-				ent.RelationshipsManyToOne =
-					ent.RelationshipsManyToOne.ToList()
-						.Where(r => mappedEntities.Select(m => m.LogicalName).Contains(r.Type))
-						.ToArray();
-				ent.RelationshipsManyToMany =
-					ent.RelationshipsManyToMany.ToList()
-						.Where(r => mappedEntities.Select(m => m.LogicalName).Contains(r.Type))
-						.ToArray();
+				return service.RetrieveMultiple(new FetchExpression(fetchXml)).Entities;
 			}
 		}
 
@@ -1115,6 +1492,7 @@ namespace CrmCodeGenerator.VSPackage
 		}
 	}
 
+	[Serializable]
 	public class LookupMetadata
 	{
 		public EntityMetadataCollection Metadata { get; set; }

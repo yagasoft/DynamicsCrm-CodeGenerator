@@ -52,9 +52,45 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public SettingsNew Settings { get; set; }
 
-		private Style originalProgressBarStyle;
+		public ObservableCollection<string> GlobalActionNames
+		{
+			get => globalActionNames;
+			set
+			{
+				globalActionNames = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public ObservableCollection<string> SelectedGlobalActions
+		{
+			get => selectedGlobalActions;
+			set
+			{
+				selectedGlobalActions = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsGlobalActionsVisible
+		{
+			get => isGlobalActionsVisible;
+			set
+			{
+				isGlobalActionsVisible = value;
+				OnPropertyChanged();
+				OnPropertyChanged("IsGlobalActionsNotVisible");
+			}
+		}
+
+		public bool IsGlobalActionsNotVisible => !IsGlobalActionsVisible;
 
 		#endregion
+
+		private ObservableCollection<string> globalActionNames = new ObservableCollection<string>();
+		private ObservableCollection<string> selectedGlobalActions = new ObservableCollection<string>();
+		private bool isGlobalActionsVisible;
+		private Style originalProgressBarStyle;
 
 		#region Property events
 
@@ -85,6 +121,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
 
 			DataContext = Settings;
+
+			GlobalActionsSection.DataContext = this;
 
 			IntSpinnerThreads.Value = Settings.Threads;
 			IntSpinnerEntitiesPerThread.Value = Settings.EntitiesPerThread;
@@ -182,6 +220,34 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region UI events
 
+		private void LoadGlobalActions_Click(object sender, RoutedEventArgs e)
+		{
+			new Thread(
+				() =>
+				{
+					try
+					{
+						ShowBusy("Loading Global Actions ...");
+						var actions = EntityHelper.RetrieveActionNames(Settings);
+						Dispatcher.Invoke(
+							() =>
+							{
+								GlobalActionNames = new ObservableCollection<string>(actions);
+								SelectedGlobalActions = new ObservableCollection<string>(Settings.SelectedGlobalActions ?? Array.Empty<string>());
+								IsGlobalActionsVisible = true;
+							});
+					}
+					catch (Exception ex)
+					{
+						PopException(ex);
+					}
+					finally
+					{
+						HideBusy();
+					}
+				}).Start();
+		}
+
 		private void Close_Click(object sender, RoutedEventArgs e)
 		{
 			if (IntSpinnerThreads.Value.HasValue)
@@ -194,15 +260,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				Settings.EntitiesPerThread = IntSpinnerEntitiesPerThread.Value.Value;
 			}
 
-			//if (CheckBoxSplitFiles.IsChecked.HasValue)
-			//{
-			//	Settings.SplitFiles = CheckBoxSplitFiles.IsChecked.Value;
-			//}
-
-			//if (CheckBoxUseDisplayNames.IsChecked.HasValue)
-			//{
-			//	Settings.UseDisplayNames = CheckBoxUseDisplayNames.IsChecked.Value;
-			//}
+			if (IsGlobalActionsVisible)
+			{
+				Settings.SelectedGlobalActions = SelectedGlobalActions.ToArray();
+			}
 
 			Dispatcher.InvokeAsync(Close);
 		}

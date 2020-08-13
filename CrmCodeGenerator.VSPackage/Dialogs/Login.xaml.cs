@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -13,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model;
@@ -140,18 +142,26 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 									   Context.SplitFiles = settings.SplitFiles;
 									   Context.UseDisplayNames = settings.UseDisplayNames;
 									   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
+									   Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
+									   Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;
+									   Context.IsAddContractAnnotations = settings.IsAddContractAnnotations;
 									   Context.IsGenerateLoadPerRelation = settings.IsGenerateLoadPerRelation;
-									   Context.GenerateOptionSetLabelsInEntity = settings.GenerateOptionSetLabelsInEntity;
-									   Context.GenerateLookupLabelsInEntity = settings.GenerateLookupLabelsInEntity;
-									   Context.GenerateOptionSetLabelsInContract = settings.GenerateOptionSetLabelsInContract;
-									   Context.GenerateLookupLabelsInContract = settings.GenerateLookupLabelsInContract;
+									   Context.IsGenerateEnumNames = settings.IsGenerateEnumNames;
+									   Context.IsGenerateEnumLabels = settings.IsGenerateEnumLabels;
+									   Context.IsGenerateFieldSchemaNames = settings.IsGenerateFieldSchemaNames;
+									   Context.IsGenerateFieldLabels = settings.IsGenerateFieldLabels;
+									   Context.IsGenerateRelationNames = settings.IsGenerateRelationNames;
 									   Context.GenerateGlobalActions = settings.GenerateGlobalActions;
 									   Context.PluginMetadataEntities = settings.PluginMetadataEntitiesSelected.ToList();
 									   Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
 									   Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
 									   Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
-									   Context.ActionEntities = settings.ActionEntitiesSelected.ToList();
+									   Context.SelectedActions = settings.SelectedActions;
 									   Context.ClearMode = settings.ClearMode;
+									   Context.SelectedEntities = settings.EntitiesSelected.ToArray();
+									   Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
+									   Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
+									   Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
 
 									   if (settings.LockNamesOnGenerate)
 									   {
@@ -359,7 +369,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				var metadataCache = GetMetadataCache(settings.ConnectionString);
 				var context = metadataCache.GetCachedContext(settings.Id);
 
-				var excludeEntities = new[] { "", "activityparty" };
+				var excludeEntities = new[] { "" };
 				var selected = settings.EntitiesSelected.Where(s => !excludeEntities.Contains(s)).ToArray();
 				var isNewModifiedEntities = context != null
 					&& selected
@@ -394,6 +404,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						try
 						{
 							mapper.MapContext(true);
+							Configuration.SaveCache();
 						}
 						catch (Exception ex)
 						{
@@ -482,6 +493,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		}
 
 		#endregion
+
+		private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+		{
+			Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
+			e.Handled = true;
+		}
 
 		#endregion
 

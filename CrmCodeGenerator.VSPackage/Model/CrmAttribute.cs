@@ -36,17 +36,19 @@ namespace CrmCodeGenerator.VSPackage.Model
     }
 
     [Serializable]
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property)]
     public class CrmPropertyAttribute : Attribute
     {
         public string LogicalName { get; set; }
 		public string SchemaName { get; set; }
 		public bool IsLookup { get; set; }
+		public bool IsMultiTyped { get; set; }
+		public bool IsImage { get; set; }
         public bool IsEntityReferenceHelper { get; set; }
     }
 
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Field)]
     public class CrmPicklistAttribute : Attribute
     {
         public string DisplayName { get; set; }

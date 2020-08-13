@@ -16,12 +16,12 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model;
-using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
+using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
 using MultiSelectComboBoxClass = CrmCodeGenerator.Controls.MultiSelectComboBox;
 
@@ -111,10 +111,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool Relations1NFReadOnlyAll
 		{
-			get
-			{
-				return relations1NReadOnlyAll;
-			}
+			get { return relations1NReadOnlyAll; }
 			set
 			{
 				relations1NReadOnlyAll = value;
@@ -179,10 +176,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool RelationsNNReadOnlyAll
 		{
-			get
-			{
-				return relationsNNReadOnlyAll;
-			}
+			get { return relationsNNReadOnlyAll; }
 			set
 			{
 				relationsNNReadOnlyAll = value;
@@ -254,46 +248,46 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
 			new Thread(() =>
-			           {
-				           try
-				           {
-					           EntityFilterList = Settings.EntityDataFilterArray;
-					           EntityFilter = EntityFilterList.GetSelectedFilter();
+					   {
+						   try
+						   {
+							   EntityFilterList = Settings.EntityDataFilterArray;
+							   EntityFilter = EntityFilterList.GetSelectedFilter();
 
-					           ShowBusy("Initialising ...");
+							   ShowBusy("Initialising ...");
 
-					           Dispatcher.Invoke(() =>
-					                             {
-						                             DataContext = this;
-						                             CheckBoxFieldsSelectAll.DataContext = this;
-						                             CheckBoxReadOnlySelectAll.DataContext = this;
-						                             CheckBoxClearFlagSelectAll.DataContext = this;
-						                             CheckBoxRelations1NSelectAll.DataContext = this;
-						                             CheckBoxRelationsN1SelectAll.DataContext = this;
-						                             CheckBoxNToOneFlattenAll.DataContext = this;
-						                             CheckBoxRelationsNNSelectAll.DataContext = this;
+							   Dispatcher.Invoke(() =>
+												 {
+													 DataContext = this;
+													 CheckBoxFieldsSelectAll.DataContext = this;
+													 CheckBoxReadOnlySelectAll.DataContext = this;
+													 CheckBoxClearFlagSelectAll.DataContext = this;
+													 CheckBoxRelations1NSelectAll.DataContext = this;
+													 CheckBoxRelationsN1SelectAll.DataContext = this;
+													 CheckBoxNToOneFlattenAll.DataContext = this;
+													 CheckBoxRelationsNNSelectAll.DataContext = this;
 
-						                             //TextBoxEnglishLabelField.DataContext = EntityDataFilter;
+													 //TextBoxEnglishLabelField.DataContext = EntityDataFilter;
 
-						                             FieldsGrid.ItemsSource = Fields;
-						                             FieldsGrid.Columns[4].Visibility = IsEnglishLabelEnabled
-							                                                                ? Visibility.Visible
-							                                                                : Visibility.Hidden;
-						                             Relations1NGrid.ItemsSource = Relations1N;
-						                             RelationsN1Grid.ItemsSource = RelationsN1;
-						                             RelationsNNGrid.ItemsSource = RelationsNN;
-					                             });
+													 FieldsGrid.ItemsSource = Fields;
+													 FieldsGrid.Columns[4].Visibility = IsEnglishLabelEnabled
+														 ? Visibility.Visible
+														 : Visibility.Hidden;
+													 Relations1NGrid.ItemsSource = Relations1N;
+													 RelationsN1Grid.ItemsSource = RelationsN1;
+													 RelationsNNGrid.ItemsSource = RelationsNN;
+												 });
 
-					           Initialise();
+							   Initialise();
 
-					           HideBusy();
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-					           Dispatcher.InvokeAsync(Close);
-				           }
-			           }).Start();
+							   HideBusy();
+						   }
+						   catch (Exception ex)
+						   {
+							   PopException(ex);
+							   Dispatcher.InvokeAsync(Close);
+						   }
+					   }).Start();
 		}
 
 		private void Initialise()
@@ -310,34 +304,34 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			//Dispatcher.Invoke(() => TextBoxEnglishLabelField.DataContext = EntityDataFilter);
 
 			new Thread(() =>
-			           {
-				           try
-				           {
-					           ShowBusy("Building lists ...");
+					   {
+						   try
+						   {
+							   ShowBusy("Building lists ...");
 
-					           if (AttributeMetadataCache == null)
-					           {
-						           AttributeMetadataCache = metadataCache.ProfileAttributeMetadataCache;
-					           }
+							   if (AttributeMetadataCache == null)
+							   {
+								   AttributeMetadataCache = metadataCache.ProfileAttributeMetadataCache;
+							   }
 
-					           if (!AttributeMetadataCache.ContainsKey(LogicalName))
-					           {
-						           AttributeMetadataCache[LogicalName] =
-							           GetEntityMetadata().EntityMetadata.FirstOrDefault();
-						           metadataCache.ProfileAttributeMetadataCache = AttributeMetadataCache;
-					           }
+							   if (!AttributeMetadataCache.ContainsKey(LogicalName))
+							   {
+								   AttributeMetadataCache[LogicalName] =
+									   GetEntityMetadata().EntityMetadata.FirstOrDefault();
+								   metadataCache.ProfileAttributeMetadataCache = AttributeMetadataCache;
+							   }
 
-					           Dispatcher.Invoke(GenerateLists);
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-				           }
-				           finally
-				           {
-					           HideBusy();
-				           }
-			           }).Start();
+							   Dispatcher.Invoke(GenerateLists);
+						   }
+						   catch (Exception ex)
+						   {
+							   PopException(ex);
+						   }
+						   finally
+						   {
+							   HideBusy();
+						   }
+					   }).Start();
 		}
 
 		private void GenerateLists()
@@ -349,168 +343,151 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			// choose non-primary attributes, and ones that don't represent others (like names of OptionSetValues)
 			// sort by IsSelected, and then by name -- bubbles the selected to the top
-			var attributes = from attributeQ in AttributeMetadataCache[LogicalName].Attributes
-			                 where (!attributeQ.IsPrimaryId.HasValue || !attributeQ.IsPrimaryId.Value)
-			                       && string.IsNullOrEmpty(attributeQ.AttributeOf)
-			                 orderby EntityDataFilter.Attributes == null
-			                         || EntityDataFilter.Attributes.Contains(attributeQ.LogicalName) descending,
-				                 attributeQ.LogicalName
-			                 select attributeQ;
+			var attributes =
+				(from attributeQ in AttributeMetadataCache[LogicalName].Attributes
+				 where (attributeQ.IsPrimaryId != true) && (attributeQ.AttributeOf == null || attributeQ is ImageAttributeMetadata)
+				 orderby EntityDataFilter.Attributes == null || EntityDataFilter.Attributes.Contains(attributeQ.LogicalName) descending,
+					 attributeQ.LogicalName
+				 select attributeQ).ToArray();
 
 			// if no filter, select all
-			FieldsSelectAll = EntityDataFilter.Attributes != null
-			                  && EntityDataFilter.Attributes.Length == attributes.Count();
-
-			ReadOnlySelectAll = EntityDataFilter.ReadOnly != null
-			                    && EntityDataFilter.ReadOnly.Length == attributes.Count();
-
-			ClearFlagSelectAll = EntityDataFilter.ClearFlag != null
-			                     && EntityDataFilter.ClearFlag.Length == attributes.Count();
+			FieldsSelectAll = EntityDataFilter.Attributes != null && EntityDataFilter.Attributes.Length == attributes.Length;
+			ReadOnlySelectAll = EntityDataFilter.ReadOnly != null && EntityDataFilter.ReadOnly.Length == attributes.Length;
+			ClearFlagSelectAll = EntityDataFilter.ClearFlag != null && EntityDataFilter.ClearFlag.Length == attributes.Length;
 
 			foreach (var attribute in attributes)
 			{
 				var attributeAsync = attribute;
 
-				Dispatcher.Invoke(() =>
-				                  {
-					                  Fields.Add(new FieldGridRow
-					                             {
-						                             IsSelected =
-							                             EntityDataFilter.Attributes?.Contains(attributeAsync.LogicalName) == true,
-						                             Name = attributeAsync.LogicalName,
-						                             DisplayName =
-							                             attributeAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-								                             ? Naming.GetProperVariableName(attributeAsync, Settings.TitleCaseLogicalNames)
-								                             : Naming.Clean(attributeAsync.DisplayName.UserLocalizedLabel.Label),
-						                             Rename =
-							                             EntityDataFilter.AttributeRenames?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
-						                             Language =
-							                             EntityDataFilter.AttributeLanguages?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
-						                             IsReadOnly = EntityDataFilter.ReadOnly?.Contains(attributeAsync.LogicalName) == true
-						                                          || (attributeAsync.IsValidForCreate != true
-						                                              && attributeAsync.IsValidForUpdate != true),
-						                             IsReadOnlyEnabled = attributeAsync.IsValidForCreate == true
-						                                                 || attributeAsync.IsValidForUpdate == true,
-						                             IsClearFlag =
-							                             EntityDataFilter.ClearFlag?.Contains(attributeAsync.LogicalName) == true
-					                             });
-				                  });
+				Dispatcher.Invoke(
+					() =>
+					{
+						Fields.Add(
+							new FieldGridRow
+							{
+								IsSelected = EntityDataFilter.Attributes?.Contains(attributeAsync.LogicalName) == true,
+								Name = attributeAsync.LogicalName,
+								DisplayName = attributeAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+									? Naming.GetProperVariableName(attributeAsync, Settings.TitleCaseLogicalNames)
+									: Naming.Clean(attributeAsync.DisplayName.UserLocalizedLabel.Label),
+								Rename = EntityDataFilter.AttributeRenames?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
+								Language = EntityDataFilter.AttributeLanguages?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
+								IsReadOnly = EntityDataFilter.ReadOnly?.Contains(attributeAsync.LogicalName) == true
+									|| (attributeAsync.IsValidForCreate != true && attributeAsync.IsValidForUpdate != true),
+								IsReadOnlyEnabled = attributeAsync.IsValidForCreate == true || attributeAsync.IsValidForUpdate == true,
+								IsClearFlag = EntityDataFilter.ClearFlag?.Contains(attributeAsync.LogicalName) == true
+							});
+					});
 			}
 
-			var relations1N = from relation1nQ in AttributeMetadataCache[LogicalName].OneToManyRelationships
-			                  orderby EntityDataFilter.OneToN == null
-			                          || EntityDataFilter.OneToN.Contains(relation1nQ.SchemaName) descending,
-				                  relation1nQ.ReferencingEntity, relation1nQ.ReferencingAttribute
-			                  select relation1nQ;
+			var relations1N =
+				(from relation1Nq in AttributeMetadataCache[LogicalName].OneToManyRelationships
+				 orderby EntityDataFilter.OneToN == null || EntityDataFilter.OneToN.Contains(relation1Nq.SchemaName) descending,
+					 relation1Nq.ReferencingEntity, relation1Nq.ReferencingAttribute
+				 select relation1Nq).ToArray();
 
 			// if no filter, select all
-			Relations1NSelectAll = EntityDataFilter.OneToN != null
-			                       && EntityDataFilter.OneToN.Length == relations1N.Count();
+			Relations1NSelectAll = EntityDataFilter.OneToN != null && EntityDataFilter.OneToN.Length == relations1N.Length;
 
-			foreach (var relation1n in relations1N)
+			foreach (var relation1N in relations1N)
 			{
-				var relation1nAsync = relation1n;
+				var relation1NAsync = relation1N;
 
-				Dispatcher.Invoke(() =>
-				                  {
-					                  var row = new Relations1NGridRow
-					                            {
-						                            IsSelected = EntityDataFilter.OneToN == null
-						                                         || EntityDataFilter.OneToN.Contains(relation1nAsync.SchemaName),
-						                            Name = relation1nAsync.SchemaName,
-						                            ToEntity = relation1nAsync.ReferencingEntity ?? "",
-						                            ToField = relation1nAsync.ReferencingAttribute ?? "",
-						                            Rename =
-							                            EntityDataFilter.OneToNRenames?.FirstNotNullOrEmpty(relation1nAsync.SchemaName),
-										  IsReadOnlyEnabled = true,
-										  IsReadOnly = EntityDataFilter.OneToNReadOnly != null
-																&& EntityDataFilter.OneToNReadOnly.ContainsKey(
-																	relation1nAsync.SchemaName)
-																&& EntityDataFilter.OneToNReadOnly[relation1nAsync.SchemaName]
-									  };
+				Dispatcher.Invoke(
+					() =>
+					{
+						var row =
+							new Relations1NGridRow
+							{
+								IsSelected = EntityDataFilter.OneToN == null || EntityDataFilter.OneToN.Contains(relation1NAsync.SchemaName),
+								Name = relation1NAsync.SchemaName,
+								ToEntity = relation1NAsync.ReferencingEntity ?? "",
+								ToField = relation1NAsync.ReferencingAttribute ?? "",
+								Rename = EntityDataFilter.OneToNRenames?.FirstNotNullOrEmpty(relation1NAsync.SchemaName),
+								IsReadOnlyEnabled = true,
+								IsReadOnly = EntityDataFilter.OneToNReadOnly != null
+									&& EntityDataFilter.OneToNReadOnly.ContainsKey(relation1NAsync.SchemaName)
+									&& EntityDataFilter.OneToNReadOnly[relation1NAsync.SchemaName]
+							};
 
-					                  Relations1N.Add(row);
-				                  });
+						Relations1N.Add(row);
+					});
 			}
 
-			var relationsN1 = from relationN1Q in AttributeMetadataCache[LogicalName].ManyToOneRelationships
-			                  orderby EntityDataFilter.NToOne == null
-			                          || EntityDataFilter.NToOne.Contains(relationN1Q.SchemaName) descending,
-				                  relationN1Q.ReferencedEntity, relationN1Q.ReferencingAttribute
-			                  select relationN1Q;
+			var relationsN1 =
+				(from relationN1Q in AttributeMetadataCache[LogicalName].ManyToOneRelationships
+				 orderby EntityDataFilter.NToOne == null || EntityDataFilter.NToOne.Contains(relationN1Q.SchemaName) descending,
+					 relationN1Q.ReferencedEntity, relationN1Q.ReferencingAttribute
+				 select relationN1Q).ToArray();
 
 			// if no filter, select all
-			RelationsN1SelectAll = EntityDataFilter.NToOne != null
-			                       && EntityDataFilter.NToOne.Length == relationsN1.Count();
+			RelationsN1SelectAll = EntityDataFilter.NToOne != null && EntityDataFilter.NToOne.Length == relationsN1.Length;
 
 			foreach (var relationN1 in relationsN1)
 			{
 				var relationN1Async = relationN1;
 
-				Dispatcher.Invoke(() =>
-				                  {
-					                  var row = new RelationsN1GridRow
-					                            {
-						                            IsSelected = EntityDataFilter.NToOne == null
-						                                         || EntityDataFilter.NToOne.Contains(relationN1Async.SchemaName),
-						                            Name = relationN1Async.SchemaName,
-						                            ToEntity = relationN1Async.ReferencedEntity ?? "",
-						                            FromField = relationN1Async.ReferencingAttribute ?? "",
-						                            Rename = EntityDataFilter.NToOneRenames?
-							                            .FirstNotNullOrEmpty(relationN1Async.SchemaName),
-						                            IsFlatten = EntityDataFilter.NToOneFlatten != null
-						                                        && EntityDataFilter.NToOneFlatten.ContainsKey(
-							                                        relationN1Async.SchemaName)
-						                                        && EntityDataFilter.NToOneFlatten[relationN1Async.SchemaName],
-										  IsReadOnlyEnabled = true,
-										  IsReadOnly = EntityDataFilter.NToOneReadOnly != null
-						                                        && EntityDataFilter.NToOneReadOnly.ContainsKey(
-							                                        relationN1Async.SchemaName)
-						                                        && EntityDataFilter.NToOneReadOnly[relationN1Async.SchemaName]
-					                            };
+				Dispatcher.Invoke(
+					() =>
+					{
+						var row =
+							new RelationsN1GridRow
+							{
+								IsSelected = EntityDataFilter.NToOne == null || EntityDataFilter.NToOne.Contains(relationN1Async.SchemaName),
+								Name = relationN1Async.SchemaName,
+								ToEntity = relationN1Async.ReferencedEntity ?? "",
+								FromField = relationN1Async.ReferencingAttribute ?? "",
+								Rename = EntityDataFilter.NToOneRenames?.FirstNotNullOrEmpty(relationN1Async.SchemaName),
+								IsFlatten = EntityDataFilter.NToOneFlatten != null
+									&& EntityDataFilter.NToOneFlatten.ContainsKey(relationN1Async.SchemaName)
+									&& EntityDataFilter.NToOneFlatten[relationN1Async.SchemaName],
+								IsReadOnlyEnabled = true,
+								IsReadOnly = EntityDataFilter.NToOneReadOnly != null
+									&& EntityDataFilter.NToOneReadOnly.ContainsKey(relationN1Async.SchemaName)
+									&& EntityDataFilter.NToOneReadOnly[relationN1Async.SchemaName]
+							};
 
-					                  RelationsN1.Add(row);
-				                  });
+						RelationsN1.Add(row);
+					});
 			}
 
-			var relationsNN = from relationNNQ in AttributeMetadataCache[LogicalName].ManyToManyRelationships
-			                  orderby EntityDataFilter.NToN == null
-			                          || EntityDataFilter.NToN.Contains(relationNNQ.SchemaName) descending,
-				                  (relationNNQ.Entity1LogicalName == LogicalName)
-					                  ? relationNNQ.Entity2LogicalName
-					                  : (relationNNQ.Entity1LogicalName ?? ""),
-				                  relationNNQ.IntersectEntityName
-			                  select relationNNQ;
+			var relationsNn =
+				(from relationNnq in AttributeMetadataCache[LogicalName].ManyToManyRelationships
+				 orderby EntityDataFilter.NToN == null || EntityDataFilter.NToN.Contains(relationNnq.SchemaName) descending,
+					 (relationNnq.Entity1LogicalName == LogicalName)
+						 ? relationNnq.Entity2LogicalName
+						 : (relationNnq.Entity1LogicalName ?? ""),
+					 relationNnq.IntersectEntityName
+				 select relationNnq).ToArray();
 
 			// if no filter, select all
-			RelationsNNSelectAll = EntityDataFilter.NToN != null
-			                       && EntityDataFilter.NToN.Length == relationsNN.Count();
+			RelationsNNSelectAll = EntityDataFilter.NToN != null && EntityDataFilter.NToN.Length == relationsNn.Length;
 
-			foreach (var relationNN in relationsNN)
+			foreach (var relationNn in relationsNn)
 			{
-				var relationNNAsync = relationNN;
+				var relationNnAsync = relationNn;
 
-				Dispatcher.Invoke(() =>
-				                  {
-					                  var row = new RelationsNNGridRow
-					                            {
-						                            IsSelected = EntityDataFilter.NToN == null
-						                                         || EntityDataFilter.NToN.Contains(relationNNAsync.SchemaName),
-						                            Name = relationNNAsync.SchemaName,
-						                            ToEntity = relationNNAsync.Entity1LogicalName == LogicalName
-							                                       ? relationNNAsync.Entity2LogicalName
-							                                       : (relationNNAsync.Entity1LogicalName ?? ""),
-						                            IntersectEntity = relationNNAsync.IntersectEntityName ?? "",
-						                            Rename = EntityDataFilter.NToNRenames?.FirstNotNullOrEmpty(relationNNAsync.SchemaName),
-										  IsReadOnlyEnabled = true,
-										  IsReadOnly = EntityDataFilter.NToNReadOnly != null
-																&& EntityDataFilter.NToNReadOnly.ContainsKey(
-																	relationNNAsync.SchemaName)
-																&& EntityDataFilter.NToNReadOnly[relationNNAsync.SchemaName]
-									  };
+				Dispatcher.Invoke(
+					() =>
+					{
+						var row =
+							new RelationsNNGridRow
+							{
+								IsSelected = EntityDataFilter.NToN == null || EntityDataFilter.NToN.Contains(relationNnAsync.SchemaName),
+								Name = relationNnAsync.SchemaName,
+								ToEntity = relationNnAsync.Entity1LogicalName == LogicalName
+									? relationNnAsync.Entity2LogicalName
+									: (relationNnAsync.Entity1LogicalName ?? ""),
+								IntersectEntity = relationNnAsync.IntersectEntityName ?? "",
+								Rename = EntityDataFilter.NToNRenames?.FirstNotNullOrEmpty(relationNnAsync.SchemaName),
+								IsReadOnlyEnabled = true,
+								IsReadOnly = EntityDataFilter.NToNReadOnly != null
+									&& EntityDataFilter.NToNReadOnly.ContainsKey(relationNnAsync.SchemaName)
+									&& EntityDataFilter.NToNReadOnly[relationNnAsync.SchemaName]
+							};
 
-					                  RelationsNN.Add(row);
-				                  });
+						RelationsNN.Add(row);
+					});
 			}
 		}
 
@@ -565,7 +542,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			var toSelect = Relations1N.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
 				.Union(RelationsN1.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
 					.Union(RelationsNN.Where(relation => relation.IsSelected)
-						.SelectMany(relation => new[] {relation.ToEntity, relation.IntersectEntity})))
+						.SelectMany(relation => new[] { relation.ToEntity, relation.IntersectEntity })))
 				.Distinct();
 
 			foreach (var entityRow in Entities.Where(entity => toSelect.Contains(entity.Name) && !entity.IsSelected))
@@ -579,50 +556,57 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private RetrieveMetadataChangesResponse GetEntityMetadata()
 		{
 			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
-			entityFilter.Conditions.Add(
-				new MetadataConditionExpression("LogicalName", MetadataConditionOperator.Equals,
-					LogicalName));
+			entityFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.Equals, LogicalName));
 
-			var entityProperties = new MetadataPropertiesExpression
-			                       {
-				                       AllProperties = false
-			                       };
+			var entityProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			entityProperties.PropertyNames.AddRange("DisplayName", "Attributes", "OneToManyRelationships"
 				, "ManyToOneRelationships", "ManyToManyRelationships");
 
-			var attributeProperties = new MetadataPropertiesExpression
-			                          {
-				                          AllProperties = false
-			                          };
+			var attributeProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			attributeProperties.PropertyNames
-				.AddRange("IsPrimaryId", "LogicalName", "SchemaName", "DisplayName", "AttributeOf", "IsValidForCreate", "IsValidForUpdate");
+				.AddRange("IsPrimaryId", "LogicalName", "SchemaName", "DisplayName", "AttributeOf",
+					"IsValidForCreate", "IsValidForUpdate");
 
-			var relationshipProperties = new MetadataPropertiesExpression
-			                             {
-				                             AllProperties = false
-			                             };
+			var relationshipProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			relationshipProperties.PropertyNames.AddRange("ReferencedAttribute", "ReferencedEntity",
 				"ReferencingEntity", "ReferencingAttribute", "SchemaName",
 				"Entity1LogicalName", "Entity2LogicalName", "IntersectEntityName");
 
-			var entityQueryExpression = new EntityQueryExpression
-			                            {
-				                            Criteria = entityFilter,
-				                            Properties = entityProperties,
-				                            AttributeQuery = new AttributeQueryExpression
-				                                             {
-					                                             Properties = attributeProperties
-				                                             },
-				                            RelationshipQuery = new RelationshipQueryExpression
-				                                                {
-					                                                Properties = relationshipProperties
-				                                                }
-			                            };
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties,
+					AttributeQuery =
+						new AttributeQueryExpression
+						{
+							Properties = attributeProperties
+						},
+					RelationshipQuery =
+						new RelationshipQueryExpression
+						{
+							Properties = relationshipProperties
+						}
+				};
 
-			var retrieveMetadataChangesRequest = new RetrieveMetadataChangesRequest
-			                                     {
-				                                     Query = entityQueryExpression,
-			                                     };
+			var retrieveMetadataChangesRequest =
+				new RetrieveMetadataChangesRequest
+				{
+					Query = entityQueryExpression,
+				};
 
 			using (var service = ConnectionHelper.GetConnection(Settings))
 			{
@@ -637,53 +621,55 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void PopException(Exception exception)
 		{
 			Dispatcher.Invoke(() =>
-			                  {
-				                  var message = exception.Message
-				                                + (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
-				                  MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
+							  {
+								  var message = exception.Message
+									  + (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
+								  MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
 
-				                  var error = "[ERROR] " + exception.Message
-				                              +
-				                              (exception.InnerException != null
-					                               ? "\n" + "[ERROR] " + exception.InnerException.Message
-					                               : "");
-				                  UpdateStatus(error, false);
-				                  UpdateStatus(exception.StackTrace, false);
-			                  });
+								  var error = "[ERROR] " + exception.Message
+									  +
+									  (exception.InnerException != null
+										  ? "\n" + "[ERROR] " + exception.InnerException.Message
+										  : "");
+								  UpdateStatus(error, false);
+								  UpdateStatus(exception.StackTrace, false);
+							  });
 		}
 
 		private void ShowBusy(string message, double? progress = null)
 		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = true;
-				                  BusyIndicator.BusyContent =
-					                  string.IsNullOrEmpty(message) ? "Please wait ..." : message;
+			Dispatcher.Invoke(
+				() =>
+				{
+					BusyIndicator.IsBusy = true;
+					BusyIndicator.BusyContent =
+						string.IsNullOrEmpty(message) ? "Please wait ..." : message;
 
-				                  if (progress == null)
-				                  {
-					                  BusyIndicator.ProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-				                  }
-				                  else
-				                  {
-					                  originalProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
+					if (progress == null)
+					{
+						BusyIndicator.ProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
+					}
+					else
+					{
+						originalProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
 
-					                  var style = new Style(typeof(ProgressBar));
-					                  style.Setters.Add(new Setter(HeightProperty, 15d));
-					                  style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
-					                  style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
-					                  BusyIndicator.ProgressBarStyle = style;
-				                  }
-			                  }, DispatcherPriority.Send);
+						var style = new Style(typeof(ProgressBar));
+						style.Setters.Add(new Setter(HeightProperty, 15d));
+						style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
+						style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
+						BusyIndicator.ProgressBarStyle = style;
+					}
+				}, DispatcherPriority.Send);
 		}
 
 		private void HideBusy()
 		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = false;
-				                  BusyIndicator.BusyContent = "Please wait ...";
-			                  }, DispatcherPriority.Send);
+			Dispatcher.Invoke(
+				() =>
+				{
+					BusyIndicator.IsBusy = false;
+					BusyIndicator.BusyContent = "Please wait ...";
+				}, DispatcherPriority.Send);
 		}
 
 		internal void UpdateStatus(string message, bool working, bool allowBusy = true, bool newLine = true)
@@ -769,7 +755,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						continue;
 					}
 
-					var rowQ = (DataGridRow) container;
+					var rowQ = (DataGridRow)container;
 
 					if (rowQ.IsSelected)
 					{
@@ -786,12 +772,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				return;
 			}
 
-			var d = (DependencyObject) e.OriginalSource;
+			var d = (DependencyObject)e.OriginalSource;
 
 			if (d != null && (IsCheckboxClickedParentCheck(d, "Flatten") || IsCheckboxClickedChildrenCheck(d, "Flatten")))
 			{
 				// clicked on flatten
-				var rowData = (RelationsN1GridRow) row.Item;
+				var rowData = (RelationsN1GridRow)row.Item;
 				rowData.IsFlatten = !rowData.IsFlatten;
 
 				// selectAll value to false
@@ -803,10 +789,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				OnPropertyChanged(gridName + "FlattenAll");
 			}
 			else if (d != null && (IsCheckboxClickedParentCheck(d, "ReadOnly")
-			                       || IsCheckboxClickedChildrenCheck(d, "ReadOnly")))
+				|| IsCheckboxClickedChildrenCheck(d, "ReadOnly")))
 			{
 				// clicked on meta
-				var rowDataCast = (GridRow) row.Item;
+				var rowDataCast = (GridRow)row.Item;
 
 				if (rowDataCast.IsReadOnlyEnabled)
 				{
@@ -822,10 +808,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				OnPropertyChanged("ReadOnlySelectAll");
 			}
 			else if (d != null && (IsCheckboxClickedParentCheck(d, "ClearFlag")
-			                       || IsCheckboxClickedChildrenCheck(d, "ClearFlag")))
+				|| IsCheckboxClickedChildrenCheck(d, "ClearFlag")))
 			{
 				// clicked on meta
-				var rowDataCast = (FieldGridRow) row.Item;
+				var rowDataCast = (FieldGridRow)row.Item;
 
 				if (rowDataCast.IsClearFlagEnabled)
 				{
@@ -843,7 +829,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			else
 			{
 				// clicked select
-				var rowData = (GridRow) row.Item;
+				var rowData = (GridRow)row.Item;
 				rowData.IsSelected = !rowData.IsSelected;
 
 				// selectAll value to false
@@ -872,7 +858,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			for (var i = 0; i < grid.Items.Count; i++)
 			{
-				var item = (DataGridRow) grid.ItemContainerGenerator.ContainerFromIndex(i);
+				var item = (DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(i);
 
 				if (item != null && item.IsEditing)
 				{
@@ -883,7 +869,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			switch (e.Key)
 			{
 				case Key.Space:
-					var isFirstItemSelected = ((GridRow) grid.SelectedItem).IsSelected;
+					var isFirstItemSelected = ((GridRow)grid.SelectedItem).IsSelected;
 
 					foreach (var item in grid.SelectedItems.Cast<GridRow>()
 						.Where(item => item.IsSelected == isFirstItemSelected))
@@ -906,7 +892,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private static DataGridCell GetCellClicked(MouseButtonEventArgs e)
 		{
-			var dep = (DependencyObject) e.OriginalSource;
+			var dep = (DependencyObject)e.OriginalSource;
 
 			// iteratively traverse the visual tree
 			while (dep != null && !(dep is DataGridCell))
@@ -989,7 +975,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				return false;
 			}
 
-			if (dep is CheckBox && ((CheckBox) dep).Name == name)
+			if (dep is CheckBox && ((CheckBox)dep).Name == name)
 			{
 				return true;
 			}
@@ -1009,7 +995,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			while (dep != null)
 			{
-				if (dep is CheckBox && ((CheckBox) dep).Name == name)
+				if (dep is CheckBox && ((CheckBox)dep).Name == name)
 				{
 					return true;
 				}
@@ -1022,15 +1008,15 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private static bool IsCheckBoxCellClicked(MouseButtonEventArgs e)
 		{
-			var types = new[] {typeof(CheckBox), typeof(DataGridCheckBoxColumn)};
-			var d = (DependencyObject) e.OriginalSource;
+			var types = new[] { typeof(CheckBox), typeof(DataGridCheckBoxColumn) };
+			var d = (DependencyObject)e.OriginalSource;
 			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
 		}
 
 		private static bool IsTextCellClicked(MouseButtonEventArgs e)
 		{
-			var types = new[] {typeof(TextBlock), typeof(TextBox), typeof(DataGridTextColumn), typeof(RichTextBox)};
-			var d = (DependencyObject) e.OriginalSource;
+			var types = new[] { typeof(TextBlock), typeof(TextBox), typeof(DataGridTextColumn), typeof(RichTextBox) };
+			var d = (DependencyObject)e.OriginalSource;
 			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
 		}
 

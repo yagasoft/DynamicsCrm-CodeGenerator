@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -167,21 +168,27 @@ namespace CrmCodeGenerator.VSPackage.Model
 		private bool isSortByDisplayName;
 		private ObservableCollection<string> pluginMetadataEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> jsEarlyBoundEntitiesSelected = new ObservableCollection<string>();
-		private ObservableCollection<string> actionEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> optionsetLabelsEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> lookupLabelsEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> _EntityList = new ObservableCollection<string>();
+		private IDictionary<string, string[]> selectedActions;
 		private bool _IncludeNonStandard;
 		private string _EntitiesString;
-		private string _SelectPrefixes = "";
 		private bool _SplitFiles;
 		private bool _UseDisplayNames = true;
 		private bool _IsUseCustomDictionary;
+		private bool isUseCustomEntityReference;
+		private bool isGenerateAlternateKeys;
+		private bool isUseCustomTypeForAltKeys;
+		private bool isMakeCrmEntitiesJsonFriendly;
 		private bool _IsGenerateLoadPerRelation;
-		private bool generateLookupLabelsInEntity;
-		private bool generateOptionSetLabelsInEntity;
-		private bool generateLookupLabelsInContract;
-		private bool generateOptionSetLabelsInContract;
+		private bool isGenerateEnumNames;
+		private bool isGenerateEnumLabels;
+		private bool isGenerateFieldSchemaNames;
+		private bool isGenerateFieldLabels;
+		private bool isGenerateRelationNames;
+		private bool isAddEntityAnnotations;
+		private bool isAddContractAnnotations;
 		private bool generateGlobalActions;
 		private bool lockNamesOnGenerate;
 		private bool titleCaseLogicalNames;
@@ -427,39 +434,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
-		public string ActionEntitiesSelectedString
-		{
-			get
-			{
-				var sb = new StringBuilder();
-				foreach (var value in actionEntitiesSelected)
-				{
-					if (sb.Length != 0)
-					{
-						sb.Append(',');
-					}
-					sb.Append(value);
-				}
-				return sb.ToString();
-			}
-			set
-			{
-				var newList = new ObservableCollection<string>();
-
-				if (!string.IsNullOrEmpty(value))
-				{
-					var split = value.Split(',').Select(p => p.Trim()).ToList();
-					foreach (var s in split)
-					{
-						newList.Add(s);
-					}
-				}
-
-				actionEntitiesSelected = newList;
-				OnPropertyChanged("ActionEntitiesSelected");
-			}
-		}
-
 		public bool IncludeNonStandard
 		{
 			get => _IncludeNonStandard;
@@ -498,10 +472,14 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
-		public string SelectPrefixes
+		public string SelectPrefixes { get; set; } = "";
+
+		public string[] SelectedGlobalActions { get; set; }
+
+		public IDictionary<string, string[]> SelectedActions
 		{
-			get => _SelectPrefixes;
-			set => _SelectPrefixes = value;
+			get => selectedActions ?? (selectedActions = new ConcurrentDictionary<string, string[]>());
+			set => selectedActions = value;
 		}
 
 		public bool SplitFiles
@@ -535,6 +513,46 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
+		public bool IsUseCustomEntityReference
+		{
+			get => isUseCustomEntityReference;
+			set
+			{
+				isUseCustomEntityReference = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsGenerateAlternateKeys
+		{
+			get => isGenerateAlternateKeys;
+			set
+			{
+				isGenerateAlternateKeys = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsUseCustomTypeForAltKeys
+		{
+			get => isUseCustomTypeForAltKeys;
+			set
+			{
+				isUseCustomTypeForAltKeys = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsMakeCrmEntitiesJsonFriendly
+		{
+			get => isMakeCrmEntitiesJsonFriendly;
+			set
+			{
+				isMakeCrmEntitiesJsonFriendly = value;
+				OnPropertyChanged();
+			}
+		}
+
 		public bool IsGenerateLoadPerRelation
 		{
 			get => _IsGenerateLoadPerRelation;
@@ -545,43 +563,72 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
-		public bool GenerateOptionSetLabelsInEntity
+		public bool IsGenerateEnumNames
 		{
-			get => generateOptionSetLabelsInEntity;
+			get => isGenerateEnumNames;
 			set
 			{
-				generateOptionSetLabelsInEntity = value;
+				isGenerateEnumNames = value;
 				OnPropertyChanged();
 			}
 		}
 
-		public bool GenerateLookupLabelsInEntity
+		public bool IsGenerateEnumLabels
 		{
-			get => generateLookupLabelsInEntity;
+			get => isGenerateEnumLabels;
 			set
 			{
-				generateLookupLabelsInEntity = value;
-				GenerateLookupLabelsInContract = GenerateLookupLabelsInContract && value;
+				isGenerateEnumLabels = value;
 				OnPropertyChanged();
 			}
 		}
 
-		public bool GenerateOptionSetLabelsInContract
+		public bool IsGenerateFieldSchemaNames
 		{
-			get => generateOptionSetLabelsInContract;
+			get => isGenerateFieldSchemaNames;
 			set
 			{
-				generateOptionSetLabelsInContract = value;
+				isGenerateFieldSchemaNames = value;
 				OnPropertyChanged();
 			}
 		}
 
-		public bool GenerateLookupLabelsInContract
+		public bool IsGenerateFieldLabels
 		{
-			get => generateLookupLabelsInContract;
+			get => isGenerateFieldLabels;
 			set
 			{
-				generateLookupLabelsInContract = value && GenerateLookupLabelsInEntity;
+				isGenerateFieldLabels = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsGenerateRelationNames
+		{
+			get => isGenerateRelationNames;
+			set
+			{
+				isGenerateRelationNames = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsAddEntityAnnotations
+		{
+			get => isAddEntityAnnotations;
+			set
+			{
+				isAddEntityAnnotations = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsAddContractAnnotations
+		{
+			get => isAddContractAnnotations;
+			set
+			{
+				isAddContractAnnotations = value;
 				OnPropertyChanged();
 			}
 		}
@@ -702,18 +749,12 @@ namespace CrmCodeGenerator.VSPackage.Model
 			set => SetField(ref jsEarlyBoundEntitiesSelected, value);
 		}
 
-		[JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
-		public ObservableCollection<string> ActionEntitiesSelected
-		{
-			get => actionEntitiesSelected;
-			set => SetField(ref actionEntitiesSelected, value);
-		}
-
 		public IOrganizationService CrmConnection { get; set; }
 
 		public bool Dirty { get; set; }
 
 		public bool TitleCaseLogicalNamesEnabled => !UseDisplayNames;
+		public bool IsUseCustomTypeForAltKeysEnabled => IsGenerateAlternateKeys;
 
 		public IEnumerable<string> FilteredEntities =>
 			EntityDataFilterArray.EntityFilters

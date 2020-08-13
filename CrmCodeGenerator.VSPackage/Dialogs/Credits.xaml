@@ -30,12 +30,12 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Column="0" Grid.Row="0" FontFamily="Gabriola" FontSize="20" Padding="0" HorizontalAlignment="Center">Eric Labashosky</Label>
-            <Label Grid.Column="1" Grid.Row="0" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  base code</Label>
-            <Label Grid.Column="0" Grid.Row="1" FontFamily="Gabriola" FontSize="20" Padding="0" HorizontalAlignment="Center">Ahmed el-Sawalhy</Label>
-            <Label Grid.Column="1" Grid.Row="1" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  extension and rework</Label>
-            <Label Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="12" HorizontalAlignment="Center" Foreground="Blue">>> Contributions &lt;&lt;</Label>
-            <Label Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" FontFamily="Gabriola" FontSize="20" Padding="0" HorizontalAlignment="Center">Ramy Victor, Mohammed Ghoname</Label>
+            <Label Grid.Column="0" Grid.Row="0" FontFamily="Gabriola" FontSize="20" Padding="0" HorizontalAlignment="Center">Ahmed Elsawalhy</Label>
+            <Label Grid.Column="1" Grid.Row="0" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  extension and rework</Label>
+            <Label Grid.Column="0" Grid.Row="1" FontFamily="Gabriola" FontSize="18" Padding="0" HorizontalAlignment="Center">Eric Labashosky</Label>
+            <Label Grid.Column="1" Grid.Row="1" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  base code</Label>
+            <Label Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="11" HorizontalAlignment="Center" Foreground="Blue">>> Contributions &lt;&lt;</Label>
+            <Label Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" FontFamily="Gabriola" FontSize="18" Padding="0" HorizontalAlignment="Center">Ramy Victor, Mohammed Ghoname</Label>
         </Grid>
     </StackPanel>
 </Window>

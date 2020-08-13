@@ -8,7 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
     x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
-    Title="Dynamics CRM T4 Template Generator v7.1.3"
+    Title="Dynamics CRM T4 Template Generator v8.1.1"
     Height="390.021" Width="477.463"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
@@ -140,11 +140,9 @@
                                                     <Run Text="Clean Save" />
                                                 </TextBlock>
                                                 <TextBlock>
-                                                    <Run Text="By default, the generator saves modified" />
-                                                    <LineBreak /><Run Text="  data in unselected options." />
+                                                    <Run Text="By default, the generator saves modified data in unselected options." />
                                                     <LineBreak />
-                                                    <Run
-                                                        Text="This option removes any data related to unselected options." />
+                                                    <Run Text="This option removes any data related to unselected options." />
                                                 </TextBlock>
                                             </StackPanel>
                                         </ToolTip>
@@ -187,8 +185,10 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Label Content="Yagasoft.com" Margin="10,3,3,3" BorderThickness="0" HorizontalAlignment="Left"
-                           VerticalAlignment="Center" Padding="0" />
+                    <TextBlock Margin="10,3,3,3" HorizontalAlignment="Left" VerticalAlignment="Center"
+                               FontStyle="Italic" FontSize="14" Padding="0" Cursor="Hand">
+                        <Hyperlink NavigateUri="http://yagasoft.com" RequestNavigate="Hyperlink_RequestNavigate">Yagasoft.com</Hyperlink>
+                    </TextBlock>
                     <Button x:Name="ButtonCredits" Content="{StaticResource ResourceKey=InfoImage}" BorderThickness="1"
                             Grid.Column="1" Margin="0" Padding="3" Click="ButtonCredits_Click" />
                     <Button x:Name="ButtonOptions" Content="{StaticResource ResourceKey=GearImage}" BorderThickness="1"

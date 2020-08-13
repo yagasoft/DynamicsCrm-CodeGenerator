@@ -390,6 +390,12 @@ namespace CrmCodeGenerator.VSPackage
 				{
 					var dataFilter = list[i];
 
+					if (dataFilter.IsExcluded && isThorough)
+					{
+						filter.EntityFilterList.RemoveAt(i);
+						continue;
+					}
+
 					var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
 					var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
 					var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
@@ -458,33 +464,36 @@ namespace CrmCodeGenerator.VSPackage
 
 		public static void SaveCache(MetadataCacheArray metadataCache)
 		{
-			Status.Update("Writing cache ... ");
-
-			var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-			var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
-
-			if (!File.Exists(file))
+			lock (lockObj)
 			{
-				File.Create(file).Dispose();
-				Status.Update("\tCreated a new cache file.");
-			}
+				Status.Update("Writing cache ... ");
 
-			new Thread(
-				() =>
+				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+				var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
+
+				if (!File.Exists(file))
 				{
-					Status.Update("\t Moved write operation to a new thread.");
+					File.Create(file).Dispose();
+					Status.Update("\tCreated a new cache file.");
+				}
 
-					using (var stream = File.Open(file, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+				new Thread(
+					() =>
 					{
+						Status.Update("\t Moved write operation to a new thread.");
+
+						using (var stream = File.Open(file, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+						{
 						// clear the file to start from scratch
 						stream.SetLength(0);
 
-						var bformatter = new BinaryFormatter { Binder = new Binder() };
-						bformatter.Serialize(stream, metadataCache);
+							var bformatter = new BinaryFormatter { Binder = new Binder() };
+							bformatter.Serialize(stream, metadataCache);
 
-						Status.Update(">>> Finished writing cache.");
-					}
-				}).Start();
+							Status.Update(">>> Finished writing cache.");
+						}
+					}).Start(); 
+			}
 		}
 	}
 }

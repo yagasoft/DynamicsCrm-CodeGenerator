@@ -17,9 +17,11 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model;
+using Microsoft.Xrm.Client.Collections.Generic;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Metadata;
 using Application = System.Windows.Forms.Application;
+using MultiSelectComboBoxClass = CrmCodeGenerator.Controls.MultiSelectComboBox;
 
 #endregion
 
@@ -31,7 +33,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool IsJsEarly
 		{
-			get { return isJsEarly; }
+			get => isJsEarly;
 			set
 			{
 				isJsEarly = value;
@@ -39,15 +41,39 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private bool isActions;
-
-		public bool IsActions
+		public IEnumerable<string> ActionNames
 		{
-			get { return isActions; }
+			get => actionNames;
 			set
 			{
-				isActions = value;
+				actionNames = value;
 				OnPropertyChanged();
+			}
+		}
+
+		public IEnumerable<string> SelectedActions
+		{
+			get => selectedActions;
+			set
+			{
+				selectedActions = value;
+				OnPropertyChanged();
+				OnPropertyChanged("ActionColour");
+				OnPropertyChanged("ActionCount");
+			}
+		}
+
+		private IEnumerable<string> actionNames;
+		private IEnumerable<string> selectedActions;
+
+		public Brush ActionColour => SelectedActions?.Any() == true ? Brushes.Red : Brushes.Black;
+
+		public string ActionCount
+		{
+			get
+			{
+				var count = SelectedActions?.Count();
+				return count > 0 ? count.ToString() : "-";
 			}
 		}
 
@@ -57,10 +83,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool IsFiltered
 		{
-			get
-			{
-				return isFiltered;
-			}
+			get => isFiltered;
 			set
 			{
 				isFiltered = value;
@@ -90,7 +113,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool DisplayFilter
 		{
-			get { return displayFilter; }
+			get => displayFilter;
 			set
 			{
 				displayFilter = value;
@@ -102,7 +125,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool EntitiesSelectAll
 		{
-			get { return entitiesSelectAll; }
+			get => entitiesSelectAll;
 			set
 			{
 				entitiesSelectAll = value;
@@ -116,7 +139,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool IsMetadataSelectAll
 		{
-			get { return isMetadataSelectAll; }
+			get => isMetadataSelectAll;
 			set
 			{
 				isMetadataSelectAll = value;
@@ -129,7 +152,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool IsJsEarlySelectAll
 		{
-			get { return isJsEarlySelectAll; }
+			get => isJsEarlySelectAll;
 			set
 			{
 				isJsEarlySelectAll = value;
@@ -138,24 +161,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private bool isActionsSelectAll;
-
-		public bool IsActionsSelectAll
-		{
-			get { return isActionsSelectAll; }
-			set
-			{
-				isActionsSelectAll = value;
-				Entities.ToList().ForEach(entity => entity.IsActions = value);
-				OnPropertyChanged();
-			}
-		}
-
 		private bool isOptionsetLabelsSelectAll;
 
 		public bool IsOptionsetLabelsSelectAll
 		{
-			get { return isOptionsetLabelsSelectAll; }
+			get => isOptionsetLabelsSelectAll;
 			set
 			{
 				isOptionsetLabelsSelectAll = value;
@@ -168,7 +178,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool IsLookupLabelsSelectAll
 		{
-			get { return isLookupLabelsSelectAll; }
+			get => isLookupLabelsSelectAll;
 			set
 			{
 				isLookupLabelsSelectAll = value;
@@ -205,47 +215,50 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Entities = new ObservableCollection<EntitiesSelectionGridRow>();
 
 			Settings = settings;
-			metadataCache = MetadataCacheHelpers.GetMetadataCache(settings.ConnectionString);
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			new Thread(() =>
-			           {
-				           try
-				           {
-					           ShowBusy("Fetching entity metadata ...");
-					           if (metadataCache.ProfileEntityMetadataCache.Any())
-					           {
-						           EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
-					           }
-					           else
-					           {
-						           RefreshEntityMetadata();
-					           }
+			new Thread(
+				() =>
+				{
+					try
+					{
+						ShowBusy("Fetching entity metadata ...");
 
-					           ShowBusy("Initialising ...");
-					           InitEntityList();
+						metadataCache = MetadataCacheHelpers.GetMetadataCache(Settings.ConnectionString);
 
-					           Dispatcher.Invoke(() =>
-					                             {
-						                             DataContext = this;
-						                             CheckBoxEntitiesSelectAll.DataContext = this;
-						                             CheckBoxMetadataSelectAll.DataContext = this;
-						                             CheckBoxJsEarlySelectAll.DataContext = this;
-						                             CheckBoxActionsSelectAll.DataContext = this;
-						                             CheckBoxOptionsetLabelsSelectAll.DataContext = this;
-						                             CheckBoxLookupLabelsSelectAll.DataContext = this;
-					                             });
+						if (metadataCache.ProfileEntityMetadataCache.Any())
+						{
+							EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
+						}
+						else
+						{
+							RefreshEntityMetadata();
+						}
 
-					           HideBusy();
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-					           Dispatcher.InvokeAsync(Close);
-				           }
-			           }).Start();
+						ShowBusy("Initialising ...");
+						InitEntityList();
+
+						Dispatcher.Invoke(
+							() =>
+							{
+								DataContext = this;
+								CheckBoxEntitiesSelectAll.DataContext = this;
+								CheckBoxMetadataSelectAll.DataContext = this;
+								CheckBoxJsEarlySelectAll.DataContext = this;
+								CheckBoxOptionsetLabelsSelectAll.DataContext = this;
+								CheckBoxLookupLabelsSelectAll.DataContext = this;
+							});
+
+						HideBusy();
+					}
+					catch (Exception ex)
+					{
+						PopException(ex);
+						Dispatcher.InvokeAsync(Close);
+					}
+				}).Start();
 		}
 
 		private void InitEntityList(List<string> filter = null)
@@ -263,130 +276,118 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				Dispatcher.Invoke(
 					() =>
-				                  {
-					                  var row = new EntitiesSelectionGridRow
-					                            {
-						                            IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
-						                            Name = entityAsync.LogicalName,
-						                            DisplayName =
-							                            entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-								                            ? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
-								                            : Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
-						                            IsFiltered = Settings.FilteredEntities.Contains(entity.LogicalName),
-						                            IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName),
-						                            IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName),
-						                            IsActions = Settings.ActionEntitiesSelected.Contains(entity.LogicalName),
-						                            IsOptionsetLabels =
-							                            Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName),
-						                            IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName)
-					                            };
+					{
+						var row =
+							new EntitiesSelectionGridRow
+							{
+								IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
+								Name = entityAsync.LogicalName,
+								DisplayName =
+									entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+										? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
+										: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
+								IsFiltered = Settings.FilteredEntities.Contains(entity.LogicalName),
+								IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName),
+								IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName),
+								IsOptionsetLabels =
+									Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName),
+								IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName),
+								SelectedActions = Settings.SelectedActions?.FirstNotNullOrDefault(entityAsync.LogicalName)
+							};
 
-					                  row.PropertyChanged += (sender, args) =>
-					                                         {
-						                                         if (args.PropertyName == "IsSelected")
-						                                         {
-							                                         if (row.IsSelected &&
-							                                             !Settings.EntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.EntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsSelected &&
-							                                                  Settings.EntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.EntitiesSelected.Remove(entity.LogicalName);
-							                                         }
-						                                         }
-						                                         else if (args.PropertyName == "IsGenerateMeta")
-						                                         {
-							                                         if (row.IsGenerateMeta &&
-							                                             !Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.PluginMetadataEntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsGenerateMeta &&
-							                                                  Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.PluginMetadataEntitiesSelected.Remove(entity.LogicalName);
-							                                         }
-						                                         }
-						                                         else if (args.PropertyName == "IsJsEarly")
-						                                         {
-							                                         if (row.IsJsEarly &&
-							                                             !Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.JsEarlyBoundEntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsJsEarly &&
-							                                                  Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.JsEarlyBoundEntitiesSelected.Remove(entity.LogicalName);
-							                                         }
-						                                         }
-						                                         else if (args.PropertyName == "IsActions")
-						                                         {
-							                                         if (row.IsActions &&
-							                                             !Settings.ActionEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.ActionEntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsActions &&
-							                                                  Settings.ActionEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.ActionEntitiesSelected.Remove(entity.LogicalName);
-							                                         }
-						                                         }
-						                                         else if (args.PropertyName == "IsOptionsetLabels")
-						                                         {
-							                                         if (row.IsOptionsetLabels &&
-							                                             !Settings.OptionsetLabelsEntitiesSelected.Contains(
-								                                             entity.LogicalName))
-							                                         {
-								                                         Settings.OptionsetLabelsEntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsOptionsetLabels &&
-							                                                  Settings.OptionsetLabelsEntitiesSelected.Contains(
-								                                                  entity.LogicalName))
-							                                         {
-								                                         if (Settings.EntityDataFilterArray.EntityFilters
-																				 .SelectMany(filterQ => filterQ.EntityFilterList)
-																				 .Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
-																									&& dataFilter.IsOptionsetLabels))
-								                                         {
-									                                         row.IsOptionsetLabels = true;
-								                                         }
-								                                         else
-								                                         {
-									                                         Settings.OptionsetLabelsEntitiesSelected.Remove(entity.LogicalName);
-								                                         }
-							                                         }
-						                                         }
-						                                         else if (args.PropertyName == "IsLookupLabels")
-						                                         {
-							                                         if (row.IsLookupLabels &&
-							                                             !Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-								                                         Settings.LookupLabelsEntitiesSelected.Add(entity.LogicalName);
-							                                         }
-							                                         else if (!row.IsLookupLabels &&
-							                                                  Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
-							                                         {
-																		 if (Settings.EntityDataFilterArray.EntityFilters
-																				 .SelectMany(filterQ => filterQ.EntityFilterList)
-																				 .Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
-																									&& dataFilter.IsLookupLabels))
-																		 {
-																			 row.IsLookupLabels = true;
-																		 }
-																		 else
-																		 {
-																			 Settings.LookupLabelsEntitiesSelected.Remove(entity.LogicalName);
-																		 }
-																	 }
-						                                         }
-					                                         };
+						row.PropertyChanged +=
+							(sender, args) =>
+							{
+								if (args.PropertyName == "IsSelected")
+								{
+									if (row.IsSelected && !Settings.EntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.EntitiesSelected.Add(entity.LogicalName);
+									}
+									else if (!row.IsSelected && Settings.EntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.EntitiesSelected.Remove(entity.LogicalName);
+									}
+								}
+								else if (args.PropertyName == "IsGenerateMeta")
+								{
+									if (row.IsGenerateMeta && !Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.PluginMetadataEntitiesSelected.Add(entity.LogicalName);
+									}
+									else if (!row.IsGenerateMeta && Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.PluginMetadataEntitiesSelected.Remove(entity.LogicalName);
+									}
+								}
+								else if (args.PropertyName == "IsJsEarly")
+								{
+									if (row.IsJsEarly && !Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.JsEarlyBoundEntitiesSelected.Add(entity.LogicalName);
+									}
+									else if (!row.IsJsEarly && Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.JsEarlyBoundEntitiesSelected.Remove(entity.LogicalName);
+									}
+								}
+								else if (args.PropertyName == "IsOptionsetLabels")
+								{
+									if (row.IsOptionsetLabels && !Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.OptionsetLabelsEntitiesSelected.Add(entity.LogicalName);
+									}
+									else if (!row.IsOptionsetLabels && Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
+									{
+										if (Settings.EntityDataFilterArray.EntityFilters
+											.SelectMany(filterQ => filterQ.EntityFilterList)
+											.Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
+												&& dataFilter.IsOptionsetLabels))
+										{
+											row.IsOptionsetLabels = true;
+										}
+										else
+										{
+											Settings.OptionsetLabelsEntitiesSelected.Remove(entity.LogicalName);
+										}
+									}
+								}
+								else if (args.PropertyName == "IsLookupLabels")
+								{
+									if (row.IsLookupLabels && !Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
+									{
+										Settings.LookupLabelsEntitiesSelected.Add(entity.LogicalName);
+									}
+									else if (!row.IsLookupLabels && Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
+									{
+										if (Settings.EntityDataFilterArray.EntityFilters
+											.SelectMany(filterQ => filterQ.EntityFilterList)
+											.Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
+												&& dataFilter.IsLookupLabels))
+										{
+											row.IsLookupLabels = true;
+										}
+										else
+										{
+											Settings.LookupLabelsEntitiesSelected.Remove(entity.LogicalName);
+										}
+									}
+								}
+								else if (args.PropertyName == "SelectedActions")
+								{
+									if (row.SelectedActions?.Any() == true)
+									{
+										Settings.SelectedActions[entity.LogicalName] = row.SelectedActions.ToArray();
+									}
+									else
+									{
+										Settings.SelectedActions.Remove(entity.LogicalName);
+									}
+								}
+							};
 
-					                  rowList.Add(row);
-				                  });
+						rowList.Add(row);
+					});
 			}
 
 			foreach (var row in rowList.OrderByDescending(row => row.IsSelected).ThenBy(row => row.Name))
@@ -411,12 +412,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				                                   .Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => IsJsEarlySelectAll = true);
-			}
-
-			if (filteredEntities.All(entity => rowList.Where(row => row.IsActions).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
-			{
-				Dispatcher.Invoke(() => IsActionsSelectAll = true);
 			}
 
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsOptionsetLabels).Select(row => row.Name)
@@ -563,13 +558,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				row.Focus();
 			}
 
-			var d = (DependencyObject) e.OriginalSource;
+			var d = (DependencyObject)e.OriginalSource;
 
-			if (d != null && (IsCheckboxClickedParentCheck(d, "IsGenerateMeta")
-			                  || IsCheckboxClickedChildrenCheck(d, "IsGenerateMeta")))
+			if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsGenerateMeta")
+				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsGenerateMeta")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow) row.Item;
+				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
 				rowDataCast.IsGenerateMeta = !rowDataCast.IsGenerateMeta;
 
 				// selectAll value to false
@@ -580,11 +575,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsMetadataSelectAll");
 			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsJsEarly")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsJsEarly")))
+			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsJsEarly")
+				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsJsEarly")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow) row.Item;
+				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
 				rowDataCast.IsJsEarly = !rowDataCast.IsJsEarly;
 
 				// selectAll value to false
@@ -595,26 +590,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsJsEarlySelectAll");
 			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsActions")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsActions")))
+			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsOptionsetLabels")
+				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsOptionsetLabels")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow) row.Item;
-				rowDataCast.IsActions = !rowDataCast.IsActions;
-
-				// selectAll value to false
-				var field = GetType().GetField("IsActionsSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				field?.SetValue(this, false);
-
-				OnPropertyChanged("IsActionsSelectAll");
-			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsOptionsetLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsOptionsetLabels")))
-			{
-				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow) row.Item;
+				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
 				rowDataCast.IsOptionsetLabels = !rowDataCast.IsOptionsetLabels;
 
 				// selectAll value to false
@@ -625,11 +605,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsOptionsetLabelsSelectAll");
 			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsLookupLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsLookupLabels")))
+			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsLookupLabels")
+				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsLookupLabels")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow) row.Item;
+				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
 				rowDataCast.IsLookupLabels = !rowDataCast.IsLookupLabels;
 
 				// selectAll value to false
@@ -640,10 +620,21 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsLookupLabelsSelectAll");
 			}
+			else if (d != null && (IsControlClickedParentCheck<Button>(d, "LoadActions")
+				|| IsControlClickedChildrenCheck<Button>(d, "LoadActions")))
+			{
+				// clicked on meta
+				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var location = PointToScreen(Mouse.GetPosition(this));
+				LoadActions(rowDataCast,
+					() => new PopupSelector(this, rowDataCast.ActionNames, rowDataCast.SelectedActions,
+						selectedActions => Dispatcher.InvokeAsync(() => rowDataCast.SelectedActions = selectedActions),
+						location.X, location.Y).ShowDialog());
+			}
 			else
 			{
 				// clicked select
-				var rowData = (GridRow) row.Item;
+				var rowData = (GridRow)row.Item;
 				rowData.IsSelected = !rowData.IsSelected;
 
 				// selectAll value to false
@@ -811,21 +802,21 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private static bool IsCheckboxClickedChildrenCheck(DependencyObject dep, string name)
+		private static bool IsControlClickedChildrenCheck<TControl>(DependencyObject dep, string name)
+			where TControl : ContentControl
 		{
-			if (dep == null)
+			switch (dep)
 			{
-				return false;
-			}
+				case TControl control when control.Name == name:
+					return true;
 
-			if (dep is CheckBox && ((CheckBox) dep).Name == name)
-			{
-				return true;
+				case null:
+					return false;
 			}
 
 			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
 			{
-				if (IsCheckboxClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), name))
+				if (IsControlClickedChildrenCheck<TControl>(VisualTreeHelper.GetChild(dep, i), name))
 				{
 					return true;
 				}
@@ -834,11 +825,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			return false;
 		}
 
-		private static bool IsCheckboxClickedParentCheck(DependencyObject dep, string name)
+		private static bool IsControlClickedParentCheck<TControl>(DependencyObject dep, string name)
+			where TControl : ContentControl
 		{
 			while (dep != null)
 			{
-				if (dep is CheckBox && ((CheckBox) dep).Name == name)
+				if (dep is TControl control && control.Name == name)
 				{
 					return true;
 				}
@@ -858,6 +850,35 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				checkBox.IsChecked = !checkBox.IsChecked;
 			}
+		}
+
+		private void LoadActions(EntitiesSelectionGridRow row, Action action)
+		{
+			new Thread(
+				() =>
+				{
+					try
+					{
+						ShowBusy($"Loading {row.Name} Actions ...");
+						var actions = EntityHelper.RetrieveActionNames(Settings, row.Name);
+						Dispatcher.InvokeAsync(
+							() =>
+							{
+								row.ActionNames = new ObservableCollection<string>(actions);
+								row.SelectedActions = new ObservableCollection<string>(Settings
+									.SelectedActions.FirstNotNullOrDefault(row.Name) ?? Array.Empty<string>());
+								action();
+							});
+					}
+					catch (Exception ex)
+					{
+						PopException(ex);
+					}
+					finally
+					{
+						HideBusy();
+					}
+				}).Start();
 		}
 
 		#endregion

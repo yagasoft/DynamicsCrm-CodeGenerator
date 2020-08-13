@@ -1,10 +1,11 @@
 ﻿<Window x:Class="CrmCodeGenerator.VSPackage.Dialogs.EntitySelection"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
         xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
-        xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
         Title="CRM Entities Selection and Generation Options" Width="1024" Height="670" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner"
             ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
@@ -174,17 +175,17 @@
                         </DataGridTemplateColumn>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
-                                <CheckBox x:Name="CheckBoxActionsSelectAll"
-                                          VerticalContentAlignment="Center"
-                                          IsChecked="{Binding IsActionsSelectAll}"
-                                              Content="Generate&#x0a;Actions"
-                                              HorizontalAlignment="Stretch"></CheckBox>
+                                <Label VerticalContentAlignment="Center"
+                                              Content="Select&#x0a;Actions" FontSize="9" Margin="0"
+                                              HorizontalAlignment="Stretch"></Label>
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox x:Name="IsActions" IsChecked="{Binding Path=IsActions, Mode=TwoWay}"
-                                                  Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
+                                    <StackPanel HorizontalAlignment="Stretch">
+                                        <Button x:Name="LoadActions" Foreground="{Binding ActionColour}"
+                                                Content="{Binding ActionCount}" Width="25" Height="Auto"
+                                                Margin="0" BorderThickness="1" Padding="3 0 3 0" HorizontalAlignment="Center" />
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

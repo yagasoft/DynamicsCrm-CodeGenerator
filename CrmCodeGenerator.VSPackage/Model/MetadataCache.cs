@@ -17,6 +17,78 @@ namespace CrmCodeGenerator.VSPackage.Model
 		public IDictionary<Guid, MappingEntity> EntityMetadataCache;
 		public IDictionary<Guid, Context> ContextCache;
 
+		public IDictionary<string, int> EntityCodesCache;
+
+		public IDictionary<string, LookupMetadata> LookupKeysMetadataCache
+		{
+			get
+			{
+				if (LookupKeysMetadataCacheSerialised == null)
+				{
+					return new Dictionary<string, LookupMetadata>();
+				}
+
+				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
+
+				using (var stream = new MemoryStream(LookupKeysMetadataCacheSerialised))
+				using (var reader = XmlDictionaryReader
+					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+				{
+					return (IDictionary<string, LookupMetadata>)serializer.ReadObject(reader)
+						?? new Dictionary<string, LookupMetadata>();
+				}
+			}
+			set
+			{
+				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
+				var stream = new MemoryStream();
+
+				using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+				{
+					serializer.WriteObject(writer, value);
+				}
+
+				LookupKeysMetadataCacheSerialised = stream.ToArray();
+			}
+		}
+
+		public byte[] LookupKeysMetadataCacheSerialised;
+
+		public IDictionary<string, LookupMetadata> BasicAttributesMetadataCache
+		{
+			get
+			{
+				if (BasicAttributesMetadataCacheSerialised == null)
+				{
+					return new Dictionary<string, LookupMetadata>();
+				}
+
+				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
+
+				using (var stream = new MemoryStream(BasicAttributesMetadataCacheSerialised))
+				using (var reader = XmlDictionaryReader
+					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
+				{
+					return (IDictionary<string, LookupMetadata>)serializer.ReadObject(reader)
+						?? new Dictionary<string, LookupMetadata>();
+				}
+			}
+			set
+			{
+				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
+				var stream = new MemoryStream();
+
+				using (var writer = XmlDictionaryWriter.CreateBinaryWriter(stream))
+				{
+					serializer.WriteObject(writer, value);
+				}
+
+				BasicAttributesMetadataCacheSerialised = stream.ToArray();
+			}
+		}
+
+		public byte[] BasicAttributesMetadataCacheSerialised;
+
 		public IDictionary<string, LookupMetadata> LookupEntitiesMetadataCache
 		{
 			get
@@ -86,6 +158,8 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 
+		public byte[] ProfileEntityMetadataCacheSerialised;
+
 		public IDictionary<string, EntityMetadata> ProfileAttributeMetadataCache
 		{
 			get
@@ -118,8 +192,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 				ProfileAttributeMetadataCacheSerialised = stream.ToArray();
 			}
 		}
-
-		public byte[] ProfileEntityMetadataCacheSerialised;
 		public byte[] ProfileAttributeMetadataCacheSerialised;
 
 		public MetadataCache()

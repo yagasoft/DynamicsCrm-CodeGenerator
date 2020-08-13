@@ -1277,8 +1277,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 
 				do
 				{
-					deviceCredentials = DeviceIdManager.LoadDeviceCredentials() ??
-					                    DeviceIdManager.RegisterDevice();
+					deviceCredentials = new ClientCredentials();
 				} while (deviceCredentials.UserName.Password.Contains(";")
 				         || deviceCredentials.UserName.Password.Contains("=")
 				         || deviceCredentials.UserName.Password.Contains(" ")

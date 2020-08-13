@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CrmCodeGenerator.VSPackage.Helpers;
 using Microsoft.Xrm.Sdk.Metadata;
+using Yagasoft.Libraries.Common;
 
 #endregion
 
@@ -14,12 +15,16 @@ namespace CrmCodeGenerator.VSPackage.Model
 	public class MappingField
 	{
 		public Guid? MetadataId { get; set; }
-		public CrmPropertyAttribute Attribute { get; set; }
+
 		public MappingEntity Entity { get; set; }
+
+		public CrmPropertyAttribute Attribute { get; set; }
 		public string AttributeOf { get; set; }
-		public MappingEnum EnumData { get; set; }
+
 		public AttributeTypeCode FieldType { get; set; }
 		public string FieldTypeString { get; set; }
+		public string TargetTypeForCrmSvcUtil { get; set; }
+
 		public bool IsValidForCreate { get; set; }
 		public bool IsValidForRead { get; set; }
 		public bool IsValidForUpdate { get; set; }
@@ -27,31 +32,31 @@ namespace CrmCodeGenerator.VSPackage.Model
 		public bool IsStateCode { get; set; }
 		public bool IsDeprecated { get; set; }
 		public string DeprecatedVersion { get; set; }
-		public string LookupSingleType { get; set; }
 		private bool IsPrimaryKey { get; set; }
-		public bool IsRequired { get; set; }
 
+		public bool IsRequired { get; set; }
 		public int? MaxLength;
 		public decimal? Min;
 		public decimal? Max;
 
+		public MappingEnum EnumData { get; set; }
+		public MappingImage ImageData { get; set; }
+		public MappingLookup LookupData { get; set; }
+		
 		public string PrivatePropertyName { get; set; }
 		public string DisplayName { get; set; }
 		public string HybridName { get; set; }
 		public string FriendlyName { get; set; }
 		public string LogicalName { get; set; }
 		public string SchemaName { get; set; }
-
-		public string StateName { get; set; }
-		public string TargetTypeForCrmSvcUtil { get; set; }
-		public string Description { get; set; }
-
-		public string DescriptionXmlSafe => Naming.XmlEscape(Description);
-
 		public string Label { get; set; }
 		public LocalizedLabelSerialisable[] LocalizedLabels { get; set; }
 
-		public LookupLabel LookupLabel { get; set; }
+		public string StateName { get; set; }
+
+		public string Description { get; set; }
+		public string DescriptionXmlSafe => Naming.XmlEscape(Description);
+
 		public DateTimeBehavior? DateTimeBehavior { get; set; }
 
 		public MappingField()
@@ -118,19 +123,22 @@ namespace CrmCodeGenerator.VSPackage.Model
 
 			if (attribute is EnumAttributeMetadata || attribute is BooleanAttributeMetadata)
 			{
-				result.EnumData =
-					MappingEnum.GetMappingEnum(attribute, result.EnumData, isTitleCaseLogicalName);
+				result.EnumData = MappingEnum.GetMappingEnum(attribute, result.EnumData, isTitleCaseLogicalName);
 			}
 
-			var lookup = attribute as LookupAttributeMetadata;
-
-			if (lookup?.Targets != null && lookup.Targets.Length == 1)
+			if (attribute is LookupAttributeMetadata lookup)
 			{
-				result.LookupSingleType = lookup.Targets[0];
+				result.LookupData = new MappingLookup();
+
+				if (lookup.Targets?.Length == 1)
+				{
+					result.LookupData.LookupSingleType = lookup.Targets[0];
+				}
 			}
 
 			ParseDateTime(attribute, result);
 			ParseMinMaxValues(attribute, result);
+			ParseImageValues(attribute, result);
 
 			result.IsPrimaryKey = attribute.IsPrimaryId ?? result.IsPrimaryKey;
 
@@ -142,6 +150,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 				{
 					result.DisplayName = Naming.GetProperVariableName(attribute, isTitleCaseLogicalName);
 				}
+
 				result.PrivatePropertyName = Naming.GetEntityPropertyPrivateName(attribute.SchemaName);
 			}
 
@@ -156,12 +165,13 @@ namespace CrmCodeGenerator.VSPackage.Model
 			{
 				if (attribute.DisplayName.LocalizedLabels != null)
 				{
-					result.LocalizedLabels = attribute.DisplayName
-						.LocalizedLabels.Select(label => new LocalizedLabelSerialisable
-														 {
-															 LanguageCode = label.LanguageCode,
-															 Label = label.Label
-														 }).ToArray();
+					result.LocalizedLabels = attribute.DisplayName.LocalizedLabels
+						.Select(label =>
+							new LocalizedLabelSerialisable
+							{
+								LanguageCode = label.LanguageCode,
+								Label = label.Label
+							}).ToArray();
 				}
 
 				if (attribute.DisplayName.UserLocalizedLabel != null)
@@ -182,8 +192,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 					{
 						LogicalName = attribute.LogicalName,
 						IsLookup = attribute.AttributeType == AttributeTypeCode.Lookup
-							|| attribute.AttributeType == AttributeTypeCode.Customer
+							|| attribute.AttributeType == AttributeTypeCode.Customer,
+						IsImage = attribute is ImageAttributeMetadata
 					};
+				result.Attribute.IsMultiTyped = result.Attribute.IsLookup && result.LookupData?.LookupSingleType.IsEmpty() == true;
 			}
 
 			result.TargetTypeForCrmSvcUtil = GetTargetType(result);
@@ -263,6 +275,21 @@ namespace CrmCodeGenerator.VSPackage.Model
 			}
 		}
 		
+		private static void ParseImageValues(AttributeMetadata attribute, MappingField result)
+		{
+			if (attribute is ImageAttributeMetadata image)
+			{
+				result.ImageData =
+					new MappingImage
+					{
+						CanStoreFullImage = image.CanStoreFullImage ?? result.ImageData?.CanStoreFullImage,
+						MaxWidth = image.MaxWidth ?? result.ImageData?.MaxWidth,
+						MaxHeight = image.MaxHeight ?? result.ImageData?.MaxHeight,
+						MaxSizeInKb = image.MaxSizeInKB ?? result.ImageData?.MaxSizeInKb
+					};
+			}
+		}
+
 		private static string GetTargetType(MappingField field)
 		{
 			if (field.IsPrimaryKey)
@@ -321,20 +348,5 @@ namespace CrmCodeGenerator.VSPackage.Model
 		DateOnly = 2,
 		TimeZoneIndependent = 3,
 		UserLocal = 1
-	}
-
-	[Serializable]
-	public class LookupLabel
-	{
-		public string LabelFieldNames { get; set; }
-		public string LogicalName { get; set; }
-		public string IdFieldName { get; set; }
-
-		public LookupLabel(string labelFieldNames = null, string logicalName = null, string idFieldName = null)
-		{
-			LabelFieldNames = labelFieldNames;
-			LogicalName = logicalName;
-			IdFieldName = idFieldName;
-		}
 	}
 }
