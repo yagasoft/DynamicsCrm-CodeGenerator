@@ -377,7 +377,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								{
 									if (row.SelectedActions?.Any() == true)
 									{
-										Settings.SelectedActions[entity.LogicalName] = row.SelectedActions.ToArray();
+										Settings.SelectedActions[entity.LogicalName] = row.SelectedActions.Intersect(row.ActionNames).ToArray();
 									}
 									else
 									{
@@ -447,7 +447,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RefreshEntityMetadata()
 		{
-			EntityHelper.RefreshSettingsEntityMetadata(Settings);
+			MetadataHelpers.RefreshSettingsEntityMetadata(Settings);
 			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 		}
 
@@ -852,6 +852,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
+		#endregion
+
 		private void LoadActions(EntitiesSelectionGridRow row, Action action)
 		{
 			new Thread(
@@ -860,7 +862,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					try
 					{
 						ShowBusy($"Loading {row.Name} Actions ...");
-						var actions = EntityHelper.RetrieveActionNames(Settings, row.Name);
+						var actions = MetadataHelpers.RetrieveActionNames(Settings, row.Name);
 						Dispatcher.InvokeAsync(
 							() =>
 							{
@@ -880,8 +882,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					}
 				}).Start();
 		}
-
-		#endregion
 
 		#region Top bar stuff
 

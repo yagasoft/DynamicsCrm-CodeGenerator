@@ -8,7 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
     x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
-    Title="Dynamics CRM T4 Template Generator v8.1.2"
+    Title="Dynamics CRM T4 Template Generator v8.1.3"
     Height="390.021" Width="477.463"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"

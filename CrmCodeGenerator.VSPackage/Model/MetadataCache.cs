@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Xml;
+using CrmCodeGenerator.VSPackage.Helpers;
 using Microsoft.Xrm.Sdk.Metadata;
 
 #endregion
@@ -14,6 +15,8 @@ namespace CrmCodeGenerator.VSPackage.Model
 	[Serializable]
 	public class MetadataCache
 	{
+		public PlatformFeature? PlatformFeatures;
+
 		public IDictionary<Guid, MappingEntity> EntityMetadataCache;
 		public IDictionary<Guid, Context> ContextCache;
 

@@ -35,9 +35,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 		private bool IsPrimaryKey { get; set; }
 
 		public bool IsRequired { get; set; }
-		public int? MaxLength;
-		public decimal? Min;
-		public decimal? Max;
+
+		public int? MaxLength { get; set; }
+		public decimal? Min { get; set; }
+		public decimal? Max { get; set; }
 
 		public MappingEnum EnumData { get; set; }
 		public MappingImage ImageData { get; set; }

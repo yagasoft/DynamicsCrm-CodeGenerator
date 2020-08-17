@@ -28,6 +28,7 @@ using Microsoft.Xrm.Sdk.Query;
 using Yagasoft.Libraries.Common;
 using static CrmCodeGenerator.VSPackage.Helpers.MetadataCacheHelpers;
 using Application = System.Windows.Forms.Application;
+using MetadataHelpers = CrmCodeGenerator.VSPackage.Helpers.MetadataHelpers;
 
 #endregion
 
@@ -195,7 +196,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					try
 					{
 						UpdateStatus("Processing non-standard inclusion/exclusion ... ", true);
-						EntityHelper.RefreshSettingsEntityMetadata(settings);
+						MetadataHelpers.RefreshSettingsEntityMetadata(settings);
 					}
 					catch (Exception ex)
 					{

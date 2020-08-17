@@ -473,7 +473,7 @@
     <Compile Include="Helpers\BlockingQueue.cs" />
     <Compile Include="Helpers\ConnectionHelper.cs" />
     <Compile Include="Helpers\DteHelper.cs" />
-    <Compile Include="Helpers\EntityHelper.cs" />
+    <Compile Include="Helpers\MetadataHelpers.cs" />
     <Compile Include="Helpers\IEnumerablesExtensions.cs" />
     <Compile Include="Helpers\MetadataCacheHelpers.cs" />
     <Compile Include="Helpers\NamingHelper.cs" />

@@ -228,12 +228,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					try
 					{
 						ShowBusy("Loading Global Actions ...");
-						var actions = EntityHelper.RetrieveActionNames(Settings);
+						var actions = MetadataHelpers.RetrieveActionNames(Settings).ToArray();
 						Dispatcher.Invoke(
 							() =>
 							{
 								GlobalActionNames = new ObservableCollection<string>(actions);
-								SelectedGlobalActions = new ObservableCollection<string>(Settings.SelectedGlobalActions ?? Array.Empty<string>());
+								SelectedGlobalActions = new ObservableCollection<string>(Settings.SelectedGlobalActions?.Intersect(actions)
+									?? Array.Empty<string>());
 								IsGlobalActionsVisible = true;
 							});
 					}

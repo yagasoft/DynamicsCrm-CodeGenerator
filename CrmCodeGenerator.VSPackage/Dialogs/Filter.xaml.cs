@@ -575,7 +575,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RefreshEntityMetadata()
 		{
-			EntityHelper.RefreshSettingsEntityMetadata(Settings);
+			MetadataHelpers.RefreshSettingsEntityMetadata(Settings);
 			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 		}
 

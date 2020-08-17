@@ -1,9 +1,12 @@
 ﻿#region Imports
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.ServiceModel;
 using CrmCodeGenerator.VSPackage.Model;
+using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
@@ -14,7 +17,14 @@ using static CrmCodeGenerator.VSPackage.Helpers.MetadataCacheHelpers;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {
-	public class EntityHelper
+	[Flags]
+	public enum PlatformFeature
+	{
+		None = 0b00,
+		Image = 0b01
+	}
+
+	public class MetadataHelpers
 	{
 		public static string[] NonStandard =
 		{
@@ -159,8 +169,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 
 			return resultFiltered;
 		}
-
-
+		
 		public static IDictionary<string, int> GetEntityCodes(SettingsNew settings)
 		{
 			var metadataCache = GetMetadataCache(settings.ConnectionString);
@@ -237,6 +246,73 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 					.Select(e => e.GetAttributeValue<string>("name"))
 					.Distinct()
 					.OrderBy(e => e);
+			}
+		}
+
+		public static PlatformFeature SetImageAndFileFeaturesSupport(SettingsNew settings, PlatformFeature existingFeatures)
+		{
+			const PlatformFeature feature = PlatformFeature.Image;
+
+			var entityProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
+			entityProperties.PropertyNames.AddRange("LogicalName", "Attributes");
+
+			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
+			entityFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.Equals, "account"));
+
+			var attributeProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
+			attributeProperties.PropertyNames.AddRange("MaxWidth", "MaxHeight", "MaxSizeInKB");
+
+			var attributeFilter = new MetadataFilterExpression(LogicalOperator.And);
+			attributeFilter.Conditions.Add(new MetadataConditionExpression("LogicalName",
+				MetadataConditionOperator.Equals, "name"));
+
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Properties = entityProperties,
+					Criteria = entityFilter,
+					AttributeQuery =
+						new AttributeQueryExpression
+						{
+							Properties = attributeProperties,
+							Criteria = attributeFilter
+						}
+				};
+
+			try
+			{
+				var retrieveMetadataChangesRequest =
+					new RetrieveMetadataChangesRequest
+					{
+						Query = entityQueryExpression
+					};
+
+				using (var service = ConnectionHelper.GetConnection(settings))
+				{
+					var dummy = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
+				}
+
+				return existingFeatures | feature;
+			}
+			catch (FaultException<OrganizationServiceFault> ex)
+			{
+				if (ex.Detail.ErrorCode == unchecked((int)0x80044183))
+				{
+					return existingFeatures & ~feature;
+				}
+				else
+				{
+					throw;
+				}
 			}
 		}
 	}

@@ -23,6 +23,7 @@ using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Yagasoft.Libraries.Common;
 using static CrmCodeGenerator.VSPackage.Helpers.MetadataCacheHelpers;
+using MetadataHelpers = CrmCodeGenerator.VSPackage.Helpers.MetadataHelpers;
 
 #endregion
 
@@ -121,7 +122,9 @@ namespace CrmCodeGenerator.VSPackage
 		private Thread langThread;
 		private Thread lookupKeysThread;
 		private Thread actionsThread;
-		
+		private Thread featuresThread;
+		private PlatformFeature platformFeatures;
+
 		#region event handler
 
 		public event MapperHandler Message;
@@ -226,6 +229,29 @@ namespace CrmCodeGenerator.VSPackage
 							Status.Update(">>> Finished fetching Actions.");
 						});
 					actionsThread.Start();
+				}
+
+				#endregion
+
+				#region Features
+
+				featuresThread = null;
+
+				if (metadataCache.PlatformFeatures == null)
+				{
+					metadataCache.PlatformFeatures = PlatformFeature.None;
+
+					featuresThread = new Thread(
+						() =>
+						{
+							Status.Update("Fetching platform features ... ");
+
+							platformFeatures = (metadataCache.PlatformFeatures |= MetadataHelpers.SetImageAndFileFeaturesSupport(Settings,
+								metadataCache.PlatformFeatures.Value)).Value;
+
+							Status.Update(">>> Finished fetching platform features.");
+						});
+					featuresThread.Start();
 				}
 
 				#endregion
@@ -386,17 +412,19 @@ namespace CrmCodeGenerator.VSPackage
 				  {
 					  try
 					  {
+						  var remainingThreads = Math.Max(1, threadCount - groupedEntities.Count);
 						  var takenCount = 0;
 						  var tempGroupedEntities = group.ToList();
 
+						  // TODO use better grouping algorithm from other tool
 						  #region Counts
 
-						  var threadCap = new int[threadCount];
+						  var threadCap = new int[remainingThreads];
 
 						  // calculate how many entities to take per thread
 						  for (var i = 0; i < tempGroupedEntities.Count; i++)
 						  {
-							  threadCap[i % threadCount] = Math.Min(threadCap[i % threadCount] + 1, Settings.EntitiesPerThread);
+							  threadCap[i % remainingThreads] = Math.Min(threadCap[i % remainingThreads] + 1, Settings.EntitiesPerThread);
 						  }
 
 						  var takeCount = 0;
@@ -405,7 +433,7 @@ namespace CrmCodeGenerator.VSPackage
 						  // calculate how many iterations to make
 						  while (remaining > 0)
 						  {
-							  remaining -= threadCap[takeCount % threadCount];
+							  remaining -= threadCap[takeCount % remainingThreads];
 							  takeCount++;
 						  }
 
@@ -417,7 +445,7 @@ namespace CrmCodeGenerator.VSPackage
 						  Parallel.For(0, takeCount,
 							  new ParallelOptions
 								{
-									MaxDegreeOfParallelism = threadCount
+									MaxDegreeOfParallelism = remainingThreads
 								},
 							  (index, state) =>
 								{
@@ -435,7 +463,7 @@ namespace CrmCodeGenerator.VSPackage
 										lock (tempGroupedEntities)
 										{
 											tempSelectedEntities = tempGroupedEntities.Skip(takenCount)
-												.Take(threadCap[index % threadCount]).ToList();
+												.Take(threadCap[index % remainingThreads]).ToList();
 
 											WorkingOnEntities = tempSelectedEntities;
 											var joinedEntities = string.Join(", ", tempSelectedEntities);
@@ -462,7 +490,7 @@ namespace CrmCodeGenerator.VSPackage
 													}
 													else
 													{
-														return !EntityHelper.NonStandard.Contains(r.LogicalName);
+														return !MetadataHelpers.NonStandard.Contains(r.LogicalName);
 													}
 												})
 											.ToList();
@@ -1186,8 +1214,15 @@ namespace CrmCodeGenerator.VSPackage
 			attributeProperties.PropertyNames
 				.AddRange("AttributeOf", "IsValidForCreate", "IsValidForRead", "IsValidForUpdate",
 					"AttributeType", "DeprecatedVersion", "Targets", "IsPrimaryId", "LogicalName", "SchemaName", "Description",
-					"DisplayName", "RequiredLevel", "MaxLength", "MinValue", "MaxValue", "MaxWidth", "MaxHeight", "MaxSizeInKB",
-					"OptionSet", "DateTimeBehavior");
+					"DisplayName", "RequiredLevel", "MaxLength", "MinValue", "MaxValue", "OptionSet", "DateTimeBehavior");
+
+			featuresThread.Join();
+
+			if (platformFeatures.HasFlag(PlatformFeature.Image))
+			{
+				attributeProperties.PropertyNames
+					.AddRange("MaxWidth", "MaxHeight", "MaxSizeInKB");
+			}
 
 			var relationshipProperties =
 				new MetadataPropertiesExpression

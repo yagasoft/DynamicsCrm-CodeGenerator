@@ -15,17 +15,21 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 	{
 		private static readonly object lockObj = new object();
 		private static IEnhancedServicePool<EnhancedOrgService> connectionPool;
+		private static string latestConnectionString;
 
 		public static IEnhancedOrgService GetConnection(SettingsNew settings)
 		{
 			lock (lockObj)
 			{
-				if (connectionPool == null)
+				var connectionString = settings.ConnectionString;
+
+				if (connectionPool == null || connectionString != latestConnectionString)
 				{
 					Status.Update($"Creating connection pool to CRM ... ");
-					Status.Update($"Connection String: '{SecureConnectionString(settings.ConnectionString)}'.");
+					Status.Update($"Connection String: '{SecureConnectionString(connectionString)}'.");
 
-					connectionPool = EnhancedServiceHelper.GetPool(settings.ConnectionString, 10);
+					connectionPool = EnhancedServiceHelper.GetPool(connectionString, 10);
+					latestConnectionString = connectionString;
 
 					Status.Update($"Created connection pool.");
 				} 
