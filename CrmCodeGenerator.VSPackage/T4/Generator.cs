@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TextTemplating;
 using System.IO;
 using System.Runtime.Remoting.Messaging;
-using CrmCodeGenerator.VSPackage.Model;
+using Microsoft.VisualStudio.TextTemplating;
+using Yagasoft.CrmCodeGenerator.Models.Mapper;
 
 namespace CrmCodeGenerator.VSPackage.T4
 {

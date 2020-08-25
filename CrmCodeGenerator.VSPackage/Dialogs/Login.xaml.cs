@@ -1,34 +1,28 @@
 ﻿#region Imports
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using CrmCodeGenerator.VSPackage.Cache;
+using CrmCodeGenerator.VSPackage.Connection;
 using CrmCodeGenerator.VSPackage.Helpers;
-using CrmCodeGenerator.VSPackage.Model;
 using EnvDTE80;
-using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata;
-using Microsoft.Xrm.Sdk.Metadata.Query;
-using Microsoft.Xrm.Sdk.Query;
+using Xceed.Wpf.Toolkit;
+using Yagasoft.CrmCodeGenerator.Mapper;
+using Yagasoft.CrmCodeGenerator.Models.Mapper;
+using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
-using static CrmCodeGenerator.VSPackage.Helpers.MetadataCacheHelpers;
 using Application = System.Windows.Forms.Application;
-using MetadataHelpers = CrmCodeGenerator.VSPackage.Helpers.MetadataHelpers;
+using MessageBox = System.Windows.MessageBox;
+using MetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
 
 #endregion
 
@@ -40,15 +34,18 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	public partial class Login
 	{
 		public Context Context;
+		public bool StillOpen => _StillOpen;
 
 		private Style originalProgressBarStyle;
 
-		private SettingsNew settings;
+		private Settings settings;
 
 		private Mapper mapper;
 
 		private bool _StillOpen = true;
-		public bool StillOpen => _StillOpen;
+
+		private readonly ConnectionManager connectionManager;
+		private readonly MetadataCacheManager metadataCacheManager;
 
 		#region Init
 
@@ -62,11 +59,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Owner = main;
 
 			settings = Configuration.LoadSettings();
+			connectionManager = new ConnectionManager();
+			metadataCacheManager = new MetadataCacheManager();
 
 			if (!settings.ConnectionString.IsEmpty())
 			{
 				// warm up the cache.
-				new Thread(() => GetMetadataCache(settings.ConnectionString)).Start();
+				new Thread(() => metadataCacheManager.GetCache(settings.ConnectionString)).Start();
 			}
 
 			////EventManager.RegisterClassHandler(typeof(TextBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
@@ -77,6 +76,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
+			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
+
 			Initialise();
 		}
 
@@ -84,10 +85,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			DataContext = settings;
 
-			settings.EntityDataFilterArray = settings.EntityDataFilterArray ?? new EntityFilterArray();
+			settings.EntityProfilesHeaderSelector = settings.EntityProfilesHeaderSelector ?? new EntityProfilesHeaderSelector();
 			settings.FiltersChanged();
 
-			mapper = new Mapper(settings);
+			mapper = new Yagasoft.CrmCodeGenerator.Mapper.Mapper(settings, connectionManager, metadataCacheManager);
 
 			RegisterMapperEvents();
 		}
@@ -101,79 +102,76 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RegisterMapperEvents()
 		{
-			mapper.PropertyChanged
+			mapper.Message
 				+= (o, args) =>
 				   {
 					   try
 					   {
-						   switch (args.PropertyName)
+						   if (args.Progress != null)
 						   {
-							   case "Progress":
-								   ShowBusy(mapper.ProgressMessage, mapper.Progress);
+							   Status.ShowBusy(Dispatcher, BusyIndicator, args.Message, HeightProperty,
+								   originalProgressBarStyle, args.Progress);
+						   }
+						   else
+						   {
+							   Status.UpdateStatus(Dispatcher, args.Message, true, args.Progress <= 0 || args.Progress >= 100);
+						   }
+					   }
+					   catch
+					   {
+						   // ignored
+					   }
+				   };
+
+			mapper.Status
+				+= (o, args) =>
+				   {
+					   try
+					   {
+						   switch (args.Status)
+						   {
+							   case MapperStatus.Cancelled:
+								  	Status.UpdateStatus(Dispatcher, "Cancelled generator!", false);
+								   _StillOpen = false;
+								   Dispatcher.InvokeAsync(Close);
 								   break;
 
-							   case "WorkingOnEntities":
-								   UpdateStatus(mapper.Progress + "%, fetching: " + string.Join(", ", mapper.WorkingOnEntities) + "...",
-									   true, mapper.Progress <= 0 || mapper.Progress >= 100);
-								   break;
+							   case MapperStatus.Finished:
+								   Context = mapper.Context;
+								   Context.SplitFiles = settings.SplitFiles;
+								   Context.UseDisplayNames = settings.UseDisplayNames;
+								   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
+								   Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
+								   Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;
+								   Context.IsAddContractAnnotations = settings.IsAddContractAnnotations;
+								   Context.IsGenerateLoadPerRelation = settings.IsGenerateLoadPerRelation;
+								   Context.IsGenerateEnumNames = settings.IsGenerateEnumNames;
+								   Context.IsGenerateEnumLabels = settings.IsGenerateEnumLabels;
+								   Context.IsGenerateFieldSchemaNames = settings.IsGenerateFieldSchemaNames;
+								   Context.IsGenerateFieldLabels = settings.IsGenerateFieldLabels;
+								   Context.IsGenerateRelationNames = settings.IsGenerateRelationNames;
+								   Context.IsImplementINotifyProperty = settings.IsImplementINotifyProperty;
+								   Context.GenerateGlobalActions = settings.GenerateGlobalActions;
+								   Context.PluginMetadataEntities = settings.PluginMetadataEntitiesSelected.ToList();
+								   Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
+								   Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
+								   Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
+								   Context.SelectedActions = settings.SelectedActions;
+								   Context.ClearMode = settings.ClearMode;
+								   Context.SelectedEntities = settings.EntitiesSelected.ToArray();
+								   Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
+								   Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
+								   Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
 
-							   case "LogMessage":
-								   lock (mapper.LoggingLock)
+								   if (settings.LockNamesOnGenerate)
 								   {
-									   UpdateStatus(mapper.LogMessage, true, mapper.Progress <= 0 || mapper.Progress >= 100);
+									   LockNames(Context);
 								   }
-								   break;
 
-							   case "CancelMapping":
-								   if (mapper.CancelMapping)
-								   {
-									   UpdateStatus("Cancelled generator!", false);
-									   _StillOpen = false;
-									   Dispatcher.InvokeAsync(Close);
-								   }
-								   break;
+								   metadataCacheManager.GetCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
 
-							   case "Error":
-								   break;
-
-							   case "Context":
-								   if (mapper.Context != null)
-								   {
-									   Context = mapper.Context;
-									   Context.SplitFiles = settings.SplitFiles;
-									   Context.UseDisplayNames = settings.UseDisplayNames;
-									   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
-									   Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
-									   Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;
-									   Context.IsAddContractAnnotations = settings.IsAddContractAnnotations;
-									   Context.IsGenerateLoadPerRelation = settings.IsGenerateLoadPerRelation;
-									   Context.IsGenerateEnumNames = settings.IsGenerateEnumNames;
-									   Context.IsGenerateEnumLabels = settings.IsGenerateEnumLabels;
-									   Context.IsGenerateFieldSchemaNames = settings.IsGenerateFieldSchemaNames;
-									   Context.IsGenerateFieldLabels = settings.IsGenerateFieldLabels;
-									   Context.IsGenerateRelationNames = settings.IsGenerateRelationNames;
-									   Context.GenerateGlobalActions = settings.GenerateGlobalActions;
-									   Context.PluginMetadataEntities = settings.PluginMetadataEntitiesSelected.ToList();
-									   Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
-									   Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
-									   Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
-									   Context.SelectedActions = settings.SelectedActions;
-									   Context.ClearMode = settings.ClearMode;
-									   Context.SelectedEntities = settings.EntitiesSelected.ToArray();
-									   Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
-									   Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
-									   Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
-
-									   if (settings.LockNamesOnGenerate)
-									   {
-										   LockNames(Context);
-									   }
-
-									   GetMetadataCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
-
-									   _StillOpen = false;
-									   Dispatcher.InvokeAsync(Close);
-								   }
+								   _StillOpen = false;
+								   Dispatcher.InvokeAsync(Close);
 								   break;
 						   }
 					   }
@@ -195,99 +193,18 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						UpdateStatus("Processing non-standard inclusion/exclusion ... ", true);
-						MetadataHelpers.RefreshSettingsEntityMetadata(settings);
+						Status.UpdateStatus(Dispatcher, "Processing non-standard inclusion/exclusion ... ", true);
+						MetadataHelpers.RefreshSettingsEntityMetadata(settings, connectionManager, metadataCacheManager);
 					}
 					catch (Exception ex)
 					{
-						PopException(ex);
+						Status.PopException(Dispatcher, ex);
 					}
 					finally
 					{
-						UpdateStatus(">>> Finished processing.", false);
+						Status.UpdateStatus(Dispatcher, ">>> Finished processing.", false);
 					}
 				}).Start();
-		}
-
-		#endregion
-
-		#region Status stuff
-
-		private void PopException(Exception exception)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  var message = exception.Message
-				                                + (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
-				                  MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-				                  var error = "[ERROR] " + exception.Message
-				                              +
-				                              (exception.InnerException != null
-					                               ? "\n" + "[ERROR] " + exception.InnerException.Message
-					                               : "");
-				                  UpdateStatus(error, false);
-				                  UpdateStatus(exception.StackTrace, false);
-			                  });
-		}
-
-		private void ShowBusy(string message, double? progress = null)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = true;
-				                  BusyIndicator.BusyContent =
-					                  string.IsNullOrEmpty(message) ? "Please wait ..." : message;
-
-				                  if (progress == null)
-				                  {
-					                  BusyIndicator.ProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-				                  }
-				                  else
-				                  {
-					                  originalProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-
-					                  var style = new Style(typeof (ProgressBar));
-					                  style.Setters.Add(new Setter(HeightProperty, 15d));
-					                  style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
-					                  style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
-					                  BusyIndicator.ProgressBarStyle = style;
-				                  }
-			                  }, DispatcherPriority.Send);
-		}
-
-		private void HideBusy()
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = false;
-				                  BusyIndicator.BusyContent = "Please wait ...";
-			                  }, DispatcherPriority.Send);
-		}
-
-		internal void UpdateStatus(string message, bool working, bool allowBusy = true, bool newLine = true)
-		{
-			//Dispatcher.Invoke(() => SetEnabledChildren(Inputs, !working, "ButtonCancel"));
-
-			if (allowBusy)
-			{
-				if (working)
-				{
-					ShowBusy(message);
-				}
-				else
-				{
-					HideBusy();
-				}
-			}
-
-			if (!string.IsNullOrWhiteSpace(message))
-			{
-				Dispatcher.BeginInvoke(new Action(() => { Status.Update(message, newLine); }));
-			}
-
-			Application.DoEvents();
-			// Needed to allow the output window to update (also allows the cursor wait and form disable to show up)
 		}
 
 		#endregion
@@ -299,8 +216,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			try
 			{
 				// make sure that all entities selected in profiles are included
-				var missingEntities = settings.EntityDataFilterArray.EntityFilters
-					.SelectMany(filter => filter.EntityFilterList
+				var missingEntities = settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
+					.SelectMany(filter => filter.EntityProfiles
 					.Where(dataFilter => !dataFilter.IsExcluded || dataFilter.IsGenerateMeta)
 					.Select(dataFilter => dataFilter.LogicalName))
 					.Distinct().Except(settings.EntitiesSelected).ToList();
@@ -318,17 +235,17 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// if user indicated 'clear cache'
 				if (CheckBoxClearCache.IsChecked == true)
 				{
-					UpdateStatus("Clearing cache ... ", true, true, false);
-					ClearMetadataCache(settings.ConnectionString);
-					UpdateStatus("done!", false);
+					Status.UpdateStatus(Dispatcher, "Clearing cache ... ", true, true, false);
+					metadataCacheManager.Clear(settings.ConnectionString);
+					Status.UpdateStatus(Dispatcher, "done!", false);
 				}
 				
-				UpdateStatus("Mapping entities, this might take a while depending on CRM server/connection speed ... ", true);
+				Status.UpdateStatus(Dispatcher, "Mapping entities, this might take a while depending on CRM server/connection speed ... ", true);
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					UpdateStatus("Generator will split generated code into separate entity files.", true);
+					Status.UpdateStatus(Dispatcher, "Generator will split generated code into separate entity files.", true);
 				}
 
 				new Thread(
@@ -341,13 +258,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						}
 						catch (Exception ex)
 						{
-							PopException(ex);
+							Status.PopException(Dispatcher, ex);
 						}
 					}).Start();
 			}
 			catch (Exception ex)
 			{
-				PopException(ex);
+				Status.PopException(Dispatcher, ex);
 			}
 		}
 
@@ -356,8 +273,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			try
 			{
 				// make sure that all entities selected in profiles are included
-				var missingEntities = settings.EntityDataFilterArray.EntityFilters
-					.SelectMany(filter => filter.EntityFilterList
+				var missingEntities = settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
+					.SelectMany(filter => filter.EntityProfiles
 					.Where(dataFilter => !dataFilter.IsExcluded || dataFilter.IsGenerateMeta)
 					.Select(dataFilter => dataFilter.LogicalName))
 					.Distinct().Except(settings.EntitiesSelected).ToList();
@@ -367,7 +284,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				var metadataCache = GetMetadataCache(settings.ConnectionString);
+				var metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
 				var context = metadataCache.GetCachedContext(settings.Id);
 
 				var excludeEntities = new[] { "" };
@@ -391,12 +308,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
 				Configuration.SaveSettings(settings);
 
-				UpdateStatus("Mapping entities using cache ... ", true);
+				Status.UpdateStatus(Dispatcher, "Mapping entities using cache ... ", true);
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					UpdateStatus("Generator will split generated code into separate entity files.", true);
+					Status.UpdateStatus(Dispatcher, "Generator will split generated code into separate entity files.", true);
 				}
 
 				new Thread(
@@ -409,13 +326,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						}
 						catch (Exception ex)
 						{
-							PopException(ex);
+							Status.PopException(Dispatcher, ex);
 						}
 					}).Start();
 			}
 			catch (Exception ex)
 			{
-				PopException(ex);
+				Status.PopException(Dispatcher, ex);
 			}
 		}
 
@@ -432,7 +349,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonOptions_Click(object sender, RoutedEventArgs e)
 		{
-			new Options(this, settings).ShowDialog();
+			new Options(this, settings, connectionManager, metadataCacheManager).ShowDialog();
 		}
 
 		private void ButtonCancel_Click(object sender, RoutedEventArgs e)
@@ -442,7 +359,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)
 		{
-			settings = new SettingsNew();
+			settings = new Settings();
 			Initialise();
 		}
 
@@ -455,12 +372,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void EntitiesRefresh_Click(object sender, RoutedEventArgs events)
 		{
-			new EntitySelection(this, settings).ShowDialog();
+			new EntitySelection(this, settings, connectionManager, metadataCacheManager).ShowDialog();
 		}
 
 		private void EntitiesProfiling_Click(object sender, RoutedEventArgs e)
 		{
-			new Filter(this, settings).ShowDialog();
+			new Filter(this, settings, connectionManager, metadataCacheManager).ShowDialog();
 		}
 
 		// credit: https://social.msdn.microsoft.com/Forums/vstudio/en-US/564b5731-af8a-49bf-b297-6d179615819f/how-to-selectall-in-textbox-when-textbox-gets-focus-by-mouse-click?forum=wpf&prof=required
@@ -509,8 +426,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				Status.Update("Locking friendly names ... ", false);
 
-				foreach (var filter in settings.EntityDataFilterArray.EntityFilters.Select(filterList => filterList)
-					.SelectMany(filter => filter.EntityFilterList))
+				foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.Select(filterList => filterList)
+					.SelectMany(filter => filter.EntityProfiles))
 				{
 					// if filter's entity exists in selected entities
 					var entity = context.Entities.FirstOrDefault(entityQ => entityQ.LogicalName == filter.LogicalName);
@@ -581,7 +498,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 			catch (Exception ex)
 			{
-				PopException(ex);
+				Status.PopException(Dispatcher, ex);
 			}
 			finally
 			{

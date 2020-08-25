@@ -3,12 +3,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vs_shell="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.12.0"
     xmlns:ui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.12.0"
-    xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
     xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
+    mc:Ignorable="d"
     x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
-    Title="Dynamics CRM T4 Template Generator v8.1.3"
+    Title="Dynamics CRM T4 Template Generator v9.1.1"
     Height="390.021" Width="477.463"
     Loaded="Window_Loaded"
     WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
@@ -33,8 +34,8 @@
         <Style TargetType="{x:Type ComboBox}">
             <Setter Property="Margin" Value="0,0,0,0" />
         </Style>
-        <converter:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed" />
-        <converter:InverseCheckboxBooleanConverter x:Key="InverseCheckboxBooleanConverter" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed" />
+        <converters:InverseCheckboxBooleanConverter x:Key="InverseCheckboxBooleanConverter" />
         <Image x:Key="GearImage" Source="../Resources/Gear.png" />
         <Image x:Key="InfoImage" Source="../Resources/Info.png" />
     </ui:DialogWindow.Resources>

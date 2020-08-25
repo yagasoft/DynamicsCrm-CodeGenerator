@@ -2,12 +2,12 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 8.1.3
+### Version: 9.1.1
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
 
-### Features
+## Features
 
   + Preserved the original CrmSvcUtil structure and logic
 	+ Replaced the SDK types with .NET types
@@ -18,13 +18,13 @@ A Visual Studio extension that allows generating early bound classes for Microso
 	+ Option to lock Variable names to avoid code errors on regeneration
   + Greatly enhanced regeneration speed by only fetching changed metadata from the server
   + Support for strongly-typed Alternate Keys, for Entities and Entity References
+  + Add Annotations for model validation
   + Generate Metadata
 	+ Field Logical and Schema Names
 	+ Localised labels
   + Many options to optimise generated code size
-  + Define web service contracts
 	+ Filter attributes to reduce size
-	+ Add Annotations for model validation
+  + Define web service contracts with different profiles
 	+ Option to mark certain Fields as 'ready only'
   + Generate concrete classes for CRM Actions
   + Support bulk relation loading
@@ -80,7 +80,7 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-05.png)
 
-### Credits
+## Credits
 
   + Base code:
 	+ Eric Labashosky
@@ -92,7 +92,17 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
-#### _v8.1.3 (2020-08-17)_
+#### _v9.1.1 (2020-08-25)_
++ Added: 'cancel' option for the Profiles window
++ Improved: moved the 'Apply to CRM Entities' option to per-Entity level for more control
++ Improved: 'Apply to CRM Entities' filters Attributes and Relations similar to Contracts
++ Improved: refactoring to prepare for XrmToolBox Plugin and improve extensibility
++ Improved: error messages
++ Updated: licence
++ Removed: pre-v7 settings migration
++ Fixed: issue with assembly binding
++ Fixed: issues
+#### _v8.1.3 (2020-08-17)_ [Download](http://blog.yagasoft.com/wp-content/uploads/CrmCodeGenerator.vsix)
 + Fixed: handling older versions of CRM when it comes to new features
 + Fixed: obsolete Action Names not removed from selection
 + Fixed: image length to be in bytes instead of KBs

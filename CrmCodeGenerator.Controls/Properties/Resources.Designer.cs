@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace MultiSelectComboBox.Properties
+namespace CrmCodeGenerator.Controls.Properties
 {
 
 

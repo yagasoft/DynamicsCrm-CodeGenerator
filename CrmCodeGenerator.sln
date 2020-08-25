@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30309.148
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrmCodeGenerator.VSPackage", "CrmCodeGenerator.VSPackage\CrmCodeGenerator.VSPackage.csproj", "{474A5BC2-BEFF-4F74-A029-7ED81B6633A8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CrmCodeGenerator.Controls", "CrmCodeGenerator.Controls\CrmCodeGenerator.Controls.csproj", "{CE17A54E-0661-429F-AFDC-272E8668B14E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yagasoft.CrmCodeGenerator", "Yagasoft.CrmCodeGenerator\Yagasoft.CrmCodeGenerator.csproj", "{5D60D484-014F-4BE1-9642-A7904604541A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,24 +39,25 @@ Global
 		{CE17A54E-0661-429F-AFDC-272E8668B14E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{CE17A54E-0661-429F-AFDC-272E8668B14E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{CE17A54E-0661-429F-AFDC-272E8668B14E}.Release|x86.ActiveCfg = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Debug|x86.Build.0 = Debug|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|x86.ActiveCfg = Release|Any CPU
+		{5D60D484-014F-4BE1-9642-A7904604541A}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .
-	EndGlobalSection
-	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 3
-		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
-		SccTeamFoundationServer = http://10.2.2.209:8080/tfs/tfs08datatcollection
-		SccLocalPath0 = .
-		SccProjectUniqueName1 = CrmCodeGenerator.Controls\\CrmCodeGenerator.Controls.csproj
-		SccProjectName1 = CrmCodeGenerator.Controls
-		SccLocalPath1 = CrmCodeGenerator.Controls
-		SccProjectUniqueName2 = CrmCodeGenerator.VSPackage\\CrmCodeGenerator.VSPackage.csproj
-		SccProjectName2 = CrmCodeGenerator.VSPackage
-		SccLocalPath2 = CrmCodeGenerator.VSPackage
+		SolutionGuid = {28FA71F2-E2E4-43D6-97FC-39E9778C3026}
 	EndGlobalSection
 	GlobalSection(CrmCodeGeneration) = preSolution
 		UseSSL = True

@@ -1,8 +1,6 @@
 ﻿<Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
-        xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -28,14 +26,13 @@
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Label Grid.Column="0" Grid.Row="0" FontFamily="Gabriola" FontSize="20" Padding="0" HorizontalAlignment="Center">Ahmed Elsawalhy</Label>
-            <Label Grid.Column="1" Grid.Row="0" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  extension and rework</Label>
-            <Label Grid.Column="0" Grid.Row="1" FontFamily="Gabriola" FontSize="18" Padding="0" HorizontalAlignment="Center">Eric Labashosky</Label>
-            <Label Grid.Column="1" Grid.Row="1" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10">:  base code</Label>
-            <Label Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="2" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="11" HorizontalAlignment="Center" Foreground="Blue">>> Contributions &lt;&lt;</Label>
-            <Label Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" FontFamily="Gabriola" FontSize="18" Padding="0" HorizontalAlignment="Center">Ramy Victor, Mohammed Ghoname</Label>
+            <Label Grid.Column="0" Grid.Row="0" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10"></Label>
+            <Label Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="10" HorizontalAlignment="Center" Foreground="Blue">>> Contributions &lt;&lt;</Label>
+            <Label Grid.Column="0" Grid.Row="2" FontFamily="Gabriola" FontSize="17" Padding="0" HorizontalAlignment="Center">Eric Labashosky (base code)</Label>
+            <Label Grid.Column="0" Grid.Row="2" xml:space="preserve" VerticalAlignment="Center" FontFamily="Verdana" FontSize="9"></Label>
+            <Label Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" FontFamily="Gabriola" FontSize="15" Padding="0" HorizontalAlignment="Center">Ramy Victor, Mohammed Ghoname</Label>
         </Grid>
     </StackPanel>
 </Window>

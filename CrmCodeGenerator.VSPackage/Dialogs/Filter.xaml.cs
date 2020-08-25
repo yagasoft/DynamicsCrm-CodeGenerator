@@ -1,11 +1,9 @@
 ﻿#region Imports
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -14,19 +12,19 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
-using CrmCodeGenerator.VSPackage.Model;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
-using Microsoft.Xrm.Sdk.Metadata.Query;
-using Microsoft.Xrm.Sdk.Query;
+using Yagasoft.CrmCodeGenerator;
+using Yagasoft.CrmCodeGenerator.Cache.Metadata;
+using Yagasoft.CrmCodeGenerator.Connection;
+using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
+using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Models.Cache;
+using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Application = System.Windows.Forms.Application;
-using MultiSelectComboBoxClass = CrmCodeGenerator.Controls.MultiSelectComboBox;
 
 #endregion
 
@@ -60,12 +58,23 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 	public class GridRow : INotifyPropertyChanged
 	{
+		protected EntityProfile entityProfile;
 		protected bool isSelected;
 		protected string rename;
 
 		public bool IsReadOnlyEnabled
 		{
 			get; set;
+		}
+
+		public EntityProfile EntityProfile
+		{
+			get => entityProfile;
+			set
+			{
+				entityProfile = value;
+				OnPropertyChanged();
+			}
 		}
 
 		public bool IsSelected
@@ -132,6 +141,18 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 	public class EntityGridRow : FieldGridRow
 	{
+		private bool isApplyToCrm;
+
+		public bool IsApplyToCrm
+		{
+			get => isApplyToCrm;
+			set
+			{
+				isApplyToCrm = value;
+				OnPropertyChanged();
+			}
+		}
+
 		private bool isGenerateMeta;
 
 		public bool IsGenerateMeta
@@ -230,22 +251,26 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		/// </summary>
 	public partial class Filter : INotifyPropertyChanged
 	{
+		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly MetadataCacheManagerBase metadataCacheManager;
+
 		#region Properties
 
 		public string LogicalName { get; set; }
 
-		public EntityFilterArray EntityFilterList { get; set; }
-		public EntityFilter EntityFilter { get; set; }
+		public EntityProfilesHeaderSelector EntityProfilesHeaderSelector { get; set; }
 
-		public EntityDataFilter EntityDataFilter { get; set; }
+		public EntityProfilesHeader SelectedEntityProfilesHeader { get; set; }
 
-		public SettingsNew Settings { get; set; }
+		public EntityProfile EntityProfile { get; set; }
+
+		public Settings Settings { get; set; }
 
 		public List<EntityMetadata> EntityMetadataCache;
 
 		private Style originalProgressBarStyle;
 
-		public bool StillOpen { get; } = true;
+		public bool StillOpen { get; private set; } = true;
 
 		public string WindowTitle { get; set; }
 
@@ -258,6 +283,19 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				entitiesSelectAll = value;
 				Entities.ToList().ForEach(entity => entity.IsSelected = value);
+				OnPropertyChanged();
+			}
+		}
+
+		private bool applyToCrmSelectAll;
+
+		public bool ApplyToCrmSelectAll
+		{
+			get => applyToCrmSelectAll;
+			set
+			{
+				applyToCrmSelectAll = value;
+				Entities.ToList().ForEach(entity => entity.IsApplyToCrm = value);
 				OnPropertyChanged();
 			}
 		}
@@ -335,6 +373,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#endregion
 
 		private readonly MetadataCache metadataCache;
+		private readonly IDictionary<EntityProfilesHeader, List<EntityGridRow>> rowMap = new Dictionary<EntityProfilesHeader, List<EntityGridRow>>();
+		private List<EntityGridRow> rowList;
 
 		#region Property events
 
@@ -349,8 +389,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Init
 
-		public Filter(Window parentWindow, SettingsNew settings)
+		public Filter(Window parentWindow, Settings settings,
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
 		{
+			this.connectionManager = connectionManager;
+			this.metadataCacheManager = metadataCacheManager;
 			InitializeComponent();
 
 			Owner = parentWindow;
@@ -359,144 +402,125 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Entities = new ObservableCollection<EntityGridRow>();
 
 			Settings = settings;
-			metadataCache = MetadataCacheHelpers.GetMetadataCache(settings.ConnectionString);
+			metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			new Thread(() =>
-					   {
-						   try
-						   {
-							   EntityFilterList = Settings.EntityDataFilterArray;
-							   EntityFilter = EntityFilterList.GetSelectedFilter();
+			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
 
-							   ShowBusy("Fetching entity metadata ...");
-							   if (metadataCache.ProfileEntityMetadataCache.Any())
-							   {
-								   EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
-							   }
-							   else
-							   {
-								   RefreshEntityMetadata();
-							   }
+			new Thread(
+				() =>
+				{
+					try
+					{
+						EntityProfilesHeaderSelector = Settings.EntityProfilesHeaderSelector;
+						SelectedEntityProfilesHeader = EntityProfilesHeaderSelector.GetSelectedFilter();
 
-							   ShowBusy("Initialising ...");
-							   InitEntityList();
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
+							HeightProperty, originalProgressBarStyle);
+						if (metadataCache.ProfileEntityMetadataCache.Any())
+						{
+							EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
+						}
+						else
+						{
+							RefreshEntityMetadata();
+						}
 
-							   Dispatcher.Invoke(
-								   () =>
-								   {
-									   DataContext = this;
-									   CheckBoxEntitiesSelectAll.DataContext = this;
-									   CheckBoxMetadataSelectAll.DataContext = this;
-									   CheckBoxOptionsetLabelsSelectAll.DataContext = this;
-									   CheckBoxLookupLabelsSelectAll.DataContext = this;
-									   ComboBoxClearModeAll.DataContext = this;
-									   ComboBoxClearModeAll.SelectedIndex = -1;
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
+							HeightProperty, originalProgressBarStyle);
+						InitEntityList();
 
-									   TextBoxPrefix.DataContext = EntityFilter;
-									   TextBoxSuffix.DataContext = EntityFilter;
-									   CheckBoxIsDefault.DataContext = EntityFilter;
+						Dispatcher.Invoke(
+							() =>
+							{
+								DataContext = this;
+								CheckBoxEntitiesSelectAll.DataContext = this;
+								CheckBoxApplyToCrmSelectAll.DataContext = this;
+								CheckBoxMetadataSelectAll.DataContext = this;
+								CheckBoxOptionsetLabelsSelectAll.DataContext = this;
+								CheckBoxLookupLabelsSelectAll.DataContext = this;
+								ComboBoxClearModeAll.DataContext = this;
+								ComboBoxClearModeAll.SelectedIndex = -1;
 
-									   EntitiesGrid.ItemsSource = Entities;
+								TextBoxPrefix.DataContext = SelectedEntityProfilesHeader;
+								TextBoxSuffix.DataContext = SelectedEntityProfilesHeader;
 
-									   ComboBoxFilters.DataContext = EntityFilterList;
-									   ComboBoxFilters.DisplayMemberPath = "DisplayName";
-								   });
+								EntitiesGrid.ItemsSource = Entities;
 
-							   HideBusy();
-						   }
-						   catch (Exception ex)
-						   {
-							   PopException(ex);
-							   Dispatcher.InvokeAsync(Close);
-						   }
-					   }).Start();
+								ComboBoxFilters.DataContext = EntityProfilesHeaderSelector;
+								ComboBoxFilters.DisplayMemberPath = "DisplayName";
+							});
+
+						Status.HideBusy(Dispatcher, BusyIndicator);
+					}
+					catch (Exception ex)
+					{
+						Status.PopException(Dispatcher, ex);
+						Dispatcher.InvokeAsync(Close);
+					}
+				}).Start();
 		}
 
 		private void InitEntityList(List<string> filter = null)
 		{
 			Dispatcher.Invoke(Entities.Clear);
 
-			var rowList = new List<EntityGridRow>();
-
-			var filteredEntities = EntityMetadataCache
-				.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
-
-			foreach (var entity in filteredEntities)
+			if (!rowMap.TryGetValue(SelectedEntityProfilesHeader, out rowList))
 			{
-				var entityAsync = entity;
+				rowList = rowMap[SelectedEntityProfilesHeader] = new List<EntityGridRow>();
 
-				Dispatcher.Invoke(() =>
-								  {
-									  var dataFilter = EntityFilter.EntityFilterList
-										  .FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+				var filteredEntities = EntityMetadataCache
+					.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
 
-									  if (dataFilter == null)
-									  {
-										  dataFilter = new EntityDataFilter(entityAsync.LogicalName);
-										  EntityFilter.EntityFilterList.Add(dataFilter);
-									  }
+				foreach (var entity in filteredEntities)
+				{
+					var entityAsync = entity;
 
-									  var row = new EntityGridRow
-												{
-													IsSelected = !dataFilter.IsExcluded,
-													Name = entityAsync.LogicalName,
-													DisplayName =
-														entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-															? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
-															: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
-													Rename = dataFilter.EntityRename,
-													IsGenerateMeta = dataFilter.IsGenerateMeta,
-													IsOptionsetLabels = dataFilter.IsOptionsetLabels,
-													IsLookupLabels = dataFilter.IsLookupLabels,
-													ValueClearMode = dataFilter.ValueClearMode == null
-														? ClearModeEnumUi.Default
-														: (ClearModeEnumUi)dataFilter.ValueClearMode
-												};
+					Dispatcher.Invoke(
+						() =>
+						{
+							var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
+								.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
 
-									  row.PropertyChanged +=
-										  (sender, args) =>
-										  {
-											  if (args.PropertyName == "IsSelected")
-											  {
-												  dataFilter.IsExcluded = !row.IsSelected;
-											  }
-											  else if (args.PropertyName == "IsGenerateMeta")
-											  {
-												  dataFilter.IsGenerateMeta = row.IsGenerateMeta;
-											  }
-											  else if (args.PropertyName == "IsOptionsetLabels")
-											  {
-												  dataFilter.IsOptionsetLabels = row.IsOptionsetLabels;
-											  }
-											  else if (args.PropertyName == "IsLookupLabels")
-											  {
-												  dataFilter.IsLookupLabels = row.IsLookupLabels;
-											  }
-											  else if (args.PropertyName == "Rename")
-											  {
-												  dataFilter.EntityRename = row.Rename;
-											  }
-											  else if (args.PropertyName == "ValueClearMode")
-											  {
-												  switch (row.ValueClearMode)
-												  {
-													  case ClearModeEnumUi.Default:
-														  dataFilter.ValueClearMode = null;
-														  break;
+							if (entityProfile == null)
+							{
+								entityProfile = new EntityProfile(entityAsync.LogicalName);
+								SelectedEntityProfilesHeader.EntityProfiles.Add(entityProfile);
+							}
 
-													  default:
-														  dataFilter.ValueClearMode =
-															  (ClearModeEnum?)row.ValueClearMode;
-														  break;
-												  }
-											  }
-										  };
+							var row =
+								new EntityGridRow
+								{
+									EntityProfile = entityProfile,
+									IsSelected = !entityProfile.IsExcluded,
+									Name = entityAsync.LogicalName,
+									DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+										? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
+										: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
+									Rename = entityProfile.EntityRename,
+									IsApplyToCrm = entityProfile.IsApplyToCrm,
+									IsGenerateMeta = entityProfile.IsGenerateMeta,
+									IsOptionsetLabels = entityProfile.IsOptionsetLabels,
+									IsLookupLabels = entityProfile.IsLookupLabels,
+									ValueClearMode = entityProfile.ValueClearMode == null
+										? ClearModeEnumUi.Default
+										: (ClearModeEnumUi)entityProfile.ValueClearMode
+								};
 
-									  rowList.Add(row);
-								  });
+							row.PropertyChanged +=
+								(sender, args) =>
+								{
+									if (args.PropertyName == nameof(EntityProfile.IsApplyToCrm))
+									{
+										Dispatcher.InvokeAsync(() => CheckBoxIsDefault.IsChecked = rowList.Any(e => e.IsApplyToCrm));
+									}
+								};
+
+							rowList.Add(row);
+						});
+				}
 			}
 
 			foreach (var row in rowList.OrderByDescending(row => row.IsSelected).ThenBy(row => row.Name))
@@ -505,20 +529,22 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 
 			// if no filter, select all
-			if (EntityFilter.EntityFilterList.Count(e => !e.IsExcluded) == EntityMetadataCache.Count)
+			if (SelectedEntityProfilesHeader.EntityProfiles.Count(e => !e.IsExcluded) == EntityMetadataCache.Count)
 			{
 				Dispatcher.Invoke(() => EntitiesSelectAll = true);
 			}
 
-			if (EntityFilter.EntityFilterList.Count(e => e.IsOptionsetLabels) == EntityMetadataCache.Count)
+			if (SelectedEntityProfilesHeader.EntityProfiles.Count(e => e.IsOptionsetLabels) == EntityMetadataCache.Count)
 			{
 				Dispatcher.Invoke(() => IsOptionsetLabelsSelectAll = true);
 			}
 
-			if (EntityFilter.EntityFilterList.Count(e => e.IsLookupLabels) == EntityMetadataCache.Count)
+			if (SelectedEntityProfilesHeader.EntityProfiles.Count(e => e.IsLookupLabels) == EntityMetadataCache.Count)
 			{
 				Dispatcher.Invoke(() => IsLookupLabelsSelectAll = true);
 			}
+
+			Dispatcher.InvokeAsync(() => CheckBoxIsDefault.IsChecked = rowList.Any(e => e.IsApplyToCrm));
 		}
 
 		protected override void OnSourceInitialized(EventArgs e)
@@ -535,7 +561,32 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void SaveFilter()
 		{
-			ConfirmSingleDefault();
+			foreach (var row in rowMap.Values.SelectMany(e => e))
+			{
+				var entityProfile = row.EntityProfile;
+				entityProfile.IsExcluded = !row.IsSelected;
+				entityProfile.IsApplyToCrm = row.IsApplyToCrm;
+				entityProfile.IsGenerateMeta = row.IsGenerateMeta;
+				entityProfile.IsOptionsetLabels = row.IsOptionsetLabels;
+				entityProfile.IsLookupLabels = row.IsLookupLabels;
+				entityProfile.EntityRename = row.Rename;
+
+				switch (row.ValueClearMode)
+				{
+					case ClearModeEnumUi.Default:
+						entityProfile.ValueClearMode = null;
+						break;
+
+					default:
+						entityProfile.ValueClearMode = (ClearModeEnum?)row.ValueClearMode;
+						break;
+				}
+
+				if (entityProfile.IsApplyToCrm)
+				{
+					ConfirmSingleDefault(entityProfile);
+				}
+			}
 
 			foreach (var entityRow in Entities.Where(entity => entity.IsOptionsetLabels))
 			{
@@ -554,20 +605,20 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private void ConfirmSingleDefault()
+		private void ConfirmSingleDefault(EntityProfile entityProfile)
 		{
-			// make sure only one profile is the default
-			if (EntityFilter.IsDefault)
+			var duplicates =
+				EntityProfilesHeaderSelector.EntityProfilesHeaders
+					.SelectMany(e => e.EntityProfiles.Where(s => s.LogicalName == entityProfile.LogicalName && s.IsApplyToCrm))
+					.GroupBy(e => e.LogicalName)
+					.Where(e => e.Count() > 1);
+
+			foreach (var group in duplicates)
 			{
-				foreach (var entityFilter in EntityFilterList.EntityFilters
-					.Where(filter => filter.IsDefault && filter != EntityFilter))
+				for (var i = 1; i < group.Count(); i++)
 				{
-					entityFilter.IsDefault = false;
+					group.ElementAt(i).IsApplyToCrm = false;
 				}
-			}
-			else if (EntityFilterList.EntityFilters.Count(filter => filter.IsDefault) <= 0)
-			{
-				EntityFilter.IsDefault = true;
 			}
 		}
 
@@ -575,88 +626,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RefreshEntityMetadata()
 		{
-			MetadataHelpers.RefreshSettingsEntityMetadata(Settings);
+			MetadataHelpers.RefreshSettingsEntityMetadata(Settings, connectionManager, metadataCacheManager);
 			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
-		}
-
-		#endregion
-
-		#region Status stuff
-
-		private void PopException(Exception exception)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  var message = exception.Message
-				                                + (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
-				                  MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-				                  var error = "[ERROR] " + exception.Message
-				                              +
-				                              (exception.InnerException != null
-					                               ? "\n" + "[ERROR] " + exception.InnerException.Message
-					                               : "");
-				                  UpdateStatus(error, false);
-				                  UpdateStatus(exception.StackTrace, false);
-			                  });
-		}
-
-		private void ShowBusy(string message, double? progress = null)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = true;
-				                  BusyIndicator.BusyContent =
-					                  string.IsNullOrEmpty(message) ? "Please wait ..." : message;
-
-				                  if (progress == null)
-				                  {
-					                  BusyIndicator.ProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-				                  }
-				                  else
-				                  {
-					                  originalProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-
-					                  var style = new Style(typeof(ProgressBar));
-					                  style.Setters.Add(new Setter(HeightProperty, 15d));
-					                  style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
-					                  style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
-					                  BusyIndicator.ProgressBarStyle = style;
-				                  }
-			                  }, DispatcherPriority.Send);
-		}
-
-		private void HideBusy()
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = false;
-				                  BusyIndicator.BusyContent = "Please wait ...";
-			                  }, DispatcherPriority.Send);
-		}
-
-		internal void UpdateStatus(string message, bool working, bool allowBusy = true, bool newLine = true)
-		{
-			//Dispatcher.Invoke(() => SetEnabledChildren(Inputs, !working, "ButtonCancel"));
-
-			if (allowBusy)
-			{
-				if (working)
-				{
-					ShowBusy(message);
-				}
-				else
-				{
-					HideBusy();
-				}
-			}
-
-			if (!string.IsNullOrWhiteSpace(message))
-			{
-				Dispatcher.BeginInvoke(new Action(() => { Status.Update(message, newLine); }));
-			}
-
-			Application.DoEvents();
 		}
 
 		#endregion
@@ -732,7 +703,22 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			var d = (DependencyObject) e.OriginalSource;
 
-			if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
+			if (d != null && (IsCheckboxClickedParentCheck(d, "ApplyToCrm")
+			                  || IsCheckboxClickedChildrenCheck(d, "ApplyToCrm")))
+			{
+				// clicked on ApplyToCrm
+				var rowDataCast = (EntityGridRow) row.Item;
+				rowDataCast.IsApplyToCrm = !rowDataCast.IsApplyToCrm;
+
+				// selectAll value to false
+				var applyToCrmField = GetType().GetField("ApplyToCrmSelectAll",
+					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
+
+				applyToCrmField?.SetValue(this, false);
+
+				OnPropertyChanged("ApplyToCrmSelectAll");
+			}
+			else if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
 			                  || IsCheckboxClickedChildrenCheck(d, "GenerateMeta")))
 			{
 				// clicked on meta
@@ -888,7 +874,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 					// get logical name and re-init
 					LogicalName = rowData.Name;
-					new FilterDetails(this, LogicalName, Settings, Entities, CheckBoxIsDefault.IsChecked == true)
+					new FilterDetails(this, LogicalName, Settings, Entities, connectionManager, metadataCacheManager)
 						.ShowDialog();
 				}
 
@@ -897,7 +883,22 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			var d = (DependencyObject) e.OriginalSource;
 
-			if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
+			if (d != null && (IsCheckboxClickedParentCheck(d, "ApplyToCrm")
+			                  || IsCheckboxClickedChildrenCheck(d, "ApplyToCrm")))
+			{
+				// clicked on ApplyToCrm
+				var rowDataCast = (EntityGridRow) rowData;
+				rowDataCast.IsApplyToCrm = !rowDataCast.IsApplyToCrm;
+
+				// selectAll value to false
+				var applyToCrmField = GetType().GetField("ApplyToCrmSelectAll",
+					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
+
+				applyToCrmField?.SetValue(this, false);
+
+				OnPropertyChanged("ApplyToCrmSelectAll");
+			}
+			else if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
 			                  || IsCheckboxClickedChildrenCheck(d, "GenerateMeta")))
 			{
 				// clicked on meta
@@ -963,7 +964,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			var rowQ = e.Row;
 			var rowDataQ = (GridRow) rowQ.Item;
 
-			if (EntityDataFilter != null && rowDataQ.Name == EntityDataFilter.LogicalName)
+			if (EntityProfile != null && rowDataQ.Name == EntityProfile.LogicalName)
 			{
 				Extensions.SetBang(rowQ, true);
 			}
@@ -1175,49 +1176,46 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ComboBoxFilters_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			SaveFilter();
+			EntityProfile = null;
+			SelectedEntityProfilesHeader = EntityProfilesHeaderSelector.GetSelectedFilter();
 
-			EntityDataFilter = null;
-			EntityFilter = EntityFilterList.GetSelectedFilter();
-
-			TextBoxPrefix.DataContext = EntityFilter;
-			TextBoxSuffix.DataContext = EntityFilter;
-			CheckBoxIsDefault.DataContext = EntityFilter;
+			TextBoxPrefix.DataContext = SelectedEntityProfilesHeader;
+			TextBoxSuffix.DataContext = SelectedEntityProfilesHeader;
 
 			InitEntityList();
 		}
 
 		private void ButtonNewFilter_Click(object sender, RoutedEventArgs e)
 		{
-			var newFilter = new EntityFilter();
-			EntityFilterList.EntityFilters.Add(newFilter);
-			EntityFilterList.SelectedFilterIndex = EntityFilterList.EntityFilters.IndexOf(newFilter);
+			var newFilter = new EntityProfilesHeader();
+			EntityProfilesHeaderSelector.EntityProfilesHeaders.Add(newFilter);
+			EntityProfilesHeaderSelector.SelectedFilterIndex = EntityProfilesHeaderSelector.EntityProfilesHeaders.IndexOf(newFilter);
 		}
 
 		private void ButtonDuplicateFilter_Click(object sender, RoutedEventArgs e)
 		{
-			var newFilter = EntityFilter.Copy();
+			var newFilter = SelectedEntityProfilesHeader.Copy();
 			newFilter.Prefix = "";
 			newFilter.Suffix = "Contract";
 
-			EntityFilterList.EntityFilters.Add(newFilter);
+			EntityProfilesHeaderSelector.EntityProfilesHeaders.Add(newFilter);
 			DteHelper.ShowInfo("The selected profile has been duplicated, and the new profile has been selected instead.",
 				"Profile duplicated.");
-			EntityFilterList.SelectedFilterIndex = EntityFilterList.EntityFilters.Count - 1;
+			EntityProfilesHeaderSelector.SelectedFilterIndex = EntityProfilesHeaderSelector.EntityProfilesHeaders.Count - 1;
 		}
 
 		private void ButtonDeleteFilter_Click(object sender, RoutedEventArgs e)
 		{
-			if (EntityFilterList.EntityFilters.Count <= 1)
+			if (EntityProfilesHeaderSelector.EntityProfilesHeaders.Count <= 1)
 			{
-				PopException(new Exception("Can't delete the last filter profile."));
+				Status.PopException(Dispatcher, new Exception("Can't delete the last filter profile."));
 				return;
 			}
 
 			if (DteHelper.IsConfirmed("Are you sure you want to delete this filter profile? This will affect other entities!",
 				"Confirm delete action ..."))
 			{
-				EntityFilterList.EntityFilters.Remove(EntityFilterList.GetSelectedFilter());
+				EntityProfilesHeaderSelector.EntityProfilesHeaders.Remove(EntityProfilesHeaderSelector.GetSelectedFilter());
 			}
 		}
 
@@ -1256,9 +1254,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// get entity names that match any regex from the fetched list
 				if (DisplayFilter)
 				{
-					var defaultFiltered = Settings.EntityDataFilterArray.EntityFilters
-						.Where(filter => filter.IsDefault)
-						.SelectMany(filter => filter.EntityFilterList).ToArray();
+					var defaultFiltered = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
+						.SelectMany(s => s.EntityProfiles.Where(e => e.IsApplyToCrm)).ToArray();
 
 					customEntities =
 						EntityMetadataCache
@@ -1290,25 +1287,27 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 
 			// filter entities
-			new Thread(() =>
-			           {
-				           try
-				           {
-					           ShowBusy("Filtering ...");
+			new Thread(
+				() =>
+				{
+					try
+					{
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...",
+							HeightProperty, originalProgressBarStyle);
 
-					           InitEntityList(customEntities?.ToList());
+						InitEntityList(customEntities?.ToList());
 
-					           //Dispatcher.Invoke(() => { DataContext = this; });
-					           Dispatcher.Invoke(() => TextBoxFilter.Focus());
-					           
-					           HideBusy();
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-					           Dispatcher.InvokeAsync(Close);
-				           }
-			           }).Start();
+						//Dispatcher.Invoke(() => { DataContext = this; });
+						Dispatcher.Invoke(() => TextBoxFilter.Focus());
+
+						Status.HideBusy(Dispatcher, BusyIndicator);
+					}
+					catch (Exception ex)
+					{
+						Status.PopException(Dispatcher, ex);
+						Dispatcher.InvokeAsync(Close);
+					}
+				}).Start();
 		}
 
 		#endregion
@@ -1322,36 +1321,36 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Dispatcher.InvokeAsync(Close);
 		}
 
-		//private void Cancel_Click(object sender, RoutedEventArgs e)
-		//{
-		//	stillOpen = false;
-		//	Dispatcher.InvokeAsync(Close);
-		//}
+		private void Cancel_Click(object sender, RoutedEventArgs e)
+		{
+			StillOpen = false;
+			Dispatcher.InvokeAsync(Close);
+		}
 
 		private void ButtonRefresh_Click(object sender, RoutedEventArgs e)
 		{
-			new Thread(() =>
-			           {
-				           try
-				           {
-					           ShowBusy("Saving ...");
-					           SaveFilter();
+			new Thread(
+				() =>
+				{
+					try
+					{
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
+							HeightProperty, originalProgressBarStyle);
+						RefreshEntityMetadata();
 
-					           ShowBusy("Fetching entity metadata ...");
-					           RefreshEntityMetadata();
-
-					           ShowBusy("Initialising ...");
-					           InitEntityList();
-				           }
-				           catch (Exception ex)
-				           {
-					           PopException(ex);
-				           }
-				           finally
-				           {
-					           HideBusy();
-				           }
-			           }).Start();
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
+							HeightProperty, originalProgressBarStyle);
+						InitEntityList();
+					}
+					catch (Exception ex)
+					{
+						Status.PopException(Dispatcher, ex);
+					}
+					finally
+					{
+						Status.HideBusy(Dispatcher, BusyIndicator);
+					}
+				}).Start();
 		}
 
 		#endregion

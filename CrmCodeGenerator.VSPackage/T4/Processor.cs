@@ -1,12 +1,8 @@
-﻿using CrmCodeGenerator.VSPackage.Model;
+﻿using System.Linq;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.TextTemplating;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Yagasoft.CrmCodeGenerator.Models.Mapper;
 
 namespace CrmCodeGenerator.VSPackage.T4
 {
@@ -75,7 +71,6 @@ namespace CrmCodeGenerator.VSPackage.T4
 
 
             // Write the processed output to file:
-            // UpdateStatus("Writing......", true);
             System.IO.File.WriteAllText(OutputFullPath, result, cb.OutputEncoding);
 
             // Append any error messages:

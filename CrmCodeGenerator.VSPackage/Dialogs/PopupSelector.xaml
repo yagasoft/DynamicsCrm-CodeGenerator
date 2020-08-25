@@ -1,12 +1,12 @@
 ﻿<Window x:Class="CrmCodeGenerator.VSPackage.Dialogs.PopupSelector"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
-        xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="d"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:controls="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
+        mc:Ignorable="d"
         Title="Selector" SizeToContent="WidthAndHeight" Loaded="Window_Loaded" WindowStartupLocation="Manual"
         ResizeMode="NoResize" ShowInTaskbar="False"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent" BorderThickness="1"
@@ -24,7 +24,7 @@
         </StackPanel.Effect>        
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0">
             <Button x:Name="Ok" Click="Close_Click" Content="X" BorderThickness="1" Padding="10 6 10 6" />
-            <control:MultiSelectComboBox x:Name="Actions" Width="285"
+            <controls:MultiSelectComboBox x:Name="Actions" Width="285"
                                          ItemsSource="{Binding Data, Mode=TwoWay}"
                                          SelectedItems="{Binding SelectedData, Mode=TwoWay}"
                                          ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />

@@ -1,11 +1,10 @@
 ﻿<Window x:Class="CrmCodeGenerator.VSPackage.Dialogs.FilterDetails"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:control="clr-namespace:CrmCodeGenerator.Controls;assembly=CrmCodeGenerator.Controls"
-        xmlns:converter="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
-        xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
+        xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
+        xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
         Title="{Binding WindowTitle}" Width="1360" Height="670" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner"
             ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
@@ -31,7 +30,7 @@
         <Style TargetType="ComboBox">
             <Setter Property="Margin" Value="0,0,0,0" />
         </Style>
-        <converter:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
         <Style TargetType="{x:Type DataGridCell}">
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridCell_PreviewMouseLeftButtonDown" />
             <Style.Triggers>

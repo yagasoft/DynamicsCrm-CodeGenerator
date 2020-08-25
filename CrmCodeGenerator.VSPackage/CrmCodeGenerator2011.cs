@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CrmCodeGenerator.VSPackage.Dialogs;
 using CrmCodeGenerator.VSPackage.Helpers;
-using CrmCodeGenerator.VSPackage.Model;
 using CrmCodeGenerator.VSPackage.T4;
 using EnvDTE80;
 using Microsoft.VisualStudio;
@@ -17,6 +16,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.TextTemplating;
 using Microsoft.VisualStudio.TextTemplating.VSHost;
+using Yagasoft.CrmCodeGenerator.Models.Mapper;
 using Yagasoft.Libraries.Common;
 //using VSLangProj80;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
@@ -117,25 +117,11 @@ namespace CrmCodeGenerator.VSPackage
 
 			if (File.Exists(file))
 			{
-				var isMigrate = DteHelper.IsConfirmed("Pre-v7 settings found, which will be converted to the current format.\r\n\r\n"
-					+ "Only the LAST selected profile will be migrated -- all other profiles will be DELETED.\r\n\r\n"
-					+ "If unsure, reinstall pre-v7 Generator and select the profile you would like migrated,"
-					+ " and then upgrade again.\r\n\r\n"
-					+ "Would you like to proceed?",
+				DteHelper.ShowInfo("Pre-v7 settings found, which needs to be converted to the current format.\r\n\r\n"
+					+ "Install pre-v8.2 Generator and select the profile you would like migrated,"
+					+ " and then upgrade again."
+					+ "v8.1.3 download link can be found in the changelog of this extension on Visual Studio Marketplace.",
 					">> WARNING << Settings Migration");
-
-				if (isMigrate)
-				{
-					isMigrate = DteHelper.IsConfirmed("Only the LAST selected profile will be migrated"
-						+ " -- all other profiles will be DELETED.\r\n\r\n"
-						+ "Are you sure?",
-						">> WARNING << Settings Migration");
-				}
-
-				if (!isMigrate)
-				{
-					return Cancel(wszInputFilePath, rgbOutputFileContents, out pcbOutput);
-				}
 			}
 
 			var m = new Login(dte);

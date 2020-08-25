@@ -69,10 +69,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CrmPluginEntities, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f00b02ab6a0604d4, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\lib\CrmPluginEntities.dll</HintPath>
-    </Reference>
     <Reference Include="envdte, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
@@ -329,7 +325,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Xrm.Client, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.5\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.7\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.2.26\lib\net462\Microsoft.Xrm.Sdk.dll</HintPath>
@@ -417,10 +413,10 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Yagasoft.Libraries.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.Common.2.2.5\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.Common.2.2.6\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
     </Reference>
     <Reference Include="Yagasoft.Libraries.EnhancedOrgService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.5\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.7\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -444,7 +440,9 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cache\MetadataCacheManager.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Connection\DisposableOrgSvc.cs" />
     <Compile Include="Dialogs\AddTemplate.xaml.cs">
       <DependentUpon>AddTemplate.xaml</DependentUpon>
     </Compile>
@@ -470,13 +468,9 @@
     <Compile Include="Dialogs\Login.xaml.cs">
       <DependentUpon>Login.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Helpers\BlockingQueue.cs" />
-    <Compile Include="Helpers\ConnectionHelper.cs" />
+    <Compile Include="Connection\ConnectionManager.cs" />
     <Compile Include="Helpers\DteHelper.cs" />
-    <Compile Include="Helpers\MetadataHelpers.cs" />
     <Compile Include="Helpers\IEnumerablesExtensions.cs" />
-    <Compile Include="Helpers\MetadataCacheHelpers.cs" />
-    <Compile Include="Helpers\NamingHelper.cs" />
     <Compile Include="Helpers\PropertyBagExtensions.cs" />
     <Compile Include="Guids.cs" />
     <Compile Include="Helpers\SimpleAES.cs" />
@@ -484,30 +478,12 @@
     <Compile Include="Helpers\StreamEater.cs" />
     <Compile Include="Helpers\WindowExtensions.cs" />
     <Compile Include="Helpers\WpfHelper.cs" />
-    <Compile Include="Mapper.cs" />
-    <Compile Include="MapperEventArgs.cs" />
     <Compile Include="Model\Constants.cs" />
-    <Compile Include="Model\Context.cs" />
-    <Compile Include="Model\CrmAttribute.cs" />
     <Compile Include="Model\CrmAttribute.Extensions.cs" />
-    <Compile Include="Model\EntityFilter.cs" />
-    <Compile Include="Model\EntityFilterArray.cs" />
-    <Compile Include="Model\MappingAction.cs" />
-    <Compile Include="Model\MappingEntity.cs" />
-    <Compile Include="Model\MappingLookup.cs" />
-    <Compile Include="Model\MappingImage.cs" />
-    <Compile Include="Model\MappingEnum.cs" />
-    <Compile Include="Model\MappingField.cs" />
-    <Compile Include="Model\MappingRelationship1N.cs" />
-    <Compile Include="Model\MappingRelationshipMN.cs" />
-    <Compile Include="Model\MappingRelationshipN1.cs" />
-    <Compile Include="Model\MetadataCacheArray.cs" />
-    <Compile Include="Model\MetadataCache.cs" />
-    <Compile Include="Model\SettingsArray.cs" />
-    <Compile Include="Model\Settings.cs" />
-    <Compile Include="Model\SettingsNew.cs" />
-    <Compile Include="Helpers\Helper.cs" />
     <Compile Include="CrmCodeGenerator2011.cs" />
+    <Compile Include="Model\OldSettings\EntityFilter.cs" />
+    <Compile Include="Model\OldSettings\EntityFilterArray.cs" />
+    <Compile Include="Model\OldSettings\SettingsNew.cs" />
     <Compile Include="ProviderSolutionProps.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -662,7 +638,12 @@
       <Project>{ce17a54e-0661-429f-afdc-272e8668b14e}</Project>
       <Name>CrmCodeGenerator.Controls</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Yagasoft.CrmCodeGenerator\Yagasoft.CrmCodeGenerator.csproj">
+      <Project>{5d60d484-014f-4be1-9642-a7904604541a}</Project>
+      <Name>Yagasoft.CrmCodeGenerator</Name>
+    </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <UseCodebase>true</UseCodebase>
   </PropertyGroup>

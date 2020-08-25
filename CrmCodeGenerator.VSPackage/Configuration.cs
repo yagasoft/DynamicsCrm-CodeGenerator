@@ -1,19 +1,22 @@
 ﻿#region Imports
 
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using CrmCodeGenerator.VSPackage.Helpers;
-using CrmCodeGenerator.VSPackage.Model;
 using EnvDTE;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Newtonsoft.Json;
+using Yagasoft.CrmCodeGenerator;
+using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Models.Cache;
+using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using Constants = CrmCodeGenerator.VSPackage.Model.Constants;
 using Thread = System.Threading.Thread;
@@ -28,7 +31,7 @@ namespace CrmCodeGenerator.VSPackage
 
 		public static string FileName;
 
-		public static SettingsNew LoadSettings()
+		public static Settings LoadSettings()
 		{
 			string connectionString = null;
 
@@ -50,21 +53,26 @@ namespace CrmCodeGenerator.VSPackage
 					Status.Update($"\tReading content ...");
 
 					var fileContent = File.ReadAllText(file);
-					var settings = JsonConvert.DeserializeObject<SettingsNew>(fileContent,
+					var settings = JsonConvert.DeserializeObject<Settings>(fileContent,
 						new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
+
+					if (settings.EntityProfilesHeaderSelector == null)
+					{
+						var oldSettings = JsonConvert.DeserializeObject<Model.OldSettings.Settings>(fileContent,
+							new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
+
+						if (oldSettings.EntityDataFilterArray != null)
+						{
+							Status.Update($"\tMigrating old JSON settings ...");
+							MigrateOldSettings(settings, oldSettings);
+						}
+					}
+
 					settings.ConnectionString = connectionString ?? settings.ConnectionString;
 
 					Status.Update(">>> Finished loading settings.");
 
 					return settings;
-				}
-
-				file = $@"{baseFileName}.dat";
-
-				if (File.Exists(file))
-				{
-					Status.Update("\tMigrating to new settings format ... ");
-					return MigrateSettings(file, project);
 				}
 
 				Status.Update("\tSettings file does not exist.");
@@ -82,6 +90,53 @@ namespace CrmCodeGenerator.VSPackage
 			return newSettings;
 		}
 
+		private static void MigrateOldSettings(Settings settings, Model.OldSettings.Settings oldSettings)
+		{
+			settings.EntityProfilesHeaderSelector =
+				new EntityProfilesHeaderSelector
+				{
+					SelectedFilterIndex = oldSettings.EntityDataFilterArray.SelectedFilterIndex,
+					EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader>(oldSettings
+						.EntityDataFilterArray.EntityFilters
+						.Select(ef =>
+						new EntityProfilesHeader
+						{
+							Prefix = ef.Prefix,
+							Suffix = ef.Suffix,
+							EntityProfiles = ef
+								.EntityFilterList
+								.Select(efl =>
+								new EntityProfile(efl.LogicalName)
+								{
+									IsApplyToCrm = ef.IsDefault,
+									Attributes = efl.Attributes,
+									AttributeLanguages = efl.AttributeLanguages,
+									AttributeRenames = efl.AttributeRenames,
+									ClearFlag = efl.ClearFlag,
+									EnglishLabelField = efl.EnglishLabelField,
+									EntityRename = efl.EntityRename,
+									IsExcluded = efl.IsExcluded,
+									IsGenerateMeta = efl.IsGenerateMeta,
+									IsLookupLabels = efl.IsLookupLabels,
+									IsOptionsetLabels = efl.IsOptionsetLabels,
+									LogicalName = efl.LogicalName,
+									NToN = efl.NToN,
+									NToNReadOnly = efl.NToNReadOnly,
+									NToNRenames = efl.NToNRenames,
+									NToOne = efl.NToOne,
+									NToOneFlatten = efl.NToOneFlatten,
+									NToOneReadOnly = efl.NToOneReadOnly,
+									NToOneRenames = efl.NToOneRenames,
+									OneToN = efl.OneToN,
+									OneToNReadOnly = efl.OneToNReadOnly,
+									OneToNRenames = efl.OneToNRenames,
+									ReadOnly = efl.ReadOnly,
+									ValueClearMode = (ClearModeEnum?)efl.ValueClearMode
+								}).ToList()
+						}))
+				};
+		}
+
 		private static string LoadConnection(string baseFileName)
 		{
 			var file = $@"{baseFileName}-Connection.dat";
@@ -97,14 +152,14 @@ namespace CrmCodeGenerator.VSPackage
 			var fileContent = File.ReadAllText(file);
 			var connectionString = Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
 
-			Status.Update($"\tConnection string: {ConnectionHelper.SecureConnectionString(connectionString)}");
+			Status.Update($"\tConnection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 
 			return connectionString;
 		}
 
-		private static SettingsNew CreateNewSettings(string connectionString)
+		private static Settings CreateNewSettings(string connectionString)
 		{
-			var newSettings = new SettingsNew();
+			var newSettings = new Settings();
 
 			if (connectionString.IsFilled())
 			{
@@ -119,87 +174,6 @@ namespace CrmCodeGenerator.VSPackage
 					newSettings.ConnectionString = cache.LatestUsedConnectionString;
 				}
 			}
-
-			return newSettings;
-		}
-
-		private static SettingsNew MigrateSettings(string file, Project project)
-		{
-			// get latest file if in TFS
-			try
-			{
-				var workspaceInfo = Workstation.Current.GetLocalWorkspaceInfo(file);
-
-				if (workspaceInfo != null)
-				{
-					var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
-					var workspace = workspaceInfo.GetWorkspace(server);
-
-					var pending = workspace.GetPendingChanges(new[] { file });
-
-					if (!pending.Any())
-					{
-						workspace.Get(new[] { file }, VersionSpec.Latest, RecursionType.Full, GetOptions.GetAll | GetOptions.Overwrite);
-						Status.Update("\tRetrieved latest settings file from TFS' current workspace.");
-					}
-				}
-			}
-			catch (Exception)
-			{
-				// ignored
-			}
-
-			SettingsArray settings;
-
-			//Open the file written above and read values from it.
-			using (var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read))
-			{
-				var bformatter = new BinaryFormatter { Binder = new Binder() };
-				stream.Position = 0;
-				var settingsObject = bformatter.Deserialize(stream);
-
-				if (settingsObject is SettingsArray array)
-				{
-					settings = array;
-				}
-				else
-				{
-					throw new Exception("\tInvalid settings format.");
-				}
-
-				Status.Update("\tFinished reading settings file.");
-			}
-
-			Status.Update("\tConverting settings ...");
-
-			var selectedSettings = settings.GetSelectedSettings();
-			selectedSettings.EntityMetadataCache = null;
-			selectedSettings.LookupEntitiesMetadataCacheSerialised = null;
-			selectedSettings.ProfileEntityMetadataCacheSerialised = null;
-			selectedSettings.ProfileAttributeMetadataCacheSerialised = null;
-			selectedSettings.Context = null;
-			selectedSettings.Folder = "";
-			selectedSettings.Template = "";
-
-			var serialisedSettings = JsonConvert.SerializeObject(selectedSettings);
-			var newSettings = JsonConvert.DeserializeObject<SettingsNew>(serialisedSettings);
-
-			newSettings.ConnectionString = selectedSettings.GetOrganizationCrmConnectionString();
-
-			SaveSettings(newSettings);
-
-			Status.Update("\tDeleting old settings file ...");
-
-			foreach (var item in project.ProjectItems.Cast<ProjectItem>().Where(item => item.Name == Path.GetFileName(file)))
-			{
-				item.Delete();
-			}
-
-			project.Save();
-
-			Status.Update("\tFinished deleting old settings file.");
-
-			Status.Update(">>> Finished loading settings.");
 
 			return newSettings;
 		}
@@ -281,7 +255,7 @@ namespace CrmCodeGenerator.VSPackage
 			}
 		}
 
-		public static void SaveSettings(SettingsNew settings)
+		public static void SaveSettings(Settings settings)
 		{
 			Status.Update("Writing settings ... ");
 
@@ -328,7 +302,7 @@ namespace CrmCodeGenerator.VSPackage
 			Status.Update(">>> Finished writing settings.");
 		}
 
-		private static void SaveConnection(SettingsNew settings, string baseFileName)
+		private static void SaveConnection(Settings settings, string baseFileName)
 		{
 			var file = $@"{baseFileName}-Connection.dat";
 			var connectionString = settings.ConnectionString;
@@ -349,7 +323,7 @@ namespace CrmCodeGenerator.VSPackage
 			var encodedString = Convert.ToBase64String(Encoding.UTF8.GetBytes(settings.ConnectionString));
 			File.WriteAllText(file, encodedString);
 
-			Status.Update($"\tConnection string: {ConnectionHelper.SecureConnectionString(connectionString)}");
+			Status.Update($"\tConnection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 		}
 
 		private static void CheckoutTfs(string file)
@@ -378,13 +352,13 @@ namespace CrmCodeGenerator.VSPackage
 			Status.Update("\tChecked out settings file from TFS' current workspace.");
 		}
 
-		private static void CleanSettings(SettingsNew settings)
+		private static void CleanSettings(Settings settings)
 		{
 			var isThorough = settings.IsCleanSave;
 
-			foreach (var filter in settings.EntityDataFilterArray.EntityFilters)
+			foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
 			{
-				var list = filter.EntityFilterList.ToArray();
+				var list = filter.EntityProfiles.ToArray();
 
 				for (var i = list.Length - 1; i >= 0; i--)
 				{
@@ -392,16 +366,17 @@ namespace CrmCodeGenerator.VSPackage
 
 					if (dataFilter.IsExcluded && isThorough)
 					{
-						filter.EntityFilterList.RemoveAt(i);
+						filter.EntityProfiles.RemoveAt(i);
 						continue;
 					}
 
 					var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
+					var isIsApplyToCrmFilled = dataFilter.IsApplyToCrm;
 					var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
 					var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
 					var isIsLookupLabelsFilled = dataFilter.IsLookupLabels;
 					var isValueClearModeFilled = dataFilter.ValueClearMode != null;
-					var isIsExcludedFilled = !dataFilter.IsExcluded;
+					var isIsIncludeFilled = !dataFilter.IsExcluded;
 					var isEnglishLabelFieldFilled = dataFilter.EnglishLabelField.IsFilled();
 					var isIsFilteredFilled = dataFilter.IsFiltered;
 					var isAttributesFilled = dataFilter.Attributes?.Any() == true;
@@ -419,11 +394,13 @@ namespace CrmCodeGenerator.VSPackage
 					var isNToNFilled = dataFilter.NToN?.Any() == true;
 					var isNToNRenamesFilled = dataFilter.NToNRenames?.Any() == true;
 					var isNToNReadOnlyFilled = dataFilter.NToNReadOnly?.Any() == true;
-					var isImmediateExclude =
-						isThorough && !filter.IsDefault && !isAttributesFilled && !isOneToNFilled && !isNToOneFilled && !isNToNFilled;
 
-					var isKeepFilter = isEntityRenameFilled || isIsGenerateMetaFilled || isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
-						|| isValueClearModeFilled || isIsExcludedFilled || isEnglishLabelFieldFilled || isIsFilteredFilled;
+					var isImmediateExclude =
+						isThorough && !isIsApplyToCrmFilled && !isAttributesFilled && !isOneToNFilled && !isNToOneFilled && !isNToNFilled;
+
+					var isKeepFilter = isEntityRenameFilled || isIsApplyToCrmFilled || isIsGenerateMetaFilled
+						|| isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
+						|| isValueClearModeFilled || isIsIncludeFilled || isEnglishLabelFieldFilled || isIsFilteredFilled;
 
 					isKeepFilter = isKeepFilter
 						|| (!isImmediateExclude
@@ -433,7 +410,7 @@ namespace CrmCodeGenerator.VSPackage
 
 					if (!isKeepFilter)
 					{
-						filter.EntityFilterList.RemoveAt(i);
+						filter.EntityProfiles.RemoveAt(i);
 					}
 					else if (isThorough)
 					{

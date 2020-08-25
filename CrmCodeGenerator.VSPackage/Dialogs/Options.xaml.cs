@@ -1,30 +1,25 @@
 ﻿#region Imports
 
 using System;
-using System.CodeDom;
-using System.Collections;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
-using CrmCodeGenerator.VSPackage.Model;
-using Microsoft.Xrm.Sdk;
-using Microsoft.Xrm.Sdk.Messages;
-using Microsoft.Xrm.Sdk.Metadata.Query;
-using Microsoft.Xrm.Sdk.Query;
+using Yagasoft.CrmCodeGenerator;
+using Yagasoft.CrmCodeGenerator.Cache.Metadata;
+using Yagasoft.CrmCodeGenerator.Connection;
+using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
+using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Application = System.Windows.Forms.Application;
-using MultiSelectComboBoxClass = CrmCodeGenerator.Controls.MultiSelectComboBox;
 
 #endregion
 
@@ -35,6 +30,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	/// </summary>
 	public partial class Options : INotifyPropertyChanged
 	{
+		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly MetadataCacheManagerBase metadataCacheManager;
+
 		#region Hide close button stuff
 
 		private const int GWL_STYLE = -16;
@@ -50,7 +48,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Properties
 
-		public SettingsNew Settings { get; set; }
+		public Settings Settings { get; set; }
 
 		public ObservableCollection<string> GlobalActionNames
 		{
@@ -106,9 +104,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#region Init
 
-		public Options(Window parentWindow, SettingsNew settings)
+		public Options(Window parentWindow, Settings settings,
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
 		{
 			InitializeComponent();
+
+			this.connectionManager = connectionManager;
+			this.metadataCacheManager = metadataCacheManager;
 
 			Owner = parentWindow;
 			Settings = settings;
@@ -116,6 +118,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
+			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
+
 			// hide close button
 			var hwnd = new WindowInteropHelper(this).Handle;
 			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
@@ -138,86 +142,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		#region Status stuff
-
-		private void PopException(Exception exception)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  var message = exception.Message
-				                                + (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
-				                  MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
-
-				                  var error = "[ERROR] " + exception.Message
-				                              +
-				                              (exception.InnerException != null
-					                               ? "\n" + "[ERROR] " + exception.InnerException.Message
-					                               : "");
-				                  UpdateStatus(error, false);
-				                  UpdateStatus(exception.StackTrace, false);
-			                  });
-		}
-
-		private void ShowBusy(string message, double? progress = null)
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = true;
-				                  BusyIndicator.BusyContent =
-					                  string.IsNullOrEmpty(message) ? "Please wait ..." : message;
-
-				                  if (progress == null)
-				                  {
-					                  BusyIndicator.ProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-				                  }
-				                  else
-				                  {
-					                  originalProgressBarStyle = originalProgressBarStyle ?? BusyIndicator.ProgressBarStyle;
-
-					                  var style = new Style(typeof (ProgressBar));
-					                  style.Setters.Add(new Setter(HeightProperty, 15d));
-					                  style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
-					                  style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
-					                  BusyIndicator.ProgressBarStyle = style;
-				                  }
-			                  }, DispatcherPriority.Send);
-		}
-
-		private void HideBusy()
-		{
-			Dispatcher.Invoke(() =>
-			                  {
-				                  BusyIndicator.IsBusy = false;
-				                  BusyIndicator.BusyContent = "Please wait ...";
-			                  }, DispatcherPriority.Send);
-		}
-
-		internal void UpdateStatus(string message, bool working, bool allowBusy = true, bool newLine = true)
-		{
-			//Dispatcher.Invoke(() => SetEnabledChildren(Inputs, !working, "ButtonCancel"));
-
-			if (allowBusy)
-			{
-				if (working)
-				{
-					ShowBusy(message);
-				}
-				else
-				{
-					HideBusy();
-				}
-			}
-
-			if (!string.IsNullOrWhiteSpace(message))
-			{
-				Dispatcher.BeginInvoke(new Action(() => { Status.Update(message, newLine); }));
-			}
-
-			Application.DoEvents();
-		}
-
-		#endregion
-
 		#region UI events
 
 		private void LoadGlobalActions_Click(object sender, RoutedEventArgs e)
@@ -227,8 +151,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						ShowBusy("Loading Global Actions ...");
-						var actions = MetadataHelpers.RetrieveActionNames(Settings).ToArray();
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Loading Global Actions ...",
+							HeightProperty, originalProgressBarStyle);
+						var actions = MetadataHelpers.RetrieveActionNames(Settings, connectionManager, metadataCacheManager).ToArray();
 						Dispatcher.Invoke(
 							() =>
 							{
@@ -240,11 +165,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					}
 					catch (Exception ex)
 					{
-						PopException(ex);
+						Status.PopException(Dispatcher, ex);
 					}
 					finally
 					{
-						HideBusy();
+						Status.HideBusy(Dispatcher, BusyIndicator);
 					}
 				}).Start();
 		}

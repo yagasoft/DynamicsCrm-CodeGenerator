@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using Microsoft.VisualStudio.OLE.Interop;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {

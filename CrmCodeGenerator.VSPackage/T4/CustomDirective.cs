@@ -2,8 +2,8 @@
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.VisualStudio.TextTemplating;
 using System.Runtime.Remoting.Messaging;
+using Microsoft.VisualStudio.TextTemplating;
 
 namespace CrmCodeGenerator.VSPackage.T4
 {
