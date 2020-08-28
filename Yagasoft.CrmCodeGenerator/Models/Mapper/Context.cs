@@ -42,6 +42,8 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapper
 
 		public EntityProfilesHeaderSelector EntityProfilesHeaderSelector { get; set; }
 
+		public List<EntityProfile> CrmEntityProfiles { get; set; }
+
 		public List<EntityProfile> EntityProfileList { get; set; }
 
 		public List<string> PluginMetadataEntities { get; set; }
@@ -56,6 +58,8 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapper
 		}
 
 		public List<string> JsEarlyBoundEntities { get; set; }
+
+		public List<string> EarlyBoundFilteredSelected { get; set; }
 
 		public IDictionary<string, string[]> SelectedActions { get; set; }
 

@@ -16,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Cache.Metadata;
@@ -56,194 +57,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 	#region Row classes
 
-	public class GridRow : INotifyPropertyChanged
-	{
-		protected EntityProfile entityProfile;
-		protected bool isSelected;
-		protected string rename;
-
-		public bool IsReadOnlyEnabled
-		{
-			get; set;
-		}
-
-		public EntityProfile EntityProfile
-		{
-			get => entityProfile;
-			set
-			{
-				entityProfile = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public bool IsSelected
-		{
-			get => isSelected;
-			set
-			{
-				isSelected = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public string Name { get; set; }
-
-		public string Rename
-		{
-			get => rename;
-			set
-			{
-				rename = value;
-				OnPropertyChanged();
-			}
-		}
-
-		private bool isReadOnly;
-
-		public bool IsReadOnly
-		{
-			get => isReadOnly;
-			set
-			{
-				isReadOnly = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-	}
-
-	public class FieldGridRow : GridRow
-	{
-		public string DisplayName { get; set; }
-		public string Language { get; set; }
-
-		public bool IsClearFlagEnabled => IsReadOnlyEnabled;
-
-		private bool isClearFlag;
-
-		public bool IsClearFlag
-		{
-			get => isClearFlag;
-			set
-			{
-				isClearFlag = value;
-				OnPropertyChanged();
-			}
-		}
-	}
-
-	public class EntityGridRow : FieldGridRow
-	{
-		private bool isApplyToCrm;
-
-		public bool IsApplyToCrm
-		{
-			get => isApplyToCrm;
-			set
-			{
-				isApplyToCrm = value;
-				OnPropertyChanged();
-			}
-		}
-
-		private bool isGenerateMeta;
-
-		public bool IsGenerateMeta
-		{
-			get => isGenerateMeta;
-			set
-			{
-				isGenerateMeta = value;
-				OnPropertyChanged();
-			}
-		}
-
-		private bool isOptionsetLabels;
-
-		public bool IsOptionsetLabels
-		{
-			get => isOptionsetLabels;
-			set
-			{
-				isOptionsetLabels = value;
-				OnPropertyChanged();
-			}
-		}
-
-		private bool isLookupLabels;
-
-		public bool IsLookupLabels
-		{
-			get => isLookupLabels;
-			set
-			{
-				isLookupLabels = value;
-				OnPropertyChanged();
-			}
-		}
-
-		private ClearModeEnumUi valueClearMode;
-
-		public ClearModeEnumUi ValueClearMode
-		{
-			get => valueClearMode;
-			set
-			{
-				valueClearMode = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public IEnumerable<ClearModeEnumUi> ValueClearModes => new[] { ClearModeEnumUi.Default }.Union(
-			Enum.GetValues(typeof(ClearModeEnum)).Cast<ClearModeEnumUi>());
-	}
-
-	public enum ClearModeEnumUi
-	{
-		Default = -1,
-		Disabled = 0,
-		Empty = 1,
-		Convention = 2,
-		Flag = 3
-	}
-
-	public class Relations1NGridRow : GridRow
-	{
-		public string ToEntity { get; set; }
-		public string ToField { get; set; }
-	}
-
-	public class RelationsN1GridRow : GridRow
-	{
-		private bool isFlatten;
-
-		public string ToEntity { get; set; }
-		public string FromField { get; set; }
-
-		public bool IsFlatten
-		{
-			get => isFlatten;
-			set
-			{
-				isFlatten = value;
-				OnPropertyChanged();
-			}
-		}
-	}
-
-	public class RelationsNNGridRow : GridRow
-	{
-		public string ToEntity { get; set; }
-		public string IntersectEntity { get; set; }
-	}
-
 	#endregion
 	
 	/// <summary>
@@ -262,13 +75,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public EntityProfilesHeader SelectedEntityProfilesHeader { get; set; }
 
-		public EntityProfile EntityProfile { get; set; }
-
 		public Settings Settings { get; set; }
 
 		public List<EntityMetadata> EntityMetadataCache;
-
-		private Style originalProgressBarStyle;
 
 		public bool StillOpen { get; private set; } = true;
 
@@ -283,19 +92,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				entitiesSelectAll = value;
 				Entities.ToList().ForEach(entity => entity.IsSelected = value);
-				OnPropertyChanged();
-			}
-		}
-
-		private bool applyToCrmSelectAll;
-
-		public bool ApplyToCrmSelectAll
-		{
-			get => applyToCrmSelectAll;
-			set
-			{
-				applyToCrmSelectAll = value;
-				Entities.ToList().ForEach(entity => entity.IsApplyToCrm = value);
 				OnPropertyChanged();
 			}
 		}
@@ -338,8 +134,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				OnPropertyChanged();
 			}
 		}
-
-
+		
 		public IEnumerable<ClearModeEnumUi> ValueClearModes => new[] { ClearModeEnumUi.Default }.Union(
 			Enum.GetValues(typeof(ClearModeEnum)).Cast<ClearModeEnumUi>());
 
@@ -368,13 +163,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		public ObservableCollection<EntityGridRow> Entities { get; set; }
+		public ObservableCollection<EntityProfileGridRow> Entities { get; set; }
 
 		#endregion
 
 		private readonly MetadataCache metadataCache;
-		private readonly IDictionary<EntityProfilesHeader, List<EntityGridRow>> rowMap = new Dictionary<EntityProfilesHeader, List<EntityGridRow>>();
-		private List<EntityGridRow> rowList;
+		private readonly IDictionary<EntityProfilesHeader, List<EntityProfileGridRow>> rowMap = new Dictionary<EntityProfilesHeader, List<EntityProfileGridRow>>();
+		private List<EntityProfileGridRow> rowList;
 
 		#region Property events
 
@@ -399,7 +194,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Owner = parentWindow;
 			WindowTitle = "Entities Profiling";
 
-			Entities = new ObservableCollection<EntityGridRow>();
+			Entities = new ObservableCollection<EntityProfileGridRow>();
 
 			Settings = settings;
 			metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
@@ -407,8 +202,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
-
 			new Thread(
 				() =>
 				{
@@ -417,8 +210,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						EntityProfilesHeaderSelector = Settings.EntityProfilesHeaderSelector;
 						SelectedEntityProfilesHeader = EntityProfilesHeaderSelector.GetSelectedFilter();
 
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...");
 						if (metadataCache.ProfileEntityMetadataCache.Any())
 						{
 							EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
@@ -428,8 +220,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							RefreshEntityMetadata();
 						}
 
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...");
 						InitEntityList();
 
 						Dispatcher.Invoke(
@@ -437,7 +228,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							{
 								DataContext = this;
 								CheckBoxEntitiesSelectAll.DataContext = this;
-								CheckBoxApplyToCrmSelectAll.DataContext = this;
 								CheckBoxMetadataSelectAll.DataContext = this;
 								CheckBoxOptionsetLabelsSelectAll.DataContext = this;
 								CheckBoxLookupLabelsSelectAll.DataContext = this;
@@ -469,7 +259,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			if (!rowMap.TryGetValue(SelectedEntityProfilesHeader, out rowList))
 			{
-				rowList = rowMap[SelectedEntityProfilesHeader] = new List<EntityGridRow>();
+				rowList = rowMap[SelectedEntityProfilesHeader] = new List<EntityProfileGridRow>();
 
 				var filteredEntities = EntityMetadataCache
 					.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
@@ -491,7 +281,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							}
 
 							var row =
-								new EntityGridRow
+								new EntityProfileGridRow
 								{
 									EntityProfile = entityProfile,
 									IsSelected = !entityProfile.IsExcluded,
@@ -500,22 +290,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 										? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
 										: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
 									Rename = entityProfile.EntityRename,
-									IsApplyToCrm = entityProfile.IsApplyToCrm,
 									IsGenerateMeta = entityProfile.IsGenerateMeta,
 									IsOptionsetLabels = entityProfile.IsOptionsetLabels,
 									IsLookupLabels = entityProfile.IsLookupLabels,
 									ValueClearMode = entityProfile.ValueClearMode == null
 										? ClearModeEnumUi.Default
 										: (ClearModeEnumUi)entityProfile.ValueClearMode
-								};
-
-							row.PropertyChanged +=
-								(sender, args) =>
-								{
-									if (args.PropertyName == nameof(EntityProfile.IsApplyToCrm))
-									{
-										Dispatcher.InvokeAsync(() => CheckBoxIsDefault.IsChecked = rowList.Any(e => e.IsApplyToCrm));
-									}
 								};
 
 							rowList.Add(row);
@@ -543,8 +323,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				Dispatcher.Invoke(() => IsLookupLabelsSelectAll = true);
 			}
-
-			Dispatcher.InvokeAsync(() => CheckBoxIsDefault.IsChecked = rowList.Any(e => e.IsApplyToCrm));
 		}
 
 		protected override void OnSourceInitialized(EventArgs e)
@@ -565,7 +343,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				var entityProfile = row.EntityProfile;
 				entityProfile.IsExcluded = !row.IsSelected;
-				entityProfile.IsApplyToCrm = row.IsApplyToCrm;
 				entityProfile.IsGenerateMeta = row.IsGenerateMeta;
 				entityProfile.IsOptionsetLabels = row.IsOptionsetLabels;
 				entityProfile.IsLookupLabels = row.IsLookupLabels;
@@ -580,11 +357,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					default:
 						entityProfile.ValueClearMode = (ClearModeEnum?)row.ValueClearMode;
 						break;
-				}
-
-				if (entityProfile.IsApplyToCrm)
-				{
-					ConfirmSingleDefault(entityProfile);
 				}
 			}
 
@@ -601,23 +373,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				if (!Settings.LookupLabelsEntitiesSelected.Contains(entityRow.Name))
 				{
 					Settings.LookupLabelsEntitiesSelected.Add(entityRow.Name);
-				}
-			}
-		}
-
-		private void ConfirmSingleDefault(EntityProfile entityProfile)
-		{
-			var duplicates =
-				EntityProfilesHeaderSelector.EntityProfilesHeaders
-					.SelectMany(e => e.EntityProfiles.Where(s => s.LogicalName == entityProfile.LogicalName && s.IsApplyToCrm))
-					.GroupBy(e => e.LogicalName)
-					.Where(e => e.Count() > 1);
-
-			foreach (var group in duplicates)
-			{
-				for (var i = 1; i < group.Count(); i++)
-				{
-					group.ElementAt(i).IsApplyToCrm = false;
 				}
 			}
 		}
@@ -640,7 +395,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			var cell = sender as DataGridCell;
 
-			if (cell != null && !cell.IsEditing && !IsComboBoxCellClicked(e))
+			if (cell != null && !cell.IsEditing && !e.IsComboBoxCellClicked())
 			{
 				// enables editing on single click
 				if (!cell.IsFocused)
@@ -672,7 +427,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 
 			// skip if an editable cell is clicked
-			if (IsTextCellClicked(e) || IsComboBoxCellClicked(e))
+			if (e.IsTextCellClicked() || e.IsComboBoxCellClicked())
 			{
 				// unselect all rows
 				for (var i = 0; i < grid.Items.Count; i++)
@@ -703,26 +458,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			var d = (DependencyObject) e.OriginalSource;
 
-			if (d != null && (IsCheckboxClickedParentCheck(d, "ApplyToCrm")
-			                  || IsCheckboxClickedChildrenCheck(d, "ApplyToCrm")))
-			{
-				// clicked on ApplyToCrm
-				var rowDataCast = (EntityGridRow) row.Item;
-				rowDataCast.IsApplyToCrm = !rowDataCast.IsApplyToCrm;
-
-				// selectAll value to false
-				var applyToCrmField = GetType().GetField("ApplyToCrmSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				applyToCrmField?.SetValue(this, false);
-
-				OnPropertyChanged("ApplyToCrmSelectAll");
-			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
-			                  || IsCheckboxClickedChildrenCheck(d, "GenerateMeta")))
+			if (d != null && (d.IsCheckboxClickedParentCheck("GenerateMeta")
+			                  || d.IsCheckboxClickedChildrenCheck("GenerateMeta")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntityGridRow) row.Item;
+				var rowDataCast = (EntityProfileGridRow) row.Item;
 				rowDataCast.IsGenerateMeta = !rowDataCast.IsGenerateMeta;
 
 				// selectAll value to false
@@ -733,11 +473,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("MetadataSelectAll");
 			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsOptionsetLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsOptionsetLabels")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsOptionsetLabels")
+			                       || d.IsCheckboxClickedChildrenCheck("IsOptionsetLabels")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntityGridRow) row.Item;
+				var rowDataCast = (EntityProfileGridRow) row.Item;
 				rowDataCast.IsOptionsetLabels = !rowDataCast.IsOptionsetLabels;
 
 				// selectAll value to false
@@ -748,11 +488,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsOptionsetLabelsSelectAll");
 			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsLookupLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsLookupLabels")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsLookupLabels")
+			                       || d.IsCheckboxClickedChildrenCheck("IsLookupLabels")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntityGridRow) row.Item;
+				var rowDataCast = (EntityProfileGridRow) row.Item;
 				rowDataCast.IsLookupLabels = !rowDataCast.IsLookupLabels;
 
 				// selectAll value to false
@@ -793,184 +533,64 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			if (gridName.Contains("Entities"))
 			{
-				EntitiesDataGridRow_PreviewMouseLeftButtonDown(sender, e);
-			}
-		}
-
-		// double click!
-		private void EntitiesDataGridRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			var row = sender as DataGridRow;
-
-			if (row == null)
-			{
-				return;
-			}
-
-			var grid = row.GetParent<DataGrid>();
-			var gridName = grid.Name.Replace("Grid", "");
-
-			// enables editing on single click
-			if (!row.IsFocused)
-			{
-				row.Focus();
-			}
-
-			var rowData = (GridRow) row.Item;
-
-			if (IsComboBoxCellClicked(e))
-			{
-				// unselect all rows
-				for (var i = 0; i < grid.Items.Count; i++)
+				// enables editing on single click
+				if (!row.IsFocused)
 				{
-					var container = grid.ItemContainerGenerator.ContainerFromIndex(i);
-
-					if (container == null)
-					{
-						continue;
-					}
-
-					var rowQ = (DataGridRow) container;
-
-					if (rowQ.IsSelected)
-					{
-						rowQ.IsSelected = false;
-					}
+					row.Focus();
 				}
 
-				return;
-			}
+				var rowData = (GridRow)row.Item;
 
-			if (IsTextCellClicked(e))
-			{
-				// unselect all rows
-				for (var i = 0; i < grid.Items.Count; i++)
+				if (e.IsTextCellClicked())
 				{
-					var container = grid.ItemContainerGenerator.ContainerFromIndex(i);
-
-					if (container == null)
+					// unselect all rows
+					for (var i = 0; i < grid.Items.Count; i++)
 					{
-						continue;
+						var container = grid.ItemContainerGenerator.ContainerFromIndex(i);
+
+						if (container == null)
+						{
+							continue;
+						}
+
+						var rowQ = (DataGridRow)container;
+
+						if (rowQ.IsSelected)
+						{
+							rowQ.IsSelected = false;
+						}
+
+						if (Extensions.GetBang(rowQ))
+						{
+							Extensions.SetBang(rowQ, false);
+						}
 					}
 
-					var rowQ = (DataGridRow) container;
-
-					if (rowQ.IsSelected)
+					if (row.IsSelected)
 					{
-						rowQ.IsSelected = false;
+						return;
 					}
 
-					if (Extensions.GetBang(rowQ))
-					{
-						Extensions.SetBang(rowQ, false);
-					}
-				}
-
-				// select current row
-				if (!row.IsSelected)
-				{
+					// select current row
 					Extensions.SetBang(row, true);
 					row.IsSelected = true;
 
 					// get logical name and re-init
 					LogicalName = rowData.Name;
-					new FilterDetails(this, LogicalName, Settings, Entities, connectionManager, metadataCacheManager)
+
+					var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
+						.FirstOrDefault(filter => filter.LogicalName == LogicalName)
+						?? new EntityProfile(LogicalName);
+
+					new FilterDetails(this, LogicalName, Settings, entityProfile,
+						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCacheManager)
 						.ShowDialog();
+
+					if (entityProfile.IsContainsData)
+					{
+						SelectedEntityProfilesHeader.EntityProfiles.Add(entityProfile);
+					}
 				}
-
-				return;
-			}
-
-			var d = (DependencyObject) e.OriginalSource;
-
-			if (d != null && (IsCheckboxClickedParentCheck(d, "ApplyToCrm")
-			                  || IsCheckboxClickedChildrenCheck(d, "ApplyToCrm")))
-			{
-				// clicked on ApplyToCrm
-				var rowDataCast = (EntityGridRow) rowData;
-				rowDataCast.IsApplyToCrm = !rowDataCast.IsApplyToCrm;
-
-				// selectAll value to false
-				var applyToCrmField = GetType().GetField("ApplyToCrmSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				applyToCrmField?.SetValue(this, false);
-
-				OnPropertyChanged("ApplyToCrmSelectAll");
-			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "GenerateMeta")
-			                  || IsCheckboxClickedChildrenCheck(d, "GenerateMeta")))
-			{
-				// clicked on meta
-				var rowDataCast = (EntityGridRow) rowData;
-				rowDataCast.IsGenerateMeta = !rowDataCast.IsGenerateMeta;
-
-				// selectAll value to false
-				var generateMetaField = GetType().GetField("MetadataSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				generateMetaField?.SetValue(this, false);
-
-				OnPropertyChanged("MetadataSelectAll");
-			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsOptionsetLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsOptionsetLabels")))
-			{
-				// clicked on meta
-				var rowDataCast = (EntityGridRow) row.Item;
-				rowDataCast.IsOptionsetLabels = !rowDataCast.IsOptionsetLabels;
-
-				// selectAll value to false
-				var field = GetType().GetField("IsOptionsetLabelsSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				field?.SetValue(this, false);
-
-				OnPropertyChanged("IsOptionsetLabelsSelectAll");
-			}
-			else if (d != null && (IsCheckboxClickedParentCheck(d, "IsLookupLabels")
-			                       || IsCheckboxClickedChildrenCheck(d, "IsLookupLabels")))
-			{
-				// clicked on meta
-				var rowDataCast = (EntityGridRow) row.Item;
-				rowDataCast.IsLookupLabels = !rowDataCast.IsLookupLabels;
-
-				// selectAll value to false
-				var field = GetType().GetField("IsLookupLabelsSelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				field?.SetValue(this, false);
-
-				OnPropertyChanged("IsLookupLabelsSelectAll");
-			}
-			else
-			{
-				// clicked select
-				rowData.IsSelected = !rowData.IsSelected;
-
-				// selectAll value to false
-				var selectAllField = GetType().GetField(gridName + "SelectAll",
-					BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.Instance);
-
-				selectAllField?.SetValue(this, false);
-
-				OnPropertyChanged(gridName + "SelectAll");
-			}
-		}
-
-		// Credit: http://blog.scottlogic.com/2008/12/02/wpf-datagrid-detecting-clicked-cell-and-row.html
-		private void EntitiesGrid_LoadingRow(object sender, DataGridRowEventArgs e)
-		{
-			var rowQ = e.Row;
-			var rowDataQ = (GridRow) rowQ.Item;
-
-			if (EntityProfile != null && rowDataQ.Name == EntityProfile.LogicalName)
-			{
-				Extensions.SetBang(rowQ, true);
-			}
-			else
-			{
-				Extensions.SetBang(rowQ, false);
 			}
 		}
 
@@ -1022,143 +642,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private static DataGridCell GetCellClicked(MouseButtonEventArgs e)
-		{
-			var dep = (DependencyObject) e.OriginalSource;
-
-			// iteratively traverse the visual tree
-			while (dep != null && !(dep is DataGridCell))
-			{
-				dep = VisualTreeHelper.GetParent(dep);
-			}
-
-			return GetCellClickedChildren(dep);
-		}
-
-		private static DataGridCell GetCellClickedChildren(DependencyObject dep)
-		{
-			if (dep == null)
-			{
-				return null;
-			}
-
-			var cell = dep as DataGridCell;
-
-			if (cell != null)
-			{
-				return cell;
-			}
-
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
-			{
-				cell = GetCellClickedChildren(VisualTreeHelper.GetChild(dep, i));
-
-				if (cell != null)
-				{
-					return cell;
-				}
-			}
-
-			return null;
-		}
-
-		private static bool IsCellClickedChildrenCheck(DependencyObject dep, params Type[] types)
-		{
-			if (dep == null)
-			{
-				return false;
-			}
-
-			if (types.Any(type => type.IsInstanceOfType(dep)))
-			{
-				return true;
-			}
-
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
-			{
-				if (IsCellClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), types))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool IsCellClickedParentCheck(DependencyObject dep, params Type[] types)
-		{
-			while (dep != null)
-			{
-				if (types.Any(type => type.IsInstanceOfType(dep)))
-				{
-					return true;
-				}
-
-				dep = VisualTreeHelper.GetParent(dep);
-			}
-
-			return false;
-		}
-
-		private static bool IsCheckboxClickedChildrenCheck(DependencyObject dep, string name)
-		{
-			if (dep == null)
-			{
-				return false;
-			}
-
-			if (dep is CheckBox && ((CheckBox) dep).Name == name)
-			{
-				return true;
-			}
-
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
-			{
-				if (IsCheckboxClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), name))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool IsCheckboxClickedParentCheck(DependencyObject dep, string name)
-		{
-			while (dep != null)
-			{
-				if (dep is CheckBox && ((CheckBox) dep).Name == name)
-				{
-					return true;
-				}
-
-				dep = VisualTreeHelper.GetParent(dep);
-			}
-
-			return false;
-		}
-
-		private static bool IsCheckBoxCellClicked(MouseButtonEventArgs e)
-		{
-			var types = new[] {typeof(CheckBox), typeof(DataGridCheckBoxColumn)};
-			var d = (DependencyObject) e.OriginalSource;
-			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
-		}
-
-		private static bool IsComboBoxCellClicked(MouseButtonEventArgs e)
-		{
-			var types = new[] {typeof(ComboBox), typeof(ComboBoxItem)};
-			var d = (DependencyObject) e.OriginalSource;
-			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
-		}
-
-		private static bool IsTextCellClicked(MouseButtonEventArgs e)
-		{
-			var types = new[] {typeof(TextBlock), typeof(TextBox), typeof(DataGridTextColumn), typeof(RichTextBox)};
-			var d = (DependencyObject) e.OriginalSource;
-			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
-		}
-
 		private void CheckBoxIsSelected_OnClick(object sender, RoutedEventArgs e)
 		{
 			// ignore check-box clicks
@@ -1176,7 +659,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ComboBoxFilters_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			EntityProfile = null;
 			SelectedEntityProfilesHeader = EntityProfilesHeaderSelector.GetSelectedFilter();
 
 			TextBoxPrefix.DataContext = SelectedEntityProfilesHeader;
@@ -1254,16 +736,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// get entity names that match any regex from the fetched list
 				if (DisplayFilter)
 				{
-					var defaultFiltered = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
-						.SelectMany(s => s.EntityProfiles.Where(e => e.IsApplyToCrm)).ToArray();
-
 					customEntities =
 						EntityMetadataCache
 							.ToDictionary(key => key.LogicalName,
 								value =>
 								{
-									var rename =
-										defaultFiltered.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
+									var rename = SelectedEntityProfilesHeader.EntityProfiles
+										.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
 
 									return "("
 										+ (string.IsNullOrEmpty(rename)
@@ -1292,8 +771,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...");
 
 						InitEntityList(customEntities?.ToList());
 
@@ -1317,7 +795,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Settings.FiltersChanged();
 			Dispatcher.InvokeAsync(Close);
 		}
 
@@ -1325,32 +802,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			StillOpen = false;
 			Dispatcher.InvokeAsync(Close);
-		}
-
-		private void ButtonRefresh_Click(object sender, RoutedEventArgs e)
-		{
-			new Thread(
-				() =>
-				{
-					try
-					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
-							HeightProperty, originalProgressBarStyle);
-						RefreshEntityMetadata();
-
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
-							HeightProperty, originalProgressBarStyle);
-						InitEntityList();
-					}
-					catch (Exception ex)
-					{
-						Status.PopException(Dispatcher, ex);
-					}
-					finally
-					{
-						Status.HideBusy(Dispatcher, BusyIndicator);
-					}
-				}).Start();
 		}
 
 		#endregion

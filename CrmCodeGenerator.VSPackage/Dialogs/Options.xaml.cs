@@ -88,7 +88,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private ObservableCollection<string> globalActionNames = new ObservableCollection<string>();
 		private ObservableCollection<string> selectedGlobalActions = new ObservableCollection<string>();
 		private bool isGlobalActionsVisible;
-		private Style originalProgressBarStyle;
 
 		#region Property events
 
@@ -118,8 +117,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
-
 			// hide close button
 			var hwnd = new WindowInteropHelper(this).Handle;
 			SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_SYSMENU);
@@ -127,6 +124,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			DataContext = Settings;
 
 			GlobalActionsSection.DataContext = this;
+			CheckBoxGenerateGlobalActions.DataContext = Settings;
 
 			IntSpinnerThreads.Value = Settings.Threads;
 			IntSpinnerEntitiesPerThread.Value = Settings.EntitiesPerThread;
@@ -151,8 +149,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Loading Global Actions ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Loading Global Actions ...");
 						var actions = MetadataHelpers.RetrieveActionNames(Settings, connectionManager, metadataCacheManager).ToArray();
 						Dispatcher.Invoke(
 							() =>

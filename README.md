@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 9.1.1
+### Version: 10.1.1
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -13,6 +13,7 @@ A Visual Studio extension that allows generating early bound classes for Microso
 	+ Replaced the SDK types with .NET types
 	  + E.g. OptionSetValue => Enum (Enum[] for Multi-select), EntityReference => Guid, Money => decimal, ... etc.
 	+ Only choose the Entities required
+	+ Only the Fields required
 	+ Option to use Display Names of entities and fields as Variable names instead of Logical Names
 	+ Option to override Field names inside the tool's UI
 	+ Option to lock Variable names to avoid code errors on regeneration
@@ -92,14 +93,31 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.1.1 (2020-08-28)_
++ Added: CRM Entity Profile window in the Entity Selection (double-click CRM Entity to open)
++ Added: filtering option in the Entity Selection (if checked, Profile is applied, else only renaming is applied)
++ Added: option to automatically delete unselected Profiles on save
++ Added: button to clear cached data from memory without having to generate or refresh
++ Added: 'cancel' option in the Entity Selection window
++ Added: connections warm-up to improve code generation performance
++ Added: pre-v10 settings migration
++ Changed: the 'red' row indicator in the Entity Selection window to mean that the CRM Entity Profile has some data
++ Fixed: issue with Enable rules in Options window
++ Fixed: alternate key information retrieved regardless of setting
++ Fixed: Generate Global Actions setting having no effect
++ Fixed: issue with pre-v9 settings migration
++ Removed: 'Apply to CRM Entity' option and moved it to Entity Selection window
++ Removed: metadata refresh buttons
++ Removed: redundant and obsolete settings entries
 #### _v9.1.1 (2020-08-25)_
-+ Added: 'cancel' option for the Profiles window
-+ Improved: moved the 'Apply to CRM Entities' option to per-Entity level for more control
-+ Improved: 'Apply to CRM Entities' filters Attributes and Relations similar to Contracts
++ Added: 'cancel' option in the Profiles window
++ Added: pre-v9 settings migration
++ Improved: moved the 'Apply to CRM Entity' option to be on a per-Entity level for more control
++ Improved: 'Apply to CRM Entity' filters Attributes and Relations similar to how Contracts work
 + Improved: refactoring to prepare for XrmToolBox Plugin and improve extensibility
 + Improved: error messages
 + Updated: licence
-+ Removed: pre-v7 settings migration
++ Removed: pre-v7 settings migration (to migrate to v7+, download v8.1.3 below first)
 + Fixed: issue with assembly binding
 + Fixed: issues
 #### _v8.1.3 (2020-08-17)_ [Download](http://blog.yagasoft.com/wp-content/uploads/CrmCodeGenerator.vsix)
@@ -127,9 +145,9 @@ When you make changes to the template and save, Visual Studio will automatically
 + Improved: connection pooling
 + Fixed: issues
 #### _v7.1.1 (2020-08-09)_
-+ Added: entity list filtering in profiles
-+ Added: option to optimise settings size
-+ Changed: switched to explicit Connection Strings to allow for a broader support of newer features
++ Added: Entity list view filtering in profiles
++ Added: option to optimise settings file size
++ Changed: switched to explicit or raw Connection Strings to allow for a broader support of newer features
 + Changed: separated settings from cache data (cache saved at the solution level)
 + Changed: save settings as JSON (per project)
 + Changed: exclude cache data from Source Control

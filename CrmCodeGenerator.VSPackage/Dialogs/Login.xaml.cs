@@ -14,8 +14,10 @@ using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Cache;
 using CrmCodeGenerator.VSPackage.Connection;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.Model;
 using EnvDTE80;
 using Xceed.Wpf.Toolkit;
+using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Mapper;
 using Yagasoft.CrmCodeGenerator.Models.Mapper;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
@@ -34,18 +36,42 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	public partial class Login
 	{
 		public Context Context;
-		public bool StillOpen => _StillOpen;
+		public bool StillOpen = true;
 
-		private Style originalProgressBarStyle;
+		private MetadataCacheManager MetadataCacheManager
+		{
+			get
+			{
+				if (cacheThread?.IsAlive == true)
+				{
+					cacheThread.Join();
+				}
+
+				return metadataCacheManager;
+			}
+		}
+
+		private Mapper Mapper
+		{
+			get
+			{
+				if (mapperThread?.IsAlive == true)
+				{
+					mapperThread.Join();
+				}
+
+				return mapper;
+			}
+		}
 
 		private Settings settings;
 
 		private Mapper mapper;
-
-		private bool _StillOpen = true;
+		private Thread mapperThread;
 
 		private readonly ConnectionManager connectionManager;
 		private readonly MetadataCacheManager metadataCacheManager;
+		private Thread cacheThread;
 
 		#region Init
 
@@ -59,14 +85,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Owner = main;
 
 			settings = Configuration.LoadSettings();
-			connectionManager = new ConnectionManager();
-			metadataCacheManager = new MetadataCacheManager();
 
-			if (!settings.ConnectionString.IsEmpty())
-			{
-				// warm up the cache.
-				new Thread(() => metadataCacheManager.GetCache(settings.ConnectionString)).Start();
-			}
+			connectionManager = CacheHelpers.GetFromMemCacheAdd(Constants.ConnCacheMemKey,
+				() => new ConnectionManager(settings.Threads));
+			metadataCacheManager = new MetadataCacheManager();
 
 			////EventManager.RegisterClassHandler(typeof(TextBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
 			////EventManager.RegisterClassHandler(typeof(TextBox), GotKeyboardFocusEvent, new RoutedEventHandler(SelectAddress));
@@ -76,21 +98,76 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
-
+			Title = $"{Constants.AppName} v{Constants.AppVersion}";
 			Initialise();
 		}
 
 		private void Initialise()
 		{
+			WarmUp();
+
 			DataContext = settings;
 
 			settings.EntityProfilesHeaderSelector = settings.EntityProfilesHeaderSelector ?? new EntityProfilesHeaderSelector();
-			settings.FiltersChanged();
 
-			mapper = new Yagasoft.CrmCodeGenerator.Mapper.Mapper(settings, connectionManager, metadataCacheManager);
+			mapperThread = new Thread(
+				() =>
+				{
+					mapper = new Mapper(settings, connectionManager, MetadataCacheManager);
+					RegisterMapperEvents();
+				});
+			mapperThread.Start();
+		}
 
-			RegisterMapperEvents();
+		private void WarmUp()
+		{
+			// warm up connections
+			void WarmUpConnections()
+			{
+				new Thread(
+					() =>
+					{
+						try
+						{
+							if (settings.ConnectionString.IsFilled())
+							{
+								connectionManager.Get(settings.ConnectionString).Dispose();
+							}
+						}
+						catch
+						{
+							// ignored
+						}
+					}).Start();
+			}
+
+			settings.PropertyChanged +=
+				(sender, args) =>
+				{
+					if (args.PropertyName == nameof(settings.Threads))
+					{
+						connectionManager.Threads = settings.Threads;
+					}
+
+					if (args.PropertyName != nameof(settings.Threads) && args.PropertyName != nameof(settings.ConnectionString))
+					{
+						return;
+					}
+
+					WarmUpConnections();
+				};
+
+			if (settings.ConnectionString.IsEmpty()
+				|| connectionManager == null || metadataCacheManager == null)
+			{
+				return;
+			}
+
+			// warm up the cache.
+			cacheThread = new Thread(() => metadataCacheManager.GetCache(settings.ConnectionString));
+			cacheThread.Start();
+
+			WarmUpConnections();
 		}
 
 		protected override void OnSourceInitialized(EventArgs e)
@@ -107,23 +184,35 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				   {
 					   try
 					   {
-						   if (args.Progress != null)
+						   var isOnBusy = args.MessageTarget.HasFlag(StatusMessageTarget.BusyIndicator);
+						   var isOnPane = args.Status == MapperStatus.Started && args.MessageTarget.HasFlag(StatusMessageTarget.LogPane);
+
+						   if (args.Status != MapperStatus.Started)
 						   {
-							   Status.ShowBusy(Dispatcher, BusyIndicator, args.Message, HeightProperty,
-								   originalProgressBarStyle, args.Progress);
+							   Status.HideBusy(Dispatcher, BusyIndicator);
 						   }
 						   else
 						   {
-							   Status.UpdateStatus(Dispatcher, args.Message, true, args.Progress <= 0 || args.Progress >= 100);
+							   if (isOnPane)
+							   {
+								   Status.Update(args.Message);
+							   }
+							   
+							   if (isOnBusy)
+							   {
+								   return Status.ShowBusy(Dispatcher, BusyIndicator, args.Message, args.Progress);
+							   }
 						   }
 					   }
 					   catch
 					   {
 						   // ignored
 					   }
+
+					   return null;
 				   };
 
-			mapper.Status
+			mapper.StatusUpdate
 				+= (o, args) =>
 				   {
 					   try
@@ -131,13 +220,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   switch (args.Status)
 						   {
 							   case MapperStatus.Cancelled:
-								  	Status.UpdateStatus(Dispatcher, "Cancelled generator!", false);
-								   _StillOpen = false;
+								   Status.Update("Cancelled generator!");
+								   StillOpen = false;
 								   Dispatcher.InvokeAsync(Close);
 								   break;
 
 							   case MapperStatus.Finished:
-								   Context = mapper.Context;
+								   Context = Mapper.Context;
 								   Context.SplitFiles = settings.SplitFiles;
 								   Context.UseDisplayNames = settings.UseDisplayNames;
 								   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
@@ -156,21 +245,23 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								   Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
 								   Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
 								   Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
+								   Context.EarlyBoundFilteredSelected = settings.EarlyBoundFilteredSelected.ToList();
 								   Context.SelectedActions = settings.SelectedActions;
 								   Context.ClearMode = settings.ClearMode;
 								   Context.SelectedEntities = settings.EntitiesSelected.ToArray();
 								   Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
 								   Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
 								   Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
+								   Context.CrmEntityProfiles = settings.CrmEntityProfiles;
 
 								   if (settings.LockNamesOnGenerate)
 								   {
 									   LockNames(Context);
 								   }
 
-								   metadataCacheManager.GetCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
+								   MetadataCacheManager.GetCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
 
-								   _StillOpen = false;
+								   StillOpen = false;
 								   Dispatcher.InvokeAsync(Close);
 								   break;
 						   }
@@ -193,8 +284,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						Status.UpdateStatus(Dispatcher, "Processing non-standard inclusion/exclusion ... ", true);
-						MetadataHelpers.RefreshSettingsEntityMetadata(settings, connectionManager, metadataCacheManager);
+						Status.Update("Processing non-standard inclusion/exclusion ... ");
+						MetadataHelpers.RefreshSettingsEntityMetadata(settings, connectionManager, MetadataCacheManager);
 					}
 					catch (Exception ex)
 					{
@@ -202,7 +293,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					}
 					finally
 					{
-						Status.UpdateStatus(Dispatcher, ">>> Finished processing.", false);
+						Status.Update(">>> Finished processing.");
 					}
 				}).Start();
 		}
@@ -227,25 +318,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				settings.Dirty = true;
-
-				settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
 				Configuration.SaveSettings(settings);
 
-				// if user indicated 'clear cache'
-				if (CheckBoxClearCache.IsChecked == true)
-				{
-					Status.UpdateStatus(Dispatcher, "Clearing cache ... ", true, true, false);
-					metadataCacheManager.Clear(settings.ConnectionString);
-					Status.UpdateStatus(Dispatcher, "done!", false);
-				}
-				
-				Status.UpdateStatus(Dispatcher, "Mapping entities, this might take a while depending on CRM server/connection speed ... ", true);
+				Status.Update("Mapping entities, this might take a while depending on CRM server/connection speed ... ");
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.UpdateStatus(Dispatcher, "Generator will split generated code into separate entity files.", true);
+					Status.Update("Generator will split generated code into separate entity files.");
 				}
 
 				new Thread(
@@ -253,7 +333,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					{
 						try
 						{
-							mapper.MapContext();
+							Mapper.MapContext();
 							Configuration.SaveCache();
 						}
 						catch (Exception ex)
@@ -284,7 +364,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				var metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
+				var metadataCache = MetadataCacheManager.GetCache(settings.ConnectionString);
 				var context = metadataCache.GetCachedContext(settings.Id);
 
 				var excludeEntities = new[] { "" };
@@ -303,17 +383,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					                    "connect and try again using the 'generate' button; or cancel, reopen, and then reconfigure.");
 				}
 
-				settings.Dirty = true;
-
-				settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
 				Configuration.SaveSettings(settings);
 
-				Status.UpdateStatus(Dispatcher, "Mapping entities using cache ... ", true);
+				Status.Update("Mapping entities using cache ... ");
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.UpdateStatus(Dispatcher, "Generator will split generated code into separate entity files.", true);
+					Status.Update("Generator will split generated code into separate entity files.");
 				}
 
 				new Thread(
@@ -321,7 +398,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					{
 						try
 						{
-							mapper.MapContext(true);
+							Mapper.MapContext(true);
 							Configuration.SaveCache();
 						}
 						catch (Exception ex)
@@ -338,7 +415,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
-			mapper.CancelMapping = true;
+			Mapper.CancelMapping = true;
 			Configuration.SaveCache();
 		}
 
@@ -349,12 +426,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonOptions_Click(object sender, RoutedEventArgs e)
 		{
-			new Options(this, settings, connectionManager, metadataCacheManager).ShowDialog();
+			new Options(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
 		}
 
 		private void ButtonCancel_Click(object sender, RoutedEventArgs e)
 		{
-			mapper.CancelMapping = true;
+			Mapper.CancelMapping = true;
 		}
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)
@@ -365,52 +442,57 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonSaveSettings_Click(object sender, RoutedEventArgs e)
 		{
-			settings.IsCleanSave = CheckBoxCleanSave.IsChecked == true;
 			Configuration.SaveSettings(settings);
 			DteHelper.ShowInfo("All settings profiles have been saved to disk.", "Settings saved!");
 		}
 
 		private void EntitiesRefresh_Click(object sender, RoutedEventArgs events)
 		{
-			new EntitySelection(this, settings, connectionManager, metadataCacheManager).ShowDialog();
+			new EntitySelection(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
 		}
 
 		private void EntitiesProfiling_Click(object sender, RoutedEventArgs e)
 		{
-			new Filter(this, settings, connectionManager, metadataCacheManager).ShowDialog();
+			new Filter(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
 		}
 
-		// credit: https://social.msdn.microsoft.com/Forums/vstudio/en-US/564b5731-af8a-49bf-b297-6d179615819f/how-to-selectall-in-textbox-when-textbox-gets-focus-by-mouse-click?forum=wpf&prof=required
-
-		#region Textbox selection
-
-		private static void SelectAddress(object sender, RoutedEventArgs e)
+		private void ClearCache_Click(object sender, RoutedEventArgs e)
 		{
-			if (sender is TextBox || sender is PasswordBox)
-			{
-				((dynamic)sender).SelectAll();
-			}
+			Status.Update("Clearing cache ... ", false);
+			MetadataCacheManager.Clear(settings.ConnectionString);
+			Status.Update("done!");
 		}
 
-		private static void SelectivelyIgnoreMouseButton(object sender, MouseButtonEventArgs e)
-		{
-			if (!(sender is TextBox || sender is PasswordBox))
-			{
-				return;
-			}
+		////// credit: https://social.msdn.microsoft.com/Forums/vstudio/en-US/564b5731-af8a-49bf-b297-6d179615819f/how-to-selectall-in-textbox-when-textbox-gets-focus-by-mouse-click?forum=wpf&prof=required
+		////#region Textbox selection
 
-			var tb = (dynamic)sender;
+		////private static void SelectAddress(object sender, RoutedEventArgs e)
+		////{
+		////	if (sender is TextBox || sender is PasswordBox)
+		////	{
+		////		((dynamic)sender).SelectAll();
+		////	}
+		////}
 
-			if (tb.IsKeyboardFocusWithin)
-			{
-				return;
-			}
+		////private static void SelectivelyIgnoreMouseButton(object sender, MouseButtonEventArgs e)
+		////{
+		////	if (!(sender is TextBox || sender is PasswordBox))
+		////	{
+		////		return;
+		////	}
 
-			e.Handled = true;
-			tb.Focus();
-		}
+		////	var tb = (dynamic)sender;
 
-		#endregion
+		////	if (tb.IsKeyboardFocusWithin)
+		////	{
+		////		return;
+		////	}
+
+		////	e.Handled = true;
+		////	tb.Focus();
+		////}
+
+		////#endregion
 
 		private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
 		{

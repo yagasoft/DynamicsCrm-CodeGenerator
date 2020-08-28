@@ -16,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Client.Collections.Generic;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
@@ -25,79 +26,14 @@ using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
+using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
+using InnerMetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
 
 #endregion
 
 namespace CrmCodeGenerator.VSPackage.Dialogs
 {
-	public class EntitiesSelectionGridRow : EntityGridRow
-	{
-		private bool isJsEarly;
-
-		public bool IsJsEarly
-		{
-			get => isJsEarly;
-			set
-			{
-				isJsEarly = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public IEnumerable<string> ActionNames
-		{
-			get => actionNames;
-			set
-			{
-				actionNames = value;
-				OnPropertyChanged();
-			}
-		}
-
-		public IEnumerable<string> SelectedActions
-		{
-			get => selectedActions;
-			set
-			{
-				selectedActions = value;
-				OnPropertyChanged();
-				OnPropertyChanged("ActionColour");
-				OnPropertyChanged("ActionCount");
-			}
-		}
-
-		private IEnumerable<string> actionNames;
-		private IEnumerable<string> selectedActions;
-
-		public Brush ActionColour => SelectedActions?.Any() == true ? Brushes.Red : Brushes.Black;
-
-		public string ActionCount
-		{
-			get
-			{
-				var count = SelectedActions?.Count();
-				return count > 0 ? count.ToString() : "-";
-			}
-		}
-
-		public Brush Colour => IsFiltered ? Brushes.Red : Brushes.Black;
-
-		private bool isFiltered;
-
-		public bool IsFiltered
-		{
-			get => isFiltered;
-			set
-			{
-				isFiltered = value;
-				OnPropertyChanged();
-				OnPropertyChanged("Colour");
-			}
-		}
-
-	}
-
 	/// <summary>
 	///     Interaction logic for Filter.xaml
 	/// </summary>
@@ -112,9 +48,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public List<EntityMetadata> EntityMetadataCache;
 
-		private Style originalProgressBarStyle;
-
-		public bool StillOpen { get; } = true;
+		public bool StillOpen { get; set; } = true;
 
 		private bool displayFilter;
 
@@ -194,7 +128,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		public ObservableCollection<EntitiesSelectionGridRow> Entities { get; set; }
+		public string LogicalName { get; set; }
+
+		public ObservableCollection<EntitySelectionGridRow> Entities { get; set; }
 
 		#endregion
 
@@ -210,6 +146,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#endregion
 
 		private MetadataCache metadataCache;
+		private List<EntitySelectionGridRow> rowList;
 
 		#region Init
 
@@ -223,22 +160,19 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			Owner = parentWindow;
 
-			Entities = new ObservableCollection<EntitiesSelectionGridRow>();
+			Entities = new ObservableCollection<EntitySelectionGridRow>();
 
 			Settings = settings;
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
-
 			new Thread(
 				() =>
 				{
 					try
 					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...");
 
 						metadataCache = metadataCacheManager.GetCache(Settings.ConnectionString);
 
@@ -251,8 +185,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							RefreshEntityMetadata();
 						}
 
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...");
 						InitEntityList();
 
 						Dispatcher.Invoke(
@@ -280,7 +213,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			Dispatcher.Invoke(Entities.Clear);
 
-			var rowList = new List<EntitiesSelectionGridRow>();
+			rowList = new List<EntitySelectionGridRow>();
 
 			var filteredEntities = EntityMetadataCache
 				.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
@@ -289,116 +222,30 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				var entityAsync = entity;
 
+				var profile = Settings.CrmEntityProfiles
+					.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+
 				Dispatcher.Invoke(
 					() =>
 					{
 						var row =
-							new EntitiesSelectionGridRow
+							new EntitySelectionGridRow
 							{
+								Entity = entityAsync,
+								EntityProfile = profile?.Copy(),
 								IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
 								Name = entityAsync.LogicalName,
+								Rename = profile?.EntityRename,
 								DisplayName =
-									entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-										? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
-										: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
-								IsFiltered = Settings.FilteredEntities.Contains(entity.LogicalName),
-								IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName),
-								IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName),
-								IsOptionsetLabels =
-									Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName),
-								IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName),
+									entityAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+										? Naming.GetProperHybridName(entityAsync.SchemaName, entityAsync.LogicalName)
+										: Naming.Clean(entityAsync.DisplayName.UserLocalizedLabel.Label),
+								IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entityAsync.LogicalName),
+								IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entityAsync.LogicalName),
+								IsEntityFiltered = Settings.EarlyBoundFilteredSelected.Contains(entityAsync.LogicalName),
+								IsOptionsetLabels = Settings.OptionsetLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
+								IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
 								SelectedActions = Settings.SelectedActions?.FirstNotNullOrDefault(entityAsync.LogicalName)
-							};
-
-						row.PropertyChanged +=
-							(sender, args) =>
-							{
-								if (args.PropertyName == "IsSelected")
-								{
-									if (row.IsSelected && !Settings.EntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.EntitiesSelected.Add(entity.LogicalName);
-									}
-									else if (!row.IsSelected && Settings.EntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.EntitiesSelected.Remove(entity.LogicalName);
-									}
-								}
-								else if (args.PropertyName == "IsGenerateMeta")
-								{
-									if (row.IsGenerateMeta && !Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.PluginMetadataEntitiesSelected.Add(entity.LogicalName);
-									}
-									else if (!row.IsGenerateMeta && Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.PluginMetadataEntitiesSelected.Remove(entity.LogicalName);
-									}
-								}
-								else if (args.PropertyName == "IsJsEarly")
-								{
-									if (row.IsJsEarly && !Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.JsEarlyBoundEntitiesSelected.Add(entity.LogicalName);
-									}
-									else if (!row.IsJsEarly && Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.JsEarlyBoundEntitiesSelected.Remove(entity.LogicalName);
-									}
-								}
-								else if (args.PropertyName == "IsOptionsetLabels")
-								{
-									if (row.IsOptionsetLabels && !Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.OptionsetLabelsEntitiesSelected.Add(entity.LogicalName);
-									}
-									else if (!row.IsOptionsetLabels && Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
-									{
-										if (Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
-											.SelectMany(filterQ => filterQ.EntityProfiles)
-											.Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
-												&& dataFilter.IsOptionsetLabels))
-										{
-											row.IsOptionsetLabels = true;
-										}
-										else
-										{
-											Settings.OptionsetLabelsEntitiesSelected.Remove(entity.LogicalName);
-										}
-									}
-								}
-								else if (args.PropertyName == "IsLookupLabels")
-								{
-									if (row.IsLookupLabels && !Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
-									{
-										Settings.LookupLabelsEntitiesSelected.Add(entity.LogicalName);
-									}
-									else if (!row.IsLookupLabels && Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
-									{
-										if (Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
-											.SelectMany(filterQ => filterQ.EntityProfiles)
-											.Any(dataFilter => dataFilter.LogicalName == entity.LogicalName
-												&& dataFilter.IsLookupLabels))
-										{
-											row.IsLookupLabels = true;
-										}
-										else
-										{
-											Settings.LookupLabelsEntitiesSelected.Remove(entity.LogicalName);
-										}
-									}
-								}
-								else if (args.PropertyName == "SelectedActions")
-								{
-									if (row.SelectedActions?.Any() == true)
-									{
-										Settings.SelectedActions[entity.LogicalName] = row.SelectedActions.Intersect(row.ActionNames).ToArray();
-									}
-									else
-									{
-										Settings.SelectedActions.Remove(entity.LogicalName);
-									}
-								}
 							};
 
 						rowList.Add(row);
@@ -412,31 +259,31 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			// selectAll status based on selection count
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsSelected).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
+				.Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => EntitiesSelectAll = true);
 			}
 
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsGenerateMeta).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
+				.Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => IsMetadataSelectAll = true);
 			}
 
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsJsEarly).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
+				.Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => IsJsEarlySelectAll = true);
 			}
 
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsOptionsetLabels).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
+				.Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => IsOptionsetLabelsSelectAll = true);
 			}
 
 			if (filteredEntities.All(entity => rowList.Where(row => row.IsLookupLabels).Select(row => row.Name)
-				                                   .Contains(entity.LogicalName)))
+				.Contains(entity.LogicalName)))
 			{
 				Dispatcher.Invoke(() => IsLookupLabelsSelectAll = true);
 			}
@@ -456,13 +303,111 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void SaveFilter()
 		{
+			foreach (var row in rowList)
+			{
+				var entity = row.Entity;
+
+				if (row.IsSelected && !Settings.EntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.EntitiesSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsSelected && Settings.EntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.EntitiesSelected.Remove(entity.LogicalName);
+				}
+
+				if (row.IsEntityFiltered && !Settings.EarlyBoundFilteredSelected.Contains(entity.LogicalName))
+				{
+					Settings.EarlyBoundFilteredSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsEntityFiltered && Settings.EarlyBoundFilteredSelected.Contains(entity.LogicalName))
+				{
+					Settings.EarlyBoundFilteredSelected.Remove(entity.LogicalName);
+				}
+
+				var profile = Settings.CrmEntityProfiles
+					.FirstOrDefault(e => e.LogicalName == entity.LogicalName);
+
+				if (profile != null)
+				{
+					Settings.CrmEntityProfiles.Remove(profile);
+				}
+
+				profile = row.EntityProfile;
+
+				if (profile?.IsBasicDataFilled != true && !row.IsEntityFiltered)
+				{
+					profile = row.EntityProfile = null;
+				}
+
+				if ((row.Rename.IsFilled() || row.IsEntityFiltered) && profile == null)
+				{
+					profile = row.EntityProfile = new EntityProfile(entity.LogicalName);
+				}
+
+				if (profile == null)
+				{
+					Settings.EarlyBoundFilteredSelected.Remove(entity.LogicalName);
+				}
+				else
+				{
+					profile.EntityRename = row.Rename;
+					Settings.CrmEntityProfiles.Add(profile);
+				}
+
+				if (row.IsGenerateMeta && !Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.PluginMetadataEntitiesSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsGenerateMeta && Settings.PluginMetadataEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.PluginMetadataEntitiesSelected.Remove(entity.LogicalName);
+				}
+
+				if (row.IsJsEarly && !Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.JsEarlyBoundEntitiesSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsJsEarly && Settings.JsEarlyBoundEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.JsEarlyBoundEntitiesSelected.Remove(entity.LogicalName);
+				}
+
+				if (row.IsOptionsetLabels && !Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.OptionsetLabelsEntitiesSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsOptionsetLabels && Settings.OptionsetLabelsEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.OptionsetLabelsEntitiesSelected.Remove(entity.LogicalName);
+				}
+
+				if (row.IsLookupLabels && !Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.LookupLabelsEntitiesSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsLookupLabels && Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName))
+				{
+					Settings.LookupLabelsEntitiesSelected.Remove(entity.LogicalName);
+				}
+
+				if (row.SelectedActions != null && row.ActionNames != null)
+				{
+					Settings.SelectedActions[entity.LogicalName] = row.SelectedActions.Intersect(row.ActionNames).ToArray();
+				}
+				
+				if (row.SelectedActions?.Any() == false && Settings.SelectedActions.ContainsKey(entity.LogicalName))
+				{
+					Settings.SelectedActions.Remove(entity.LogicalName);
+				}
+			}
 		}
 
 		#region CRM
 
 		private void RefreshEntityMetadata()
 		{
-			MetadataHelpers.RefreshSettingsEntityMetadata(Settings, connectionManager, metadataCacheManager);
+			InnerMetadataHelpers.RefreshSettingsEntityMetadata(Settings, connectionManager, metadataCacheManager);
 			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 		}
 
@@ -471,6 +416,20 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region UI events
 
 		#region Grid stuff
+
+		private void DataGridCell_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			var cell = sender as DataGridCell;
+
+			if (cell != null && !cell.IsEditing)
+			{
+				// enables editing on single click
+				if (!cell.IsFocused)
+				{
+					cell.Focus();
+				}
+			}
+		}
 
 		/// <summary>
 		///     Credit: http://stackoverflow.com/a/3833742/1919456
@@ -487,19 +446,43 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			var grid = row.GetParent<DataGrid>();
 			var gridName = grid.Name.Replace("Grid", "");
 
-			// enables editing on single click
-			if (!row.IsFocused)
+			// skip if an editable cell is clicked
+			if (!e.IsCellClicked<Button>() && e.IsTextCellClicked())
 			{
-				row.Focus();
+				// unselect all rows
+				for (var i = 0; i < grid.Items.Count; i++)
+				{
+					var container = grid.ItemContainerGenerator.ContainerFromIndex(i);
+
+					if (container == null)
+					{
+						continue;
+					}
+
+					var rowQ = (DataGridRow) container;
+
+					if (rowQ.IsSelected)
+					{
+						rowQ.IsSelected = false;
+					}
+				}
+
+				// select current row
+				if (!row.IsSelected)
+				{
+					row.IsSelected = true;
+				}
+
+				return;
 			}
 
 			var d = (DependencyObject)e.OriginalSource;
 
-			if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsGenerateMeta")
-				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsGenerateMeta")))
+			if (d != null && (d.IsCheckboxClickedParentCheck("IsGenerateMeta")
+				|| d.IsCheckboxClickedParentCheck("IsGenerateMeta")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				rowDataCast.IsGenerateMeta = !rowDataCast.IsGenerateMeta;
 
 				// selectAll value to false
@@ -510,11 +493,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsMetadataSelectAll");
 			}
-			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsJsEarly")
-				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsJsEarly")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsJsEarly")
+				|| d.IsCheckboxClickedParentCheck("IsJsEarly")))
 			{
 				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				rowDataCast.IsJsEarly = !rowDataCast.IsJsEarly;
 
 				// selectAll value to false
@@ -525,11 +508,16 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsJsEarlySelectAll");
 			}
-			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsOptionsetLabels")
-				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsOptionsetLabels")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsEntityFiltered")
+				|| d.IsCheckboxClickedParentCheck("IsEntityFiltered")))
 			{
-				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
+				rowDataCast.IsEntityFiltered = !rowDataCast.IsEntityFiltered;
+			}
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsOptionsetLabels")
+				|| d.IsCheckboxClickedParentCheck("IsOptionsetLabels")))
+			{
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				rowDataCast.IsOptionsetLabels = !rowDataCast.IsOptionsetLabels;
 
 				// selectAll value to false
@@ -540,11 +528,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsOptionsetLabelsSelectAll");
 			}
-			else if (d != null && (IsControlClickedParentCheck<CheckBox>(d, "IsLookupLabels")
-				|| IsControlClickedChildrenCheck<CheckBox>(d, "IsLookupLabels")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsLookupLabels")
+				|| d.IsCheckboxClickedParentCheck("IsLookupLabels")))
 			{
-				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				rowDataCast.IsLookupLabels = !rowDataCast.IsLookupLabels;
 
 				// selectAll value to false
@@ -555,11 +542,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				OnPropertyChanged("IsLookupLabelsSelectAll");
 			}
-			else if (d != null && (IsControlClickedParentCheck<Button>(d, "LoadActions")
-				|| IsControlClickedChildrenCheck<Button>(d, "LoadActions")))
+			else if (d != null && (d.IsCheckboxClickedParentCheck("LoadActions")
+				|| d.IsCheckboxClickedParentCheck("LoadActions")))
 			{
-				// clicked on meta
-				var rowDataCast = (EntitiesSelectionGridRow)row.Item;
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				var location = PointToScreen(Mouse.GetPosition(this));
 				LoadActions(rowDataCast,
 					() => new PopupSelector(this, rowDataCast.ActionNames, rowDataCast.SelectedActions,
@@ -602,9 +588,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					row.Focus();
 				}
 
-				var rowData = (GridRow)row.Item;
+				var rowData = (EntitySelectionGridRow)row.Item;
 
-				if (IsTextCellClicked(e))
+				if (e.IsTextCellClicked())
 				{
 					// unselect all rows
 					for (var i = 0; i < grid.Items.Count; i++)
@@ -629,65 +615,27 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						}
 					}
 
-					// select current row
-					if (!row.IsSelected)
+					if (row.IsSelected)
 					{
-						Extensions.SetBang(row, true);
-						row.IsSelected = true;
-
-						// get logical name and re-init
-						var logicalName = rowData.Name;
-						new FilterDetails(this, logicalName, Settings,
-							new ObservableCollection<EntityGridRow>(Entities),
-							connectionManager, metadataCacheManager, true).ShowDialog();
+						return;
 					}
+
+					// select current row
+					Extensions.SetBang(row, true);
+					row.IsSelected = true;
+
+					// get logical name and re-init
+					LogicalName = rowData.Name;
+
+					var entityProfile = rowData.EntityProfile ?? new EntityProfile(LogicalName);
+
+					new FilterDetails(this, LogicalName, Settings, entityProfile,
+						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCacheManager)
+						.ShowDialog();
+
+					rowData.EntityProfile = entityProfile.IsBasicDataFilled ? entityProfile : null;
 				}
 			}
-		}
-
-		private static bool IsTextCellClicked(MouseButtonEventArgs e)
-		{
-			var types = new[] { typeof(TextBlock), typeof(TextBox), typeof(DataGridTextColumn), typeof(RichTextBox) };
-			var d = (DependencyObject)e.OriginalSource;
-			return d != null && (IsCellClickedParentCheck(d, types) || IsCellClickedChildrenCheck(d, types));
-		}
-
-		private static bool IsCellClickedChildrenCheck(DependencyObject dep, params Type[] types)
-		{
-			if (dep == null)
-			{
-				return false;
-			}
-
-			if (types.Any(type => type.IsInstanceOfType(dep)))
-			{
-				return true;
-			}
-
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
-			{
-				if (IsCellClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), types))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool IsCellClickedParentCheck(DependencyObject dep, params Type[] types)
-		{
-			while (dep != null)
-			{
-				if (types.Any(type => type.IsInstanceOfType(dep)))
-				{
-					return true;
-				}
-
-				dep = VisualTreeHelper.GetParent(dep);
-			}
-
-			return false;
 		}
 
 		private void Grid_KeyUp(object sender, KeyEventArgs e)
@@ -706,7 +654,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			for (var i = 0; i < grid.Items.Count; i++)
 			{
-				var item = (DataGridRow) grid.ItemContainerGenerator.ContainerFromIndex(i);
+				var item = (DataGridRow)grid.ItemContainerGenerator.ContainerFromIndex(i);
 
 				if (item != null && item.IsEditing)
 				{
@@ -717,7 +665,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			switch (e.Key)
 			{
 				case Key.Space:
-					var isFirstItemSelected = ((GridRow) grid.SelectedItem).IsSelected;
+					var isFirstItemSelected = ((GridRow)grid.SelectedItem).IsSelected;
 
 					foreach (var item in grid.SelectedItems.Cast<GridRow>()
 						.Where(item => item.IsSelected == isFirstItemSelected))
@@ -738,45 +686,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private static bool IsControlClickedChildrenCheck<TControl>(DependencyObject dep, string name)
-			where TControl : ContentControl
-		{
-			switch (dep)
-			{
-				case TControl control when control.Name == name:
-					return true;
-
-				case null:
-					return false;
-			}
-
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
-			{
-				if (IsControlClickedChildrenCheck<TControl>(VisualTreeHelper.GetChild(dep, i), name))
-				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool IsControlClickedParentCheck<TControl>(DependencyObject dep, string name)
-			where TControl : ContentControl
-		{
-			while (dep != null)
-			{
-				if (dep is TControl control && control.Name == name)
-				{
-					return true;
-				}
-
-				dep = VisualTreeHelper.GetParent(dep);
-			}
-
-			return false;
-		}
-
 		private void CheckBoxIsSelected_OnClick(object sender, RoutedEventArgs e)
 		{
 			// ignore check-box clicks
@@ -790,16 +699,15 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		private void LoadActions(EntitiesSelectionGridRow row, Action action)
+		private void LoadActions(EntitySelectionGridRow row, Action action)
 		{
 			new Thread(
 				() =>
 				{
 					try
 					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, $"Loading {row.Name} Actions ...",
-							HeightProperty, originalProgressBarStyle);
-						var actions = MetadataHelpers.RetrieveActionNames(Settings,
+						Status.ShowBusy(Dispatcher, BusyIndicator, $"Loading {row.Name} Actions ...");
+						var actions = InnerMetadataHelpers.RetrieveActionNames(Settings,
 							connectionManager, metadataCacheManager, row.Name);
 						Dispatcher.InvokeAsync(
 							() =>
@@ -858,17 +766,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// get entity names that match any regex from the fetched list
 				if (DisplayFilter)
 				{
-					var defaultFiltered = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
-						.SelectMany(e => e.EntityProfiles)
-						.Where(e => e.IsApplyToCrm).ToArray();
-
 					customEntities =
 						EntityMetadataCache
 							.ToDictionary(key => key.LogicalName,
 								value =>
 								{
-									var rename =
-										defaultFiltered.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
+									var rename = Settings.CrmEntityProfiles
+										.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
 
 									return "("
 										+ (string.IsNullOrEmpty(rename)
@@ -893,25 +797,24 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			// filter entities
 			new Thread(() =>
-			           {
-				           try
-				           {
-					          	Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...",
-					          		HeightProperty, originalProgressBarStyle);
+					   {
+						   try
+						   {
+							   Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...");
 
-					           InitEntityList(customEntities?.ToList());
+							   InitEntityList(customEntities?.ToList());
 
-					           //Dispatcher.Invoke(() => { DataContext = this; });
-					           Dispatcher.Invoke(() => TextBoxFilter.Focus());
-					           
-					          	Status.HideBusy(Dispatcher, BusyIndicator);
-				           }
-				           catch (Exception ex)
-				           {
-					          	Status.PopException(Dispatcher, ex);
-					           Dispatcher.InvokeAsync(Close);
-				           }
-			           }).Start();
+							   //Dispatcher.Invoke(() => { DataContext = this; });
+							   Dispatcher.Invoke(() => TextBoxFilter.Focus());
+
+							   Status.HideBusy(Dispatcher, BusyIndicator);
+						   }
+						   catch (Exception ex)
+						   {
+							   Status.PopException(Dispatcher, ex);
+							   Dispatcher.InvokeAsync(Close);
+						   }
+					   }).Start();
 		}
 
 		#endregion
@@ -921,44 +824,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Settings.FiltersChanged();
 			Dispatcher.InvokeAsync(Close);
 		}
 
-		//private void Cancel_Click(object sender, RoutedEventArgs e)
-		//{
-		//	stillOpen = false;
-		//	Dispatcher.InvokeAsync(Close);
-		//}
-
-		private void ButtonRefresh_Click(object sender, RoutedEventArgs e)
+		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
-			new Thread(
-				() =>
-				{
-					try
-					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Saving ...",
-							HeightProperty, originalProgressBarStyle);
-						SaveFilter();
-
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Fetching entity metadata ...",
-							HeightProperty, originalProgressBarStyle);
-						RefreshEntityMetadata();
-
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
-							HeightProperty, originalProgressBarStyle);
-						InitEntityList();
-					}
-					catch (Exception ex)
-					{
-						Status.PopException(Dispatcher, ex);
-					}
-					finally
-					{
-						Status.HideBusy(Dispatcher, BusyIndicator);
-					}
-				}).Start();
+			StillOpen = false;
+			Dispatcher.InvokeAsync(Close);
 		}
 
 		#endregion

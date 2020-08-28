@@ -241,7 +241,7 @@
                     </DataGrid.Columns>
                 </DataGrid>
                 <Label Content="Many to Many Relations" Grid.Row="4" FontWeight="Bold"></Label>
-                <DataGrid x:Name="RelationsNNGrid" Grid.Row="5" AutoGenerateColumns="False" SelectionMode="Extended"
+                <DataGrid x:Name="RelationsNnGrid" Grid.Row="5" AutoGenerateColumns="False" SelectionMode="Extended"
                                 CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"
@@ -249,7 +249,7 @@
                     <DataGrid.Columns>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
-                                <CheckBox x:Name="CheckBoxRelationsNNSelectAll" IsChecked="{Binding RelationsNNSelectAll}"
+                                <CheckBox x:Name="CheckBoxRelationsNnSelectAll" IsChecked="{Binding RelationsNnSelectAll}"
                                                 HorizontalAlignment="Stretch" />
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
@@ -267,7 +267,7 @@
                             <DataGridTemplateColumn.Header>
                                 <CheckBox x:Name="CheckBoxNToNReadOnlyAll"
                                           Content="Read&#x0a;Only"
-                                          IsChecked="{Binding RelationsNNReadOnlyAll}"
+                                          IsChecked="{Binding RelationsNnReadOnlyAll}"
                                                 HorizontalAlignment="Stretch"></CheckBox>
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
@@ -299,7 +299,7 @@
                     <Label Padding="7,4,3,0" FontWeight="Bold" Content="English Label Field:"></Label>
                     <TextBox x:Name="TextBoxEnglishLabelField" Margin="2,0,1,0" Text="{Binding EnglishLabelField, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
                 </StackPanel>-->
-                <Button x:Name="ButtonCancel" Content="Cancel" Width="55" BorderThickness="1" Margin="3,0,0,0" Padding="7,0,7,0" Grid.Column="6" Click="Cancel_Click" />
+                <Button x:Name="ButtonCancel" Content="Cancel" Width="55" BorderThickness="1" Margin="0,0,3,0" Padding="7,0,7,0" Grid.Column="6" Click="Cancel_Click" />
                 <Button x:Name="ButtonOk" Content="OK" Width="80" BorderThickness="1" Margin="3,0,15,0" Padding="7,0,7,0" Grid.Column="7" Click="Logon_Click" />
             </Grid>
         </Grid>

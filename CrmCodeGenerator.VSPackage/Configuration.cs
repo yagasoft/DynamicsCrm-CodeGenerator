@@ -1,12 +1,14 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.Model.OldSettings2;
 using EnvDTE;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
@@ -19,6 +21,7 @@ using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using Constants = CrmCodeGenerator.VSPackage.Model.Constants;
+using Settings = Yagasoft.CrmCodeGenerator.Models.Settings.Settings;
 using Thread = System.Threading.Thread;
 
 #endregion
@@ -61,14 +64,29 @@ namespace CrmCodeGenerator.VSPackage
 						var oldSettings = JsonConvert.DeserializeObject<Model.OldSettings.Settings>(fileContent,
 							new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
 
-						if (oldSettings.EntityDataFilterArray != null)
+						if (oldSettings.EntityDataFilterArray?.EntityFilters.Any() == true)
 						{
-							Status.Update($"\tMigrating old JSON settings ...");
+							Status.Update($"\tMigrating pre-v9 JSON settings ...");
 							MigrateOldSettings(settings, oldSettings);
 						}
 					}
 
+					if (settings.CrmEntityProfiles == null)
+					{
+						var oldSettings = JsonConvert.DeserializeObject<Model.OldSettings2.Settings>(fileContent,
+							new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
+
+						if (oldSettings.EntityProfilesHeaderSelector?.EntityProfilesHeaders?.Any() == true)
+						{
+							Status.Update($"\tMigrating pre-v10 JSON settings ...");
+							MigrateOldSettings2(settings, oldSettings);
+						}
+					}
+
 					settings.ConnectionString = connectionString ?? settings.ConnectionString;
+					settings.AppId = settings.AppId ?? Constants.AppId;
+					settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
+					settings.SettingsVersion = settings.SettingsVersion ?? Constants.SettingsVersion;
 
 					Status.Update(">>> Finished loading settings.");
 
@@ -84,6 +102,9 @@ namespace CrmCodeGenerator.VSPackage
 			}
 
 			var newSettings = CreateNewSettings(connectionString);
+			newSettings.AppId = Constants.AppId;
+			newSettings.AppVersion = Constants.AppVersion;
+			newSettings.SettingsVersion = Constants.SettingsVersion;
 
 			Status.Update(">>> Created new settings.");
 
@@ -92,23 +113,105 @@ namespace CrmCodeGenerator.VSPackage
 
 		private static void MigrateOldSettings(Settings settings, Model.OldSettings.Settings oldSettings)
 		{
+			MigrateOldSettings2(settings,
+				new Model.OldSettings2.Settings
+				{
+					EntityProfilesHeaderSelector =
+						new EntityProfilesHeaderSelector_old2
+						{
+							SelectedFilterIndex = oldSettings.EntityDataFilterArray.SelectedFilterIndex,
+							EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader_old2>(oldSettings
+								.EntityDataFilterArray.EntityFilters
+								.Select(ef =>
+								new EntityProfilesHeader_old2
+								{
+									Prefix = ef.Prefix,
+									Suffix = ef.Suffix,
+									EntityProfiles = ef
+										.EntityFilterList?
+										.Select(efl =>
+										new EntityProfile_old2(efl.LogicalName)
+										{
+											IsApplyToCrm = ef.IsDefault,
+											Attributes = efl.Attributes,
+											AttributeLanguages = efl.AttributeLanguages,
+											AttributeRenames = efl.AttributeRenames,
+											ClearFlag = efl.ClearFlag,
+											EnglishLabelField = efl.EnglishLabelField,
+											EntityRename = efl.EntityRename,
+											IsExcluded = efl.IsExcluded,
+											IsGenerateMeta = efl.IsGenerateMeta,
+											IsLookupLabels = efl.IsLookupLabels,
+											IsOptionsetLabels = efl.IsOptionsetLabels,
+											LogicalName = efl.LogicalName,
+											NToN = efl.NToN,
+											NToNReadOnly = efl.NToNReadOnly,
+											NToNRenames = efl.NToNRenames,
+											NToOne = efl.NToOne,
+											NToOneFlatten = efl.NToOneFlatten,
+											NToOneReadOnly = efl.NToOneReadOnly,
+											NToOneRenames = efl.NToOneRenames,
+											OneToN = efl.OneToN,
+											OneToNReadOnly = efl.OneToNReadOnly,
+											OneToNRenames = efl.OneToNRenames,
+											ReadOnly = efl.ReadOnly,
+											ValueClearMode = (ClearModeEnum_old2?)efl.ValueClearMode
+										}).ToList()
+								}))
+						}
+				});
+		}
+
+		private static void MigrateOldSettings2(Settings settings, Model.OldSettings2.Settings oldSettings)
+		{
+			settings.CrmEntityProfiles =
+				oldSettings
+					.EntityProfilesHeaderSelector.EntityProfilesHeaders
+					.SelectMany(ef => ef.EntityProfiles.Where(ep => ep.IsApplyToCrm)
+						.Select(ep =>
+							new EntityProfile(ep.LogicalName)
+							{
+								Attributes = ep.Attributes,
+								AttributeLanguages = ep.AttributeLanguages,
+								AttributeRenames = ep.AttributeRenames,
+								ClearFlag = ep.ClearFlag,
+								EnglishLabelField = ep.EnglishLabelField,
+								EntityRename = ep.EntityRename,
+								IsExcluded = ep.IsExcluded,
+								IsGenerateMeta = ep.IsGenerateMeta,
+								IsLookupLabels = ep.IsLookupLabels,
+								IsOptionsetLabels = ep.IsOptionsetLabels,
+								LogicalName = ep.LogicalName,
+								NToN = ep.NToN,
+								NToNReadOnly = ep.NToNReadOnly,
+								NToNRenames = ep.NToNRenames,
+								NToOne = ep.NToOne,
+								NToOneFlatten = ep.NToOneFlatten,
+								NToOneReadOnly = ep.NToOneReadOnly,
+								NToOneRenames = ep.NToOneRenames,
+								OneToN = ep.OneToN,
+								OneToNReadOnly = ep.OneToNReadOnly,
+								OneToNRenames = ep.OneToNRenames,
+								ReadOnly = ep.ReadOnly,
+								ValueClearMode = (ClearModeEnum?)ep.ValueClearMode
+							})).ToList();
+
 			settings.EntityProfilesHeaderSelector =
 				new EntityProfilesHeaderSelector
 				{
-					SelectedFilterIndex = oldSettings.EntityDataFilterArray.SelectedFilterIndex,
+					SelectedFilterIndex = oldSettings.EntityProfilesHeaderSelector.SelectedFilterIndex,
 					EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader>(oldSettings
-						.EntityDataFilterArray.EntityFilters
+						.EntityProfilesHeaderSelector.EntityProfilesHeaders
 						.Select(ef =>
 						new EntityProfilesHeader
 						{
 							Prefix = ef.Prefix,
 							Suffix = ef.Suffix,
 							EntityProfiles = ef
-								.EntityFilterList
+								.EntityProfiles?
 								.Select(efl =>
 								new EntityProfile(efl.LogicalName)
 								{
-									IsApplyToCrm = ef.IsDefault,
 									Attributes = efl.Attributes,
 									AttributeLanguages = efl.AttributeLanguages,
 									AttributeRenames = efl.AttributeRenames,
@@ -184,7 +287,7 @@ namespace CrmCodeGenerator.VSPackage
 			{
 				try
 				{
-					var cache = CacheHelpers.GetFromMemCache<MetadataCacheArray>(Constants.CacheMemKey);
+					var cache = CacheHelpers.GetFromMemCache<MetadataCacheArray>(Constants.MetaCacheMemKey);
 
 					if (cache != null)
 					{
@@ -234,7 +337,7 @@ namespace CrmCodeGenerator.VSPackage
 								throw new Exception("Invalid settings format.");
 							}
 
-							CacheHelpers.AddToMemCache(Constants.CacheMemKey, cache);
+							CacheHelpers.AddToMemCache(Constants.MetaCacheMemKey, cache);
 
 							Status.Update(">>> Finished loading cache.");
 
@@ -251,7 +354,7 @@ namespace CrmCodeGenerator.VSPackage
 					Status.Update("Failed to read cache => " + ex.BuildExceptionMessage(isUseExStackTrace: true));
 				}
 
-				return CacheHelpers.AddToMemCache(Constants.CacheMemKey, new MetadataCacheArray());
+				return CacheHelpers.AddToMemCache(Constants.MetaCacheMemKey, new MetadataCacheArray());
 			}
 		}
 
@@ -287,14 +390,14 @@ namespace CrmCodeGenerator.VSPackage
 
 			Status.Update("\tCleaning redundant settings ...");
 
-			CleanSettings(settings);
+			if (settings.IsCleanSave)
+			{
+				CleanSettings(settings);
+			}
 
 			Status.Update("\tSerialising settings ...");
-			var connectionString = settings.ConnectionString;
-			settings.ConnectionString = null;
 			var serialisedSettings = JsonConvert.SerializeObject(settings, Formatting.Indented,
 				new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
-			settings.ConnectionString = connectionString;
 
 			Status.Update("\tWriting to file ...");
 			File.WriteAllText(file, serialisedSettings);
@@ -354,7 +457,7 @@ namespace CrmCodeGenerator.VSPackage
 
 		private static void CleanSettings(Settings settings)
 		{
-			var isThorough = settings.IsCleanSave;
+			var isCleanProfiles = settings.IsRemoveUnselectedProfiles;
 
 			foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
 			{
@@ -364,71 +467,46 @@ namespace CrmCodeGenerator.VSPackage
 				{
 					var dataFilter = list[i];
 
-					if (dataFilter.IsExcluded && isThorough)
+					var isIncluded = !dataFilter.IsExcluded;
+
+					if (isCleanProfiles && !isIncluded)
 					{
 						filter.EntityProfiles.RemoveAt(i);
 						continue;
 					}
 
+					dataFilter.Attributes?.RemoveEmpty();
+					dataFilter.AttributeRenames?.RemoveEmpty();
+					dataFilter.AttributeLanguages?.RemoveEmpty();
+					dataFilter.ReadOnly?.RemoveEmpty();
+					dataFilter.ClearFlag?.RemoveEmpty();
+					dataFilter.OneToN?.RemoveEmpty();
+					dataFilter.OneToNRenames?.RemoveEmpty();
+					dataFilter.OneToNReadOnly?.RemoveEmpty();
+					dataFilter.NToOne?.RemoveEmpty();
+					dataFilter.NToOneRenames?.RemoveEmpty();
+					dataFilter.NToOneFlatten?.RemoveEmpty();
+					dataFilter.NToOneReadOnly?.RemoveEmpty();
+					dataFilter.NToN?.RemoveEmpty();
+					dataFilter.NToNRenames?.RemoveEmpty();
+					dataFilter.NToNReadOnly?.RemoveEmpty();
+
 					var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
-					var isIsApplyToCrmFilled = dataFilter.IsApplyToCrm;
 					var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
 					var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
 					var isIsLookupLabelsFilled = dataFilter.IsLookupLabels;
 					var isValueClearModeFilled = dataFilter.ValueClearMode != null;
-					var isIsIncludeFilled = !dataFilter.IsExcluded;
 					var isEnglishLabelFieldFilled = dataFilter.EnglishLabelField.IsFilled();
-					var isIsFilteredFilled = dataFilter.IsFiltered;
-					var isAttributesFilled = dataFilter.Attributes?.Any() == true;
-					var isAttributeRenamesFilled = dataFilter.AttributeRenames?.Any() == true;
-					var isAttributeLanguagesFilled = dataFilter.AttributeLanguages?.Any() == true;
-					var isReadOnlyFilled = dataFilter.ReadOnly?.Any() == true;
-					var isClearFlagFilled = dataFilter.ClearFlag?.Any() == true;
-					var isOneToNFilled = dataFilter.OneToN?.Any() == true;
-					var isOneToNRenamesFilled = dataFilter.OneToNRenames?.Any() == true;
-					var isOneToNReadOnlyFilled = dataFilter.OneToNReadOnly?.Any() == true;
-					var isNToOneFilled = dataFilter.NToOne?.Any() == true;
-					var isNToOneRenamesFilled = dataFilter.NToOneRenames?.Any() == true;
-					var isNToOneFlattenFilled = dataFilter.NToOneFlatten?.Any() == true;
-					var isNToOneReadOnlyFilled = dataFilter.NToOneReadOnly?.Any() == true;
-					var isNToNFilled = dataFilter.NToN?.Any() == true;
-					var isNToNRenamesFilled = dataFilter.NToNRenames?.Any() == true;
-					var isNToNReadOnlyFilled = dataFilter.NToNReadOnly?.Any() == true;
+					var isCollectionsFilled = dataFilter.IsBasicDataFilled;
 
-					var isImmediateExclude =
-						isThorough && !isIsApplyToCrmFilled && !isAttributesFilled && !isOneToNFilled && !isNToOneFilled && !isNToNFilled;
-
-					var isKeepFilter = isEntityRenameFilled || isIsApplyToCrmFilled || isIsGenerateMetaFilled
+					var isKeepFilter = isIncluded || isEntityRenameFilled || isIsGenerateMetaFilled
 						|| isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
-						|| isValueClearModeFilled || isIsIncludeFilled || isEnglishLabelFieldFilled || isIsFilteredFilled;
-
-					isKeepFilter = isKeepFilter
-						|| (!isImmediateExclude
-							&& (isAttributesFilled || isAttributeRenamesFilled || isAttributeLanguagesFilled || isReadOnlyFilled || isClearFlagFilled
-								|| isOneToNFilled || isOneToNRenamesFilled || isOneToNReadOnlyFilled || isNToOneFilled || isNToOneRenamesFilled
-								|| isNToOneFlattenFilled || isNToOneReadOnlyFilled || isNToNFilled || isNToNRenamesFilled || isNToNReadOnlyFilled));
+						|| isValueClearModeFilled || isEnglishLabelFieldFilled
+						|| isCollectionsFilled;
 
 					if (!isKeepFilter)
 					{
 						filter.EntityProfiles.RemoveAt(i);
-					}
-					else if (isThorough)
-					{
-						dataFilter.Attributes?.RemoveEmpty();
-						dataFilter.AttributeRenames?.RemoveEmpty();
-						dataFilter.AttributeLanguages?.RemoveEmpty();
-						dataFilter.ReadOnly?.RemoveEmpty();
-						dataFilter.ClearFlag?.RemoveEmpty();
-						dataFilter.OneToN?.RemoveEmpty();
-						dataFilter.OneToNRenames?.RemoveEmpty();
-						dataFilter.OneToNReadOnly?.RemoveEmpty();
-						dataFilter.NToOne?.RemoveEmpty();
-						dataFilter.NToOneRenames?.RemoveEmpty();
-						dataFilter.NToOneFlatten?.RemoveEmpty();
-						dataFilter.NToOneReadOnly?.RemoveEmpty();
-						dataFilter.NToN?.RemoveEmpty();
-						dataFilter.NToNRenames?.RemoveEmpty();
-						dataFilter.NToNReadOnly?.RemoveEmpty();
 					}
 				}
 			}

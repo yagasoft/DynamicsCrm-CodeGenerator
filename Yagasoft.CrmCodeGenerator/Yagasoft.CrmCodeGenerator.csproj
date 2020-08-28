@@ -81,7 +81,7 @@
     <Compile Include="Connection\IConnectionManager.cs" />
     <Compile Include="Connection\OrgSvcs\IDisposableOrgSvc.cs" />
     <Compile Include="Connection\OrgSvcs\DisposableOrgSvcBase.cs" />
-    <Compile Include="Helpers\Connection.cs" />
+    <Compile Include="Helpers\ConnectionHelpers.cs" />
     <Compile Include="Helpers\Helpers.cs" />
     <Compile Include="Cache\Metadata\MetadataCacheManagerBase.cs" />
     <Compile Include="Helpers\MetadataHelpers.cs" />
@@ -101,6 +101,7 @@
     <Compile Include="Models\Mapping\MappingRelationship1N.cs" />
     <Compile Include="Models\Mapping\MappingRelationshipMN.cs" />
     <Compile Include="Models\Mapping\MappingRelationshipN1.cs" />
+    <Compile Include="Models\Messages\BusyMessage.cs" />
     <Compile Include="Models\Settings\EntityProfile.cs" />
     <Compile Include="Models\Settings\EntityProfilesHeader.cs" />
     <Compile Include="Models\Settings\EntityProfilesHeaderSelector.cs" />

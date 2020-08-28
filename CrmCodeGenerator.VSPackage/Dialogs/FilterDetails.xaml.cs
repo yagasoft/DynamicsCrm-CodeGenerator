@@ -15,6 +15,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
@@ -50,8 +51,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public IDictionary<string, EntityMetadata> AttributeMetadataCache;
 
-		private Style originalProgressBarStyle;
-
 		public bool StillOpen { get; private set; } = true;
 
 		public string WindowTitle { get; set; }
@@ -60,7 +59,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool FieldsSelectAll
 		{
-			get { return fieldsSelectAll; }
+			get => fieldsSelectAll;
 			set
 			{
 				fieldsSelectAll = value;
@@ -73,7 +72,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool ReadOnlySelectAll
 		{
-			get { return readOnlySelectAll; }
+			get => readOnlySelectAll;
 			set
 			{
 				readOnlySelectAll = value;
@@ -87,7 +86,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool ClearFlagSelectAll
 		{
-			get { return clearFlagSelectAll; }
+			get => clearFlagSelectAll;
 			set
 			{
 				clearFlagSelectAll = value;
@@ -101,7 +100,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool Relations1NSelectAll
 		{
-			get { return relations1NSelectAll; }
+			get => relations1NSelectAll;
 			set
 			{
 				relations1NSelectAll = value;
@@ -112,9 +111,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private bool relations1NReadOnlyAll;
 
-		public bool Relations1NFReadOnlyAll
+		public bool Relations1NReadOnlyAll
 		{
-			get { return relations1NReadOnlyAll; }
+			get => relations1NReadOnlyAll;
 			set
 			{
 				relations1NReadOnlyAll = value;
@@ -127,7 +126,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool RelationsN1SelectAll
 		{
-			get { return relationsN1SelectAll; }
+			get => relationsN1SelectAll;
 			set
 			{
 				relationsN1SelectAll = value;
@@ -140,7 +139,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool RelationsN1FlattenAll
 		{
-			get { return relationsN1FlattenAll; }
+			get => relationsN1FlattenAll;
 			set
 			{
 				relationsN1FlattenAll = value;
@@ -153,7 +152,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool RelationsN1ReadOnlyAll
 		{
-			get { return relationsN1ReadOnlyAll; }
+			get => relationsN1ReadOnlyAll;
 			set
 			{
 				relationsN1ReadOnlyAll = value;
@@ -162,41 +161,41 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private bool relationsNNSelectAll;
+		private bool relationsNnSelectAll;
 
-		public bool RelationsNNSelectAll
+		public bool RelationsNnSelectAll
 		{
-			get { return relationsNNSelectAll; }
+			get => relationsNnSelectAll;
 			set
 			{
-				relationsNNSelectAll = value;
-				RelationsNN.ToList().ForEach(relation => relation.IsSelected = value);
+				relationsNnSelectAll = value;
+				RelationsNn.ToList().ForEach(relation => relation.IsSelected = value);
 				OnPropertyChanged();
 			}
 		}
 
-		private bool relationsNNReadOnlyAll;
+		private bool relationsNnReadOnlyAll;
 
-		public bool RelationsNNReadOnlyAll
+		public bool RelationsNnReadOnlyAll
 		{
-			get { return relationsNNReadOnlyAll; }
+			get => relationsNnReadOnlyAll;
 			set
 			{
-				relationsNNReadOnlyAll = value;
-				RelationsNN.ToList().ForEach(relation => relation.IsReadOnly = value);
+				relationsNnReadOnlyAll = value;
+				RelationsNn.ToList().ForEach(relation => relation.IsReadOnly = value);
 				OnPropertyChanged();
 			}
 		}
 
-		public ObservableCollection<EntityGridRow> Entities { get; set; }
-		public ObservableCollection<FieldGridRow> Fields { get; set; }
+		public ObservableCollection<GridRow> Entities { get; set; }
+		public ObservableCollection<EntityFilterGridRow> Fields { get; set; }
 		public ObservableCollection<Relations1NGridRow> Relations1N { get; set; }
 		public ObservableCollection<RelationsN1GridRow> RelationsN1 { get; set; }
-		public ObservableCollection<RelationsNNGridRow> RelationsNN { get; set; }
+		public ObservableCollection<RelationsNnGridRow> RelationsNn { get; set; }
 
 		public bool IsEnglishLabelEnabled
 		{
-			get { return isEnglishLabelEnabled; }
+			get => isEnglishLabelEnabled;
 			set
 			{
 				isEnglishLabelEnabled = value;
@@ -227,7 +226,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public FilterDetails(Window parentWindow, string logicalName, Settings settings,
-			ObservableCollection<EntityGridRow> entities,
+			EntityProfile entityProfile, ObservableCollection<GridRow> entities,
 			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager,
 			bool isCrmEntities = false)
 		{
@@ -242,11 +241,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			this.connectionManager = connectionManager;
 			IsCrmEntities = isCrmEntities;
 
+			EntityProfile = entityProfile;
+
 			Entities = entities;
-			Fields = new ObservableCollection<FieldGridRow>();
+			Fields = new ObservableCollection<EntityFilterGridRow>();
 			Relations1N = new ObservableCollection<Relations1NGridRow>();
 			RelationsN1 = new ObservableCollection<RelationsN1GridRow>();
-			RelationsNN = new ObservableCollection<RelationsNNGridRow>();
+			RelationsNn = new ObservableCollection<RelationsNnGridRow>();
 
 			Settings = settings;
 			metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
@@ -254,8 +255,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
-			originalProgressBarStyle = BusyIndicator.ProgressBarStyle;
-
 			new Thread(
 				() =>
 				{
@@ -264,30 +263,30 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						EntityProfiles = Settings.EntityProfilesHeaderSelector;
 						EntityProfilesHeader = EntityProfiles.GetSelectedFilter();
 
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...");
 
-						Dispatcher.Invoke(() =>
-										  {
-											  DataContext = this;
-											  CheckBoxFieldsSelectAll.DataContext = this;
-											  CheckBoxReadOnlySelectAll.DataContext = this;
-											  CheckBoxClearFlagSelectAll.DataContext = this;
-											  CheckBoxRelations1NSelectAll.DataContext = this;
-											  CheckBoxRelationsN1SelectAll.DataContext = this;
-											  CheckBoxNToOneFlattenAll.DataContext = this;
-											  CheckBoxRelationsNNSelectAll.DataContext = this;
+						Dispatcher.Invoke(
+							() =>
+							{
+								DataContext = this;
+								CheckBoxFieldsSelectAll.DataContext = this;
+								CheckBoxReadOnlySelectAll.DataContext = this;
+								CheckBoxClearFlagSelectAll.DataContext = this;
+								CheckBoxRelations1NSelectAll.DataContext = this;
+								CheckBoxRelationsN1SelectAll.DataContext = this;
+								CheckBoxNToOneFlattenAll.DataContext = this;
+								CheckBoxRelationsNnSelectAll.DataContext = this;
 
-											  //TextBoxEnglishLabelField.DataContext = EntityProfile;
+								//TextBoxEnglishLabelField.DataContext = EntityProfile;
 
-											  FieldsGrid.ItemsSource = Fields;
-											  FieldsGrid.Columns[4].Visibility = IsEnglishLabelEnabled
-												  ? Visibility.Visible
-												  : Visibility.Hidden;
-											  Relations1NGrid.ItemsSource = Relations1N;
-											  RelationsN1Grid.ItemsSource = RelationsN1;
-											  RelationsNNGrid.ItemsSource = RelationsNN;
-										  });
+								FieldsGrid.ItemsSource = Fields;
+								FieldsGrid.Columns[4].Visibility = IsEnglishLabelEnabled
+									? Visibility.Visible
+									: Visibility.Hidden;
+								Relations1NGrid.ItemsSource = Relations1N;
+								RelationsN1Grid.ItemsSource = RelationsN1;
+								RelationsNnGrid.ItemsSource = RelationsNn;
+							});
 
 						Initialise();
 
@@ -304,12 +303,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Initialise()
 		{
 			EntityProfilesHeader = Settings.EntityProfilesHeaderSelector.GetSelectedFilter();
-			EntityProfile = EntityProfilesHeader.EntityProfiles.FirstOrDefault(filter => filter.LogicalName == LogicalName);
 
 			if (EntityProfile == null)
 			{
-				EntityProfile = new EntityProfile(LogicalName);
-				EntityProfilesHeader.EntityProfiles.Add(EntityProfile);
+				throw new Exception("Entity Profile not provided to this window.");
 			}
 
 			//Dispatcher.Invoke(() => TextBoxEnglishLabelField.DataContext = EntityProfile);
@@ -319,8 +316,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						Status.ShowBusy(Dispatcher, BusyIndicator, "Building lists ...",
-							HeightProperty, originalProgressBarStyle);
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Building lists ...");
 
 						if (AttributeMetadataCache == null)
 						{
@@ -376,7 +372,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					() =>
 					{
 						Fields.Add(
-							new FieldGridRow
+							new EntityFilterGridRow
 							{
 								IsSelected = EntityProfile.Attributes?.Contains(attributeAsync.LogicalName) == true,
 								Name = attributeAsync.LogicalName,
@@ -474,7 +470,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				 select relationNnq).ToArray();
 
 			// if no filter, select all
-			RelationsNNSelectAll = EntityProfile.NToN != null && EntityProfile.NToN.Length == relationsNn.Length;
+			RelationsNnSelectAll = EntityProfile.NToN != null && EntityProfile.NToN.Length == relationsNn.Length;
 
 			foreach (var relationNn in relationsNn)
 			{
@@ -484,7 +480,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					() =>
 					{
 						var row =
-							new RelationsNNGridRow
+							new RelationsNnGridRow
 							{
 								IsSelected = EntityProfile.NToN == null || EntityProfile.NToN.Contains(relationNnAsync.SchemaName),
 								Name = relationNnAsync.SchemaName,
@@ -499,7 +495,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 									&& EntityProfile.NToNReadOnly[relationNnAsync.SchemaName]
 							};
 
-						RelationsNN.Add(row);
+						RelationsNn.Add(row);
 					});
 			}
 		}
@@ -547,14 +543,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			EntityProfile.NToOneReadOnly = RelationsN1.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
 
 			EntityProfile.NToN =
-				RelationsNN.Where(relation => relation.IsSelected).Select(relation => relation.Name).ToArray();
-			EntityProfile.NToNRenames = RelationsNN.Where(relation => !string.IsNullOrWhiteSpace(relation.Rename))
+				RelationsNn.Where(relation => relation.IsSelected).Select(relation => relation.Name).ToArray();
+			EntityProfile.NToNRenames = RelationsNn.Where(relation => !string.IsNullOrWhiteSpace(relation.Rename))
 				.ToDictionary(relation => relation.Name, relation => relation.Rename);
-			EntityProfile.NToNReadOnly = RelationsNN.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
+			EntityProfile.NToNReadOnly = RelationsNn.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
 
 			var toSelect = Relations1N.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
 				.Union(RelationsN1.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
-					.Union(RelationsNN.Where(relation => relation.IsSelected)
+					.Union(RelationsNn.Where(relation => relation.IsSelected)
 						.SelectMany(relation => new[] { relation.ToEntity, relation.IntersectEntity })))
 				.Distinct();
 
@@ -723,7 +719,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				|| IsCheckboxClickedChildrenCheck(d, "ReadOnly")))
 			{
 				// clicked on meta
-				var rowDataCast = (GridRow)row.Item;
+				var rowDataCast = (EntityFilterGridRow)row.Item;
 
 				if (rowDataCast.IsReadOnlyEnabled)
 				{
@@ -742,7 +738,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				|| IsCheckboxClickedChildrenCheck(d, "ClearFlag")))
 			{
 				// clicked on meta
-				var rowDataCast = (FieldGridRow)row.Item;
+				var rowDataCast = (EntityFilterGridRow)row.Item;
 
 				if (rowDataCast.IsClearFlagEnabled)
 				{
@@ -811,7 +807,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					break;
 
 				case Key.Delete:
-					foreach (var item in grid.SelectedItems.Cast<GridRow>()
+					foreach (var item in grid.SelectedItems.Cast<EntityFilterGridRow>()
 						.Where(item => !string.IsNullOrEmpty(item.Rename)))
 					{
 						item.Rename = "";
@@ -968,7 +964,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonSelectAll_Click(object sender, RoutedEventArgs e)
 		{
-			if (!Fields.Any() && !Relations1N.Any() && !RelationsN1.Any() && !RelationsNN.Any())
+			if (!Fields.Any() && !Relations1N.Any() && !RelationsN1.Any() && !RelationsNn.Any())
 			{
 				return;
 			}
@@ -976,12 +972,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			FieldsSelectAll = true;
 			Relations1NSelectAll = true;
 			RelationsN1SelectAll = true;
-			RelationsNNSelectAll = true;
+			RelationsNnSelectAll = true;
 		}
 
 		private void ButtonDeselectAll_Click(object sender, RoutedEventArgs e)
 		{
-			if (!Fields.Any() && !Relations1N.Any() && !RelationsN1.Any() && !RelationsNN.Any())
+			if (!Fields.Any() && !Relations1N.Any() && !RelationsN1.Any() && !RelationsNn.Any())
 			{
 				return;
 			}
@@ -989,7 +985,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			FieldsSelectAll = false;
 			Relations1NSelectAll = false;
 			RelationsN1SelectAll = false;
-			RelationsNNSelectAll = false;
+			RelationsNnSelectAll = false;
 		}
 
 		private void ButtonClearNames_Click(object sender, RoutedEventArgs e)
@@ -1009,7 +1005,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				relation.Rename = "";
 			}
 
-			foreach (var relation in RelationsNN.Where(relation => !string.IsNullOrEmpty(relation.Rename)))
+			foreach (var relation in RelationsNn.Where(relation => !string.IsNullOrEmpty(relation.Rename)))
 			{
 				relation.Rename = "";
 			}
@@ -1022,7 +1018,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Settings.FiltersChanged();
 			Dispatcher.InvokeAsync(Close);
 		}
 

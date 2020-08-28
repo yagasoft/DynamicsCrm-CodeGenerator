@@ -325,7 +325,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Xrm.Client, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.7\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.4.1\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.2.26\lib\net462\Microsoft.Xrm.Sdk.dll</HintPath>
@@ -416,7 +416,7 @@
       <HintPath>..\packages\Yagasoft.Libraries.Common.2.2.6\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
     </Reference>
     <Reference Include="Yagasoft.Libraries.EnhancedOrgService, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.3.7\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.2.4.1\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -477,13 +477,17 @@
     <Compile Include="Helpers\Status.cs" />
     <Compile Include="Helpers\StreamEater.cs" />
     <Compile Include="Helpers\WindowExtensions.cs" />
-    <Compile Include="Helpers\WpfHelper.cs" />
+    <Compile Include="Helpers\WpfHelpers.cs" />
     <Compile Include="Model\Constants.cs" />
     <Compile Include="Model\CrmAttribute.Extensions.cs" />
     <Compile Include="CrmCodeGenerator2011.cs" />
+    <Compile Include="Model\OldSettings2\EntityProfile.cs" />
+    <Compile Include="Model\OldSettings2\EntityProfilesHeader.cs" />
+    <Compile Include="Model\OldSettings2\EntityProfilesHeaderSelector.cs" />
+    <Compile Include="Model\OldSettings2\Settings.cs" />
     <Compile Include="Model\OldSettings\EntityFilter.cs" />
     <Compile Include="Model\OldSettings\EntityFilterArray.cs" />
-    <Compile Include="Model\OldSettings\SettingsNew.cs" />
+    <Compile Include="Model\OldSettings\Settings.cs" />
     <Compile Include="ProviderSolutionProps.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -500,6 +504,15 @@
     <Compile Include="T4\Generator.cs" />
     <Compile Include="T4\Processor.cs" />
     <Compile Include="UserException.cs" />
+    <Compile Include="ViewModels\ClearModeEnumUi.cs" />
+    <Compile Include="ViewModels\EntityFilterGridRow.cs" />
+    <Compile Include="ViewModels\EntitySelectionGridRow.cs" />
+    <Compile Include="ViewModels\EntityProfileGridRow.cs" />
+    <Compile Include="ViewModels\EntityGridRow.cs" />
+    <Compile Include="ViewModels\GridRow.cs" />
+    <Compile Include="ViewModels\Relations1NGridRow.cs" />
+    <Compile Include="ViewModels\RelationsN1GridRow.cs" />
+    <Compile Include="ViewModels\RelationsNnGridRow.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx">
@@ -536,6 +549,7 @@
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Resource Include="Resources\Info.png" />
+    <Resource Include="Resources\Save.png" />
     <Content Include="Resources\Templates\[CS]Minimal.tt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>

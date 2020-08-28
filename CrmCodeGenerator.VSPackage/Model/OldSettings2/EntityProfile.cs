@@ -9,18 +9,14 @@
 #endregion
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 
-namespace Yagasoft.CrmCodeGenerator.Models.Settings
+namespace CrmCodeGenerator.VSPackage.Model.OldSettings2
 {
 	[Serializable]
-	public class EntityProfile : INotifyPropertyChanged
+	public class EntityProfile_old2 : INotifyPropertyChanged
 	{
 		public string LogicalName { get; set; }
 
@@ -30,6 +26,16 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			set
 			{
 				entityRename = string.IsNullOrEmpty(value) ? null : value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool IsApplyToCrm
+		{
+			get => isApplyToCrm;
+			set
+			{
+				isApplyToCrm = value;
 				OnPropertyChanged();
 			}
 		}
@@ -64,7 +70,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
-		public ClearModeEnum? ValueClearMode
+		public ClearModeEnum_old2? ValueClearMode
 		{
 			get => valueClearMode;
 			set
@@ -94,17 +100,8 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
-		[JsonIgnore]
-		public bool IsFiltered => Attributes.Any() || OneToN.Any() || NToOne.Any() || NToN.Any();
-
-		[JsonIgnore]
-		public bool IsBasicDataFilled => IsFiltered || AttributeRenames.Any() || AttributeLanguages.Any()
-			|| OneToNRenames.Any() || NToOneRenames.Any() || NToNRenames.Any();
-
-		[JsonIgnore]
-		public bool IsContainsData => GetType().GetProperties()
-			.Where(e => e.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(e.PropertyType))
-			.Any(e => (e.GetGetMethod().Invoke(this, null) as IEnumerable)?.Cast<object>().Any() == true);
+		public bool IsFiltered => !string.IsNullOrEmpty(EntityRename)
+			|| Attributes.Length > 0 || OneToN.Length > 0 || NToOne.Length > 0 || NToN.Length > 0;
 
 		public string[] Attributes { get; set; } = new string[0];
 		public IDictionary<string, string> AttributeRenames { get; set; } = new Dictionary<string, string>();
@@ -125,7 +122,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		public IDictionary<string, string> NToNRenames { get; set; } = new Dictionary<string, string>();
 		public IDictionary<string, bool> NToNReadOnly { get; set; } = new Dictionary<string, bool>();
 
-		public EntityProfile(string logicalName)
+		public EntityProfile_old2(string logicalName)
 		{
 			LogicalName = logicalName;
 		}
@@ -142,9 +139,10 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		private string entityRename;
 		private bool isExcluded = true;
 		private bool isGenerateMeta;
+		private bool isApplyToCrm;
 		private bool isOptionsetLabels;
 		private bool isLookupLabels;
-		private ClearModeEnum? valueClearMode;
+		private ClearModeEnum_old2? valueClearMode;
 		private string englishLabelField;
 	}
 }

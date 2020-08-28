@@ -1,17 +1,116 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Yagasoft.Libraries.Common;
 
 namespace CrmCodeGenerator.VSPackage.Helpers
 {
-	class WpfHelper
+	public class WpfHelpers
 	{
+		public static bool IsCellClickedChildrenCheck(DependencyObject dep, params Type[] types)
+		{
+			if (dep == null)
+			{
+				return false;
+			}
+
+			if (types.Any(type => type.IsInstanceOfType(dep)))
+			{
+				return true;
+			}
+
+			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
+			{
+				if (IsCellClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), types))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		public static bool IsCellClickedParentCheck(DependencyObject dep, params Type[] types)
+		{
+			while (dep != null)
+			{
+				if (types.Any(type => type.IsInstanceOfType(dep)))
+				{
+					return true;
+				}
+
+				dep = VisualTreeHelper.GetParent(dep);
+			}
+
+			return false;
+		}
 	}
 
-	public static class Extensions
+	public static partial class Extensions
 	{
+		public static bool IsComboBoxCellClicked(this MouseButtonEventArgs e)
+		{
+			var types = new[] {typeof(ComboBox), typeof(ComboBoxItem)};
+			var d = (DependencyObject) e.OriginalSource;
+			return d != null && (WpfHelpers.IsCellClickedParentCheck(d, types) || WpfHelpers.IsCellClickedChildrenCheck(d, types));
+		}
+
+		public static bool IsTextCellClicked(this MouseButtonEventArgs e)
+		{
+			var types = new[] {typeof(TextBlock), typeof(TextBox), typeof(DataGridTextColumn), typeof(RichTextBox)};
+			var d = (DependencyObject) e.OriginalSource;
+			return d != null && (WpfHelpers.IsCellClickedParentCheck(d, types) || WpfHelpers.IsCellClickedChildrenCheck(d, types));
+		}
+
+		public static bool IsCellClicked<TControl>(this MouseButtonEventArgs e) where TControl : FrameworkElement
+		{
+			var types = new[] {typeof(TControl)};
+			var d = (DependencyObject) e.OriginalSource;
+			return d != null && (WpfHelpers.IsCellClickedParentCheck(d, types) || WpfHelpers.IsCellClickedChildrenCheck(d, types));
+		}
+
+		public static bool IsCheckboxClickedParentCheck(this DependencyObject dep, string name)
+		{
+			while (dep != null)
+			{
+				if (dep is FrameworkElement frameElement && frameElement.Name == name)
+				{
+					return true;
+				}
+
+				dep = VisualTreeHelper.GetParent(dep);
+			}
+
+			return false;
+		}
+
+		public static bool IsCheckboxClickedChildrenCheck(this DependencyObject dep, string name)
+		{
+			if (dep == null)
+			{
+				return false;
+			}
+
+			if (dep is FrameworkElement frameElement && frameElement.Name == name)
+			{
+				return true;
+			}
+
+			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(dep); i++)
+			{
+				if (IsCheckboxClickedChildrenCheck(VisualTreeHelper.GetChild(dep, i), name))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		public static T GetChild<T>(this DependencyObject depObj) where T : DependencyObject
 		{
 			if (depObj == null)

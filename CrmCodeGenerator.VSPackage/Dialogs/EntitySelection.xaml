@@ -3,11 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
+        xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
         mc:Ignorable="d"
-        Title="CRM Entities Selection and Generation Options" Width="1024" Height="670" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner"
-            ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        Title="CRM Entities Selection and Generation Options" Width="1024" Height="670" Loaded="Window_Loaded"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
     <Window.Resources>
         <Style TargetType="Label">
@@ -27,19 +30,29 @@
         <Style TargetType="ComboBox">
             <Setter Property="Margin" Value="0,0,0,0" />
         </Style>
-        <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed" />
         <Style TargetType="{x:Type DataGridCell}">
+            <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridCell_PreviewMouseLeftButtonDown" />
+            <Setter Property="Foreground" Value="{Binding Colour}" />
             <Style.Triggers>
                 <Trigger Property="DataGridCell.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Transparent" />
                     <Setter Property="Background" Value="Transparent" />
                 </Trigger>
             </Style.Triggers>
-            <Setter Property="Foreground" Value="{Binding Colour}" />
         </Style>
         <Style TargetType="{x:Type DataGridRow}">
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown" />
+            <EventSetter Event="PreviewMouseDoubleClick" Handler="DataGridRow_PreviewMouseDoubleClick" />
             <Style.Triggers>
+                <Trigger Property="t:Extensions.Bang" Value="True">
+                    <Setter Property="BorderBrush" Value="Red" />
+                    <Setter Property="BorderThickness" Value="1" />
+                </Trigger>
+                <Trigger Property="t:Extensions.Bang" Value="False">
+                    <Setter Property="BorderBrush" Value="Black" />
+                    <Setter Property="BorderThickness" Value="0" />
+                </Trigger>
                 <Trigger Property="DataGridRow.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Blue" />
                     <Setter Property="BorderThickness" Value="1" />
@@ -57,34 +70,38 @@
     <xctk:BusyIndicator x:Name="BusyIndicator">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid Grid.ColumnSpan="3">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition MaxWidth="50"/>
-                    <ColumnDefinition MaxWidth="50"/>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition MaxWidth="50" />
+                    <ColumnDefinition MaxWidth="50" />
                 </Grid.ColumnDefinitions>
                 <CheckBox x:Name="CheckBoxDisplayFilter" IsChecked="{Binding DisplayFilter}"
                           VerticalAlignment="Center" Margin="6,0,0,0"
-                                              HorizontalAlignment="Stretch">Filter by Display Name</CheckBox>
+                          HorizontalAlignment="Stretch">
+                    Filter by Display Name
+                </CheckBox>
                 <TextBox x:Name="TextBoxFilter" Margin="5,0,0,0" Grid.Column="1"
                          KeyDown="TextBoxFilter_OnKeyDown"
-                         Text="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                <Button x:Name="ButtonFilter" Grid.Column="2" Margin="2,2,0,2" Content="Filter" Click="ButtonFilter_Click" />
-                <Button x:Name="ButtonFilterClear" Grid.Column="3" Margin="2,2,0,2" Content="Clear" Click="ButtonFilterClear_Click" />
+                         Text="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <Button x:Name="ButtonFilter" Grid.Column="2" Margin="2,2,0,2" Content="Filter"
+                        Click="ButtonFilter_Click" />
+                <Button x:Name="ButtonFilterClear" Grid.Column="3" Margin="2,2,0,2" Content="Clear"
+                        Click="ButtonFilterClear_Click" />
             </Grid>
             <Grid Grid.Row="1">
-                    <DataGrid x:Name="EntitiesGrid" AutoGenerateColumns="False" SelectionMode="Extended"
-                              CanUserAddRows="False" CanUserDeleteRows="False"
-                              ScrollViewer.CanContentScroll="True"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                              ItemsSource="{Binding Entities}"
-                              KeyUp="Grid_KeyUp">
+                <DataGrid x:Name="EntitiesGrid" AutoGenerateColumns="False" SelectionMode="Extended"
+                          CanUserAddRows="False" CanUserDeleteRows="False"
+                          ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                          ItemsSource="{Binding Entities}"
+                          KeyUp="Grid_KeyUp">
                     <DataGrid.Resources>
                         <Style TargetType="CheckBox">
                             <Setter Property="Padding" Value="0" />
@@ -94,76 +111,33 @@
                         </Style>
                     </DataGrid.Resources>
                     <DataGrid.Columns>
-                            <DataGridTemplateColumn>
-                                <DataGridTemplateColumn.Header>
-                                    <CheckBox x:Name="CheckBoxEntitiesSelectAll" IsChecked="{Binding EntitiesSelectAll, Mode=TwoWay}"
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="CheckBoxEntitiesSelectAll"
+                                          IsChecked="{Binding EntitiesSelectAll, Mode=TwoWay}"
+                                          HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
                                               HorizontalAlignment="Stretch" />
-                                </DataGridTemplateColumn.Header>
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding Path=IsSelected, Mode=TwoWay}" Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTextColumn Binding="{Binding Path=Name}" Header="Logical Name"
-                                            IsReadOnly="True" Width="*"/>
-                        <DataGridTextColumn Binding="{Binding Path=DisplayName}" Header="Display Name" IsReadOnly="True" Width="*"/>
-                            <DataGridTemplateColumn>
-                                <DataGridTemplateColumn.Header>
-                                <CheckBox x:Name="CheckBoxMetadataSelectAll"
-                                          VerticalContentAlignment="Center"
-                                          IsChecked="{Binding IsMetadataSelectAll}"
-                                          Content="Generate&#x0a;Metadata"
-                                              HorizontalAlignment="Stretch"></CheckBox>
-                                </DataGridTemplateColumn.Header>
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox x:Name="IsGenerateMeta" IsChecked="{Binding Path=IsGenerateMeta, Mode=TwoWay}" Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn>
-                                <DataGridTemplateColumn.Header>
-                                    <CheckBox x:Name="CheckBoxOptionsetLabelsSelectAll"
-                                              VerticalContentAlignment="Center"
-                                              Content="Optionset&#x0a;Labels"
-                                              IsChecked="{Binding IsOptionsetLabelsSelectAll}"
-                                              HorizontalAlignment="Stretch"></CheckBox>
-                                </DataGridTemplateColumn.Header>
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                    <CheckBox x:Name="IsOptionsetLabels" IsChecked="{Binding Path=IsOptionsetLabels, Mode=TwoWay}"
-                                                  Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn>
-                                <DataGridTemplateColumn.Header>
-                                    <CheckBox x:Name="CheckBoxLookupLabelsSelectAll"
-                                              IsChecked="{Binding IsLookupLabelsSelectAll}"
-                                              Content="Lookup&#x0a;Labels"
-                                              VerticalContentAlignment="Center"
-                                              HorizontalAlignment="Stretch">
-                                    </CheckBox>
-                                </DataGridTemplateColumn.Header>
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                    <CheckBox x:Name="IsLookupLabels" IsChecked="{Binding Path=IsLookupLabels, Mode=TwoWay}"
-                                                  Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                                            IsReadOnly="True" Width="*" />
+                        <DataGridTextColumn Binding="{Binding Path=DisplayName}" Header="Display Name"
+                                            IsReadOnly="True" Width="*" />
+                        <DataGridTextColumn Binding="{Binding Path=Rename, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Header="New Name" Width="*"/>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
                                 <CheckBox x:Name="CheckBoxJsEarlySelectAll"
                                           VerticalContentAlignment="Center"
                                           Content="Early&#x0a;Bound"
                                           IsChecked="{Binding IsJsEarlySelectAll}"
-                                          HorizontalAlignment="Stretch"></CheckBox>
+                                          HorizontalAlignment="Stretch" />
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -176,30 +150,95 @@
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
                                 <Label VerticalContentAlignment="Center"
-                                              Content="Select&#x0a;Actions" FontSize="9" Margin="0"
-                                              HorizontalAlignment="Stretch"></Label>
+                                       Content="Apply&#x0a;Filter" FontSize="9" Margin="0"
+                                       HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="IsEntityFiltered"
+                                              IsChecked="{Binding Path=IsEntityFiltered, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
+                                              HorizontalAlignment="Stretch" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="CheckBoxMetadataSelectAll"
+                                          VerticalContentAlignment="Center"
+                                          IsChecked="{Binding IsMetadataSelectAll}"
+                                          Content="Generate&#x0a;Metadata"
+                                          HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="IsGenerateMeta"
+                                              IsChecked="{Binding Path=IsGenerateMeta, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
+                                              HorizontalAlignment="Stretch" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="CheckBoxOptionsetLabelsSelectAll"
+                                          VerticalContentAlignment="Center"
+                                          Content="Optionset&#x0a;Labels"
+                                          IsChecked="{Binding IsOptionsetLabelsSelectAll}"
+                                          HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="IsOptionsetLabels"
+                                              IsChecked="{Binding Path=IsOptionsetLabels, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
+                                              HorizontalAlignment="Stretch" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="CheckBoxLookupLabelsSelectAll"
+                                          IsChecked="{Binding IsLookupLabelsSelectAll}"
+                                          Content="Lookup&#x0a;Labels"
+                                          VerticalContentAlignment="Center"
+                                          HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="IsLookupLabels"
+                                              IsChecked="{Binding Path=IsLookupLabels, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
+                                              HorizontalAlignment="Stretch" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <Label VerticalContentAlignment="Center"
+                                       Content="Select&#x0a;Actions" FontSize="9" Margin="0"
+                                       HorizontalAlignment="Stretch" />
                             </DataGridTemplateColumn.Header>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel HorizontalAlignment="Stretch">
                                         <Button x:Name="LoadActions" Foreground="{Binding ActionColour}"
                                                 Content="{Binding ActionCount}" Width="25" Height="Auto"
-                                                Margin="0" BorderThickness="1" Padding="3 0 3 0" HorizontalAlignment="Center" />
+                                                Margin="0" BorderThickness="1" Padding="3 0 3 0"
+                                                HorizontalAlignment="Center" />
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
-                    </DataGrid>
+                </DataGrid>
             </Grid>
-            <Grid Height="24" Grid.ColumnSpan="3" Grid.Row="2" >
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Button x:Name="ButtonRefresh" Content="Refresh" HorizontalAlignment="Left" BorderThickness="1" Margin="0,0,3,0" Padding="7,0,7,0" Click="ButtonRefresh_Click" />
-                <Button x:Name="GenerateCodeButton" Click="Logon_Click" Content="OK" BorderThickness="1" HorizontalAlignment="Right" Grid.Column="1" Margin="3,0,15,0"  Width="80" />
-            </Grid>
+            <Button x:Name="ButtonCancel" Content="Cancel" Grid.Row="2" Width="55" Height="24"
+                    HorizontalAlignment="Left"
+                    BorderThickness="1" Margin="3,0,0,0" Padding="7,0,7,0" Click="Cancel_Click" />
+            <Button x:Name="GenerateCodeButton" Content="OK" Grid.Row="2" Width="80" Height="24"
+                    HorizontalAlignment="Right"
+                    BorderThickness="1" Margin="0,0,15,0" Click="Logon_Click" />
         </Grid>
     </xctk:BusyIndicator>
 </Window>

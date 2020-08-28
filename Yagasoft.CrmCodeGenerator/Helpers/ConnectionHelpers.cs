@@ -1,6 +1,9 @@
 #region Imports
 
+using System.Linq;
 using System.Text.RegularExpressions;
+using Yagasoft.CrmCodeGenerator.Connection;
+using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 
 #endregion
 
@@ -8,6 +11,8 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 {
 	public static class ConnectionHelpers
 	{
+		private static readonly object lockObj = new object();
+
 		public static string SecureConnectionString(string connectionString)
 		{
 			return Regex

@@ -166,8 +166,6 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 				filter.EntityProfiles.RemoveAll(entity => !settings.EntityList.Contains(entity.LogicalName));
 			}
 
-			settings.FiltersChanged();
-
 			return resultFiltered;
 		}
 		

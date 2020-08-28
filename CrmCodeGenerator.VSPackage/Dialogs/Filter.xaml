@@ -83,8 +83,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition MaxWidth="50"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Label Padding="5,5,3,0" FontWeight="Bold" Content="Prefix:"></Label>
@@ -96,13 +94,8 @@
 					    SelectedIndex="{Binding SelectedFilterIndex, Mode=TwoWay}"
 					    SelectionChanged="ComboBoxFilters_SelectionChanged" />
                 <Button x:Name="ButtonDeleteFilter" Grid.Column="5" Margin="2,2,0,2" Content="Delete" Click="ButtonDeleteFilter_Click" />
-                <CheckBox x:Name="CheckBoxIsDefault" IsChecked="{Binding IsDefault, Mode=TwoWay}"
-                          Grid.Column="6" VerticalAlignment="Center" Margin="2,2,0,2" IsEnabled="False">
-                    <TextBlock>'Apply to CRM'<LineBreak/>Entities Selected</TextBlock>
-                </CheckBox>
-                <Separator Grid.Column="7" Margin="5 3 2 3" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" />
-                <Label Grid.Column="8" Padding="7,5,3,0" FontWeight="Bold" Content="Suffix:"></Label>
-                <TextBox x:Name="TextBoxSuffix" Grid.Column="9" Margin="2,0,1,0" Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <Label Grid.Column="6" Padding="7,5,3,0" FontWeight="Bold" Content="Suffix:"></Label>
+                <TextBox x:Name="TextBoxSuffix" Grid.Column="7" Margin="2,0,1,0" Text="{Binding Suffix, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             </Grid>
             <Grid Grid.Row="1"  Grid.ColumnSpan="3">
                 <Grid.ColumnDefinitions>
@@ -132,7 +125,7 @@
                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                               ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                           CanUserDeleteRows="False"
-                              KeyUp="Grid_KeyUp" LoadingRow="EntitiesGrid_LoadingRow">
+                              KeyUp="Grid_KeyUp">
                         <DataGrid.Columns>
                             <DataGridTemplateColumn>
                                 <DataGridTemplateColumn.Header>
@@ -149,21 +142,6 @@
                             <DataGridTextColumn Binding="{Binding Path=Name}" Header="Logical Name" IsReadOnly="True" Width="*"/>
                             <DataGridTextColumn Binding="{Binding Path=DisplayName}" Header="Display Name" IsReadOnly="True" Width="*"/>
                             <DataGridTextColumn Binding="{Binding Path=Rename, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="New Name" Width="*"/>
-                            <DataGridTemplateColumn>
-                                <DataGridTemplateColumn.Header>
-                                    <CheckBox x:Name="CheckBoxApplyToCrmSelectAll"
-                                              VerticalContentAlignment="Center"
-                                              Content="Apply&#x0a;to CRM"
-                                              IsChecked="{Binding ApplyToCrmSelectAll}"
-                                              HorizontalAlignment="Stretch"></CheckBox>
-                                </DataGridTemplateColumn.Header>
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox x:Name="ApplyToCrm" IsChecked="{Binding Path=IsApplyToCrm, Mode=TwoWay}" Click="CheckBoxIsSelected_OnClick"
-                                              HorizontalAlignment="Stretch" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
                             <DataGridTemplateColumn>
                                 <DataGridTemplateColumn.Header>
                                     <CheckBox x:Name="CheckBoxMetadataSelectAll"
@@ -235,17 +213,10 @@
                     </DataGrid>
                 </Grid>
             </Grid>
-            <Grid Height="24" Grid.ColumnSpan="3" Grid.Row="3" >
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Button x:Name="ButtonRefresh" Content="Refresh" HorizontalAlignment="Left" BorderThickness="1" Margin="0,0,3,0" Padding="7,0,7,0" Click="ButtonRefresh_Click" />
-                <Button x:Name="ButtonCancel" Content="Cancel" Width="55" BorderThickness="1" Margin="3,0,0,0" Padding="7,0,7,0" Grid.Column="2" Click="Cancel_Click" />
-                <Button x:Name="GenerateCodeButton" Click="Logon_Click" Content="OK" BorderThickness="1" HorizontalAlignment="Right" Grid.Column="3" Margin="3,0,15,0"  Width="80" />
-            </Grid>
+            <Button x:Name="ButtonCancel" Content="Cancel" Grid.Row="3" Width="55" Height="24" HorizontalAlignment="Left"
+                    BorderThickness="1" Margin="3,0,0,0" Padding="7,0,7,0" Click="Cancel_Click" />
+            <Button x:Name="GenerateCodeButton" Content="OK" Grid.Row="3" Width="80" Height="24" HorizontalAlignment="Right"
+                    BorderThickness="1" Margin="0,0,15,0" Click="Logon_Click" />
         </Grid>
     </xctk:BusyIndicator>
 </Window>

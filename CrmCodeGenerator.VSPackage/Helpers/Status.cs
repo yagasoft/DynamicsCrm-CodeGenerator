@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Controls;
@@ -8,6 +11,7 @@ using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Xceed.Wpf.Toolkit;
+using Yagasoft.CrmCodeGenerator.Models.Messages;
 using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
 using MessageBox = System.Windows.MessageBox;
@@ -68,37 +72,103 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 					MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
 
 					var error = exception.BuildExceptionMessage("[ERROR]");
-					UpdateStatus(dispatcher, error, false);
+					Update(error);
 				}, DispatcherPriority.Loaded);
 		}
 
-		public static void ShowBusy(Dispatcher dispatcher, BusyIndicator busyIndicator, string message,
-			DependencyProperty heightProperty, Style originalProgressBarStyle = null, double? progress = null)
+	    private static Style originalProgressBarStyle;
+	    private static readonly ConcurrentStack<BusyMessage<Style>> busyStack = new ConcurrentStack<BusyMessage<Style>>();
+	    private static readonly HashSet<Guid> busyPopped = new HashSet<Guid>();
+
+		public static BusyMessage<Style> ShowBusy(Dispatcher dispatcher, BusyIndicator busyIndicator, string message,
+			double? progress = null, Guid? popId = null)
 		{
 			if (busyIndicator == null)
 			{
-				return;
+				return null;
 			}
 
-			dispatcher.InvokeAsync(
+			if (progress == null)
+			{
+				lock (lockObj)
+				{
+					dispatcher.Invoke(
+						() =>
+						{
+							originalProgressBarStyle = originalProgressBarStyle ?? busyIndicator.ProgressBarStyle;
+						});
+				}
+			}
+
+			return
+				dispatcher.Invoke(
 				() =>
 				{
-					busyIndicator.IsBusy = true;
-					busyIndicator.BusyContent =
-						string.IsNullOrEmpty(message) ? "Please wait ..." : message;
+					Guid? id = null;
+					Style style = null;
 
-					if (progress == null)
+					if (popId != null)
 					{
-						busyIndicator.ProgressBarStyle = originalProgressBarStyle ?? busyIndicator.ProgressBarStyle;
+						busyPopped.Add(popId.Value);
+
+						BusyMessage<Style> top;
+
+						while (busyStack.TryPeek(out top) && busyPopped.Remove(top?.Id ?? Guid.Empty))
+						{
+							busyStack.TryPop(out _);
+						}
+
+						if (busyStack.TryPeek(out top))
+						{
+							id = top.Id;
+							message = top.Message;
+							style = top.Style;
+						}
+						else
+						{
+							HideBusy(dispatcher, busyIndicator);
+							return null;
+						}
 					}
-					else
+
+					busyIndicator.IsBusy = true;
+					busyIndicator.BusyContent = string.IsNullOrEmpty(message) ? "Please wait ..." : message;
+
+					if (style == null)
 					{
-						var style = new Style(typeof(ProgressBar));
-						style.Setters.Add(new Setter(heightProperty, 15d));
-						style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
-						style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
-						busyIndicator.ProgressBarStyle = style;
+						if (progress == null)
+						{
+							style = originalProgressBarStyle;
+						}
+						else
+						{
+							style = new Style(typeof(ProgressBar));
+							style.Setters.Add(new Setter(FrameworkElement.HeightProperty, 10d));
+							style.Setters.Add(new Setter(RangeBase.ValueProperty, progress));
+							style.Setters.Add(new Setter(RangeBase.MaximumProperty, 100d));
+						}
 					}
+
+					busyIndicator.ProgressBarStyle = style;
+
+					BusyMessage<Style> busyMessage = null;
+
+					if (id == null)
+					{
+						busyMessage =
+							new BusyMessage<Style>
+							{
+								Id = Guid.NewGuid(),
+								Message = message,
+								Style = progress.HasValue ? null : style
+							};
+						busyMessage.Finished = () => ShowBusy(dispatcher, busyIndicator, message, null, busyMessage.Id);
+						busyMessage.FinishedProgress = progressQ => ShowBusy(dispatcher, busyIndicator, message,
+							progress.HasValue ? progressQ : (double?)null, busyMessage.Id);
+						busyStack.Push(busyMessage);
+					}
+
+					return busyMessage;
 				}, DispatcherPriority.Loaded);
 		}
 
@@ -112,33 +182,11 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 			dispatcher.InvokeAsync(
 				() =>
 				{
+					busyStack.Clear();
+					busyPopped.Clear();
 					busyIndicator.IsBusy = false;
 					busyIndicator.BusyContent = "Please wait ...";
 				}, DispatcherPriority.Loaded);
-		}
-
-		public static void UpdateStatus(Dispatcher dispatcher, string message, bool working, bool allowBusy = true, bool newLine = true,
-			BusyIndicator busyIndicator = null, Style originalProgressBarStyle = null, DependencyProperty heightProperty = null)
-		{
-			if (allowBusy)
-			{
-				if (working)
-				{
-					ShowBusy(dispatcher, busyIndicator, message, heightProperty, originalProgressBarStyle);
-				}
-				else
-				{
-					HideBusy(dispatcher, busyIndicator);
-				}
-			}
-
-			if (!string.IsNullOrWhiteSpace(message))
-			{
-				Update(message, newLine);
-			}
-
-			Application.DoEvents();
-			// Needed to allow the output window to update (also allows the cursor wait and form disable to show up)
 		}
     }
 }

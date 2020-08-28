@@ -182,6 +182,51 @@
                             </CheckBox>
                         </StackPanel>
                     </GroupBox>
+                    <GroupBox Margin="5" Padding="2">
+                        <GroupBox.Header>
+                            Save
+                        </GroupBox.Header>
+                        <StackPanel>
+                            <CheckBox x:Name="CheckBoxCleanSave" Content="Clean Save"
+                                      IsChecked="{Binding IsCleanSave, Mode=TwoWay}"
+                                      Margin="5" ToolTipService.ShowDuration="30000">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold">
+                                                <Run Text="Clean Save" />
+                                            </TextBlock>
+                                            <TextBlock>
+                                                <Run Text="By default, the generator saves modified data in unselected options." />
+                                                <LineBreak />
+                                                <Run Text="This option removes any data related to unselected options." />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>
+                            </CheckBox>
+                            <CheckBox x:Name="CheckBoxIsRemoveUnselectedProfiles" Content="Remove Unselected Profiles"
+                                      Margin="5" IsChecked="{Binding IsRemoveUnselectedProfiles, Mode=TwoWay}"
+                                      IsEnabled="{Binding IsRemoveUnselectedProfilesEnabled}" ToolTipService.ShowDuration="30000">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold">
+                                                <Run Text="Remove Unselected Profiles" />
+                                            </TextBlock>
+                                            <TextBlock>
+                                                <Run
+                                                    Text="Remove unselected profile data from the JSON save file to save space." />
+                                                <LineBreak />
+                                                <Run
+                                                    Text="Do not use this option if you want to later reselect and reuse this data." />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>
+                            </CheckBox>
+                        </StackPanel>
+                    </GroupBox>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Grid.Row="0">
                     <GroupBox Margin="5" Padding="2">
