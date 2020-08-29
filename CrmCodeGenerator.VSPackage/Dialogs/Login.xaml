@@ -9,14 +9,21 @@
     xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
     mc:Ignorable="d"
     x:Class="CrmCodeGenerator.VSPackage.Dialogs.Login"
-    Height="384" Width="477.463"
-    Loaded="Window_Loaded"
+    Width="475"
+    Loaded="Window_Loaded" SizeToContent="Height"
     WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False"
     ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
     <ui:DialogWindow.Resources>
+        <Style TargetType="{x:Type GroupBox}">
+            <Setter Property="BorderBrush" Value="DarkGray" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
         <Style TargetType="{x:Type Label}">
-            <Setter Property="Margin" Value="-4,0,0,-4" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Padding" Value="0" />
         </Style>
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="Margin" Value="0,0,0,0" />
@@ -47,8 +54,7 @@
     </ui:DialogWindow.InputBindings>
 
     <xctk:BusyIndicator x:Name="BusyIndicator">
-        <StackPanel x:Name="Inputs" Grid.Column="0" Grid.Row="0" Margin="5,5,5,0"
-                    ScrollViewer.VerticalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="Inputs" Margin="5">
             <GroupBox Margin="0,0,0,2">
                 <GroupBox.Header>
                     Connection String
@@ -64,13 +70,13 @@
                              VerticalScrollBarVisibility="Auto" />
                 </StackPanel>
             </GroupBox>
-            <StackPanel Margin="0,0,0,10">
-                <GroupBox Margin="0,0,0,5">
+            <StackPanel>
+                <GroupBox>
                     <GroupBox.Header>
                         Entities
                     </GroupBox.Header>
-                    <StackPanel Margin="0,3,0,-7">
-                        <Grid Background="Transparent" Margin="0,0,0,5">
+                    <StackPanel Margin="0,3,0,0">
+                        <Grid Background="Transparent">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="18" />
                                 <RowDefinition Height="21" />
@@ -130,7 +136,7 @@
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="ButtonClearCache" Click="ClearCache_Click"
-                                        CommandParameter="{Binding ElementName=txtPassword}" Content="Clear Cache"
+                                        Content="Clear Cache"
                                         BorderThickness="1" Padding="3,0,3,0" Grid.Column="1"
                                         HorizontalAlignment="Right" Width="85" Margin="-1,3,0,0"
                                         ToolTipService.ShowDuration="30000" ToolTipService.InitialShowDelay="1000">
@@ -152,6 +158,26 @@
                             </Grid>
                         </Grid>
                     </StackPanel>
+                </GroupBox>
+                <GroupBox Margin="0,0,0,5">
+                    <GroupBox.Header>
+                        Info
+                    </GroupBox.Header>
+                    <Grid Height="20" x:Name="GridInfo" >
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Label Margin="10,0,0,0" Content="Template version: " />
+                            <Label x:Name="LabelTemplateVersion" Margin="10,0,10,0" />
+                            <Label x:Name="LabelTemplateLatest" Margin="2,0,10,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Label Margin="10,0,0,0" Content="Compatible: " />
+                            <Label x:Name="LabelCompatibility" Margin="10,0,10,0" />
+                        </StackPanel>
+                    </Grid>
                 </GroupBox>
                 <Grid Height="24">
                     <Grid.ColumnDefinitions>

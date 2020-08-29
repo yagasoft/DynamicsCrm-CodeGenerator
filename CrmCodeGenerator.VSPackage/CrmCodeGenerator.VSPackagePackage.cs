@@ -16,7 +16,7 @@ using Microsoft.TeamFoundation.VersionControl.Client;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Helpers.Assembly;
 
 #endregion
 

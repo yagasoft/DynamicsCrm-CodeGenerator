@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Text.RegularExpressions;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model.OldSettings2;
 using EnvDTE;
@@ -17,6 +18,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Newtonsoft.Json;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Helpers.Assembly;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
@@ -38,13 +40,15 @@ namespace CrmCodeGenerator.VSPackage
 		{
 			string connectionString = null;
 
+			string baseFileName = null;
+
 			try
 			{
 				Status.Update("Loading settings ... ");
 
 				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
 				var project = dte.GetSelectedProject();
-				var baseFileName = $@"{project.GetPath()}\{FileName}";
+				baseFileName = $@"{project.GetPath()}\{FileName}";
 
 				connectionString = LoadConnection(baseFileName);
 
@@ -87,8 +91,11 @@ namespace CrmCodeGenerator.VSPackage
 					settings.AppId = settings.AppId ?? Constants.AppId;
 					settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
 					settings.SettingsVersion = settings.SettingsVersion ?? Constants.SettingsVersion;
+					settings.BaseFileName = FileName;
 
-					Status.Update(">>> Finished loading settings.");
+					SetTemplateInfo(settings, baseFileName);
+
+					Status.Update(">> Finished loading settings.");
 
 					return settings;
 				}
@@ -105,10 +112,73 @@ namespace CrmCodeGenerator.VSPackage
 			newSettings.AppId = Constants.AppId;
 			newSettings.AppVersion = Constants.AppVersion;
 			newSettings.SettingsVersion = Constants.SettingsVersion;
+			newSettings.BaseFileName = FileName;
 
-			Status.Update(">>> Created new settings.");
+			if (baseFileName.IsFilled())
+			{
+				SetTemplateInfo(newSettings, baseFileName);
+			}
+
+			Status.Update(">> Created new settings.");
 
 			return newSettings;
+		}
+
+		private static void SetTemplateInfo(Settings settings, string baseFileName, bool isRetry = false)
+		{
+			if (baseFileName.IsEmpty())
+			{
+				return;
+			}
+
+			try
+			{
+				var file = $"{baseFileName}.tt";
+
+				if (!File.Exists(file))
+				{
+					if (!isRetry)
+					{
+						Thread.Sleep(500);
+						SetTemplateInfo(settings, baseFileName, true);
+						return;
+					}
+
+					Status.Update("\t [ERROR] Could not find template file.");
+					return;
+				}
+
+				Status.Update($"\tFound template file: {file}.");
+				Status.Update($"\tReading content ...");
+
+				var fileContent = File.ReadAllText(file);
+
+				var templateInfo = TemplateHelpers.ParseTemplateInfo(fileContent);
+
+				if (templateInfo?.DetectedTemplateVersion.IsFilled() == true)
+				{
+					settings.DetectedTemplateVersion = templateInfo.DetectedTemplateVersion;
+					Status.Update($"\tTemplate version: {settings.DetectedTemplateVersion}.");
+				}
+				else
+				{
+					Status.Update($"\tCould not detect template version.");
+				}
+
+				if (templateInfo?.DetectedMinAppVersion.IsFilled() == true)
+				{
+					settings.DetectedMinAppVersion = templateInfo.DetectedMinAppVersion;
+					Status.Update($"\tMinimum app version: {settings.DetectedMinAppVersion}.");
+				}
+				else
+				{
+					Status.Update($"\tCould not detect minimum app version.");
+				}
+			}
+			catch
+			{
+				Status.Update("\t [ERROR] Failed to detect template version.");
+			}
 		}
 
 		private static void MigrateOldSettings(Settings settings, Model.OldSettings.Settings oldSettings)
@@ -339,7 +409,7 @@ namespace CrmCodeGenerator.VSPackage
 
 							CacheHelpers.AddToMemCache(Constants.MetaCacheMemKey, cache);
 
-							Status.Update(">>> Finished loading cache.");
+							Status.Update(">> Finished loading cache.");
 
 							return cache;
 						}
@@ -402,7 +472,7 @@ namespace CrmCodeGenerator.VSPackage
 			Status.Update("\tWriting to file ...");
 			File.WriteAllText(file, serialisedSettings);
 
-			Status.Update(">>> Finished writing settings.");
+			Status.Update(">> Finished writing settings.");
 		}
 
 		private static void SaveConnection(Settings settings, string baseFileName)
@@ -519,13 +589,13 @@ namespace CrmCodeGenerator.VSPackage
 
 		public static void SaveCache(MetadataCacheArray metadataCache)
 		{
+			Status.Update("Writing cache ... ");
+
+			var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+			var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
+
 			lock (lockObj)
 			{
-				Status.Update("Writing cache ... ");
-
-				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-				var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
-
 				if (!File.Exists(file))
 				{
 					File.Create(file).Dispose();
@@ -545,7 +615,7 @@ namespace CrmCodeGenerator.VSPackage
 							var bformatter = new BinaryFormatter { Binder = new Binder() };
 							bformatter.Serialize(stream, metadataCache);
 
-							Status.Update(">>> Finished writing cache.");
+							Status.Update(">> Finished writing cache.");
 						}
 					}).Start(); 
 			}

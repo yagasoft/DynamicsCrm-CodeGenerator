@@ -123,12 +123,32 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 				var child = VisualTreeHelper.GetChild(depObj, i);
 
 				var result = (child as T) ?? GetChild<T>(child);
+
 				if (result != null)
 				{
 					return result;
 				}
 			}
+
 			return null;
+		}
+
+		public static IEnumerable<TControl> GetChildren<TControl>(this DependencyObject depObj) where TControl : DependencyObject
+		{
+			if (depObj == null)
+			{
+				return null;
+			}
+
+			var children = new List<TControl>();
+
+			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+			{
+				var child = VisualTreeHelper.GetChild(depObj, i);
+				children.AddRange(child is TControl childAsTControl ? new [] { childAsTControl } : GetChildren<TControl>(child));
+			}
+
+			return children;
 		}
 
 		public static T GetParent<T>(this DependencyObject child) where T : DependencyObject

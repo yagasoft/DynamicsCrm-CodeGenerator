@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Cache;
@@ -108,6 +109,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			DataContext = settings;
 
+			SetInfoUiValues();
+
 			settings.EntityProfilesHeaderSelector = settings.EntityProfilesHeaderSelector ?? new EntityProfilesHeaderSelector();
 
 			mapperThread = new Thread(
@@ -117,6 +120,35 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					RegisterMapperEvents();
 				});
 			mapperThread.Start();
+		}
+
+		private void SetInfoUiValues()
+		{
+			var color = (SolidColorBrush)new BrushConverter().ConvertFrom("#212121");
+
+			foreach (var control in GridInfo.GetChildren<Label>().Where(c => c.Name.IsEmpty()))
+			{
+				control.Foreground = color;
+			}
+
+			var templateVersion = settings.DetectedTemplateVersion;
+
+			if (templateVersion.IsEmpty())
+			{
+				LabelTemplateVersion.Content = "--";
+				LabelCompatibility.Content = "--";
+			}
+
+			LabelTemplateVersion.Content = templateVersion;
+			LabelTemplateVersion.Foreground = Brushes.Blue;
+
+			var isTemplateLatest = new Version(templateVersion) >= new Version(Constants.LatestTemplateVersion);
+			LabelTemplateLatest.Content = isTemplateLatest ? "(latest)" : "";
+			LabelTemplateLatest.Foreground = isTemplateLatest ? Brushes.Green : Brushes.Black;
+
+			var isTemplateCompatible = new Version(templateVersion) >= new Version(Constants.MinTemplateVersion);
+			LabelCompatibility.Content = isTemplateCompatible ? "YES" : "NO";
+			LabelCompatibility.Foreground = isTemplateCompatible ? Brushes.Green : Brushes.Red;
 		}
 
 		private void WarmUp()
@@ -293,7 +325,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					}
 					finally
 					{
-						Status.Update(">>> Finished processing.");
+						Status.Update(">> Finished processing.");
 					}
 				}).Start();
 		}

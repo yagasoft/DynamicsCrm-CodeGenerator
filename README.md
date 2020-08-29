@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.1.1
+### Version: 10.1.2
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -93,6 +93,8 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.1.2 (2020-08-29)_
++ Added: template file compatibility check (validates using version formatted as in default templates)
 #### _v10.1.1 (2020-08-28)_
 + Added: CRM Entity Profile window in the Entity Selection (double-click CRM Entity to open)
 + Added: filtering option in the Entity Selection (if checked, Profile is applied, else only renaming is applied)

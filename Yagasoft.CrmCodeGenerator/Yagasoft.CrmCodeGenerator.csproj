@@ -81,11 +81,15 @@
     <Compile Include="Connection\IConnectionManager.cs" />
     <Compile Include="Connection\OrgSvcs\IDisposableOrgSvc.cs" />
     <Compile Include="Connection\OrgSvcs\DisposableOrgSvcBase.cs" />
+    <Compile Include="Helpers\Assembly\AssemblyHelpers.cs" />
+    <Compile Include="Helpers\Assembly\Binder.cs" />
     <Compile Include="Helpers\ConnectionHelpers.cs" />
     <Compile Include="Helpers\Helpers.cs" />
     <Compile Include="Cache\Metadata\MetadataCacheManagerBase.cs" />
     <Compile Include="Helpers\MetadataHelpers.cs" />
-    <Compile Include="Helpers\NamingHelper.cs" />
+    <Compile Include="Helpers\NamingHelpers.cs" />
+    <Compile Include="Helpers\ObjectCopier.cs" />
+    <Compile Include="Helpers\TemplateHelpers.cs" />
     <Compile Include="Mapper\Mapper.cs" />
     <Compile Include="Models\Attributes\CrmAttribute.cs" />
     <Compile Include="Models\Cache\MetadataCache.cs" />
@@ -106,6 +110,7 @@
     <Compile Include="Models\Settings\EntityProfilesHeader.cs" />
     <Compile Include="Models\Settings\EntityProfilesHeaderSelector.cs" />
     <Compile Include="Models\Settings\Settings.cs" />
+    <Compile Include="Models\TemplateInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

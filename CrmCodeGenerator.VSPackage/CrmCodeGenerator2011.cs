@@ -168,13 +168,13 @@ namespace CrmCodeGenerator.VSPackage
 				extension = cb.FileExtension;
 			}
 
-			Status.Update(">>> Finished generating code.");
+			Status.Update(">> Finished generating code.");
 
 			Status.Update("Writing code to disk ... ");
 
 			SaveOutputContent(rgbOutputFileContents, out pcbOutput, content);
 
-			Status.Update(">>> Finished writing code.");
+			Status.Update(">> Finished writing code.");
 
 			return VSConstants.S_OK;
 		}

@@ -26,9 +26,15 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 	public class Settings : INotifyPropertyChanged
 	{
 		public Guid Id = Guid.NewGuid();
-		public string AppId = "test";
-		public string AppVersion = "0.0.1";
-		public string SettingsVersion = "0.0.1";
+
+		public string AppId { get; set; } = "test";
+		public string AppVersion { get; set; } = "0.0.1";
+		public string SettingsVersion { get; set; } = "0.0.1";
+
+		public string DetectedTemplateVersion { get; set; }
+		public string DetectedMinAppVersion { get; set; }
+
+		public string BaseFileName = "CrmSchema";
 
 		public EntityProfilesHeaderSelector EntityProfilesHeaderSelector = new EntityProfilesHeaderSelector();
 		public int EntitiesPerThread = 5;
