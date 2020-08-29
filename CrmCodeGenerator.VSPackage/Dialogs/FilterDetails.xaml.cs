@@ -21,7 +21,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Microsoft.Xrm.Tooling.Connector;
-using Yagasoft.CrmCodeGenerator.Cache.Metadata;
 using Yagasoft.CrmCodeGenerator.Connection;
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
@@ -227,7 +226,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public FilterDetails(Window parentWindow, string logicalName, Settings settings,
 			EntityProfile entityProfile, ObservableCollection<GridRow> entities,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager,
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache,
 			bool isCrmEntities = false)
 		{
 			InitializeComponent();
@@ -250,7 +249,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			RelationsNn = new ObservableCollection<RelationsNnGridRow>();
 
 			Settings = settings;
-			metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
+			this.metadataCache = metadataCache;
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)

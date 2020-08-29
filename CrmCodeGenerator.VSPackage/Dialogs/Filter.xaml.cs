@@ -19,7 +19,6 @@ using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
-using Yagasoft.CrmCodeGenerator.Cache.Metadata;
 using Yagasoft.CrmCodeGenerator.Connection;
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
@@ -65,7 +64,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	public partial class Filter : INotifyPropertyChanged
 	{
 		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
-		private readonly MetadataCacheManagerBase metadataCacheManager;
+		private readonly MetadataCache metadataCache;
 
 		#region Properties
 
@@ -167,7 +166,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		private readonly MetadataCache metadataCache;
 		private readonly IDictionary<EntityProfilesHeader, List<EntityProfileGridRow>> rowMap = new Dictionary<EntityProfilesHeader, List<EntityProfileGridRow>>();
 		private List<EntityProfileGridRow> rowList;
 
@@ -185,10 +183,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public Filter(Window parentWindow, Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{
 			this.connectionManager = connectionManager;
-			this.metadataCacheManager = metadataCacheManager;
+			this.metadataCache = metadataCache;
+
 			InitializeComponent();
 
 			Owner = parentWindow;
@@ -197,7 +196,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Entities = new ObservableCollection<EntityProfileGridRow>();
 
 			Settings = settings;
-			metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
 		}
 
 		private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -381,7 +379,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RefreshEntityMetadata()
 		{
-			MetadataHelpers.RefreshSettingsEntityMetadata(Settings, connectionManager, metadataCacheManager);
+			MetadataHelpers.RefreshSettingsEntityMetadata(Settings, connectionManager, metadataCache);
 			EntityMetadataCache = metadataCache.ProfileEntityMetadataCache;
 		}
 
@@ -583,7 +581,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						?? new EntityProfile(LogicalName);
 
 					new FilterDetails(this, LogicalName, Settings, entityProfile,
-						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCacheManager)
+						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCache)
 						.ShowDialog();
 
 					if (entityProfile.IsContainsData)

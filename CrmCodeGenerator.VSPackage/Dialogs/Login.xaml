@@ -47,7 +47,7 @@
         <Image x:Key="SaveImage" Source="../Resources/Save.png" />
     </ui:DialogWindow.Resources>
     <ui:DialogWindow.CommandBindings>
-        <CommandBinding Command="Close" Executed="Cancel_Click" />
+        <CommandBinding Command="Close" Executed="ButtonCancel_Click" />
     </ui:DialogWindow.CommandBindings>
     <ui:DialogWindow.InputBindings>
         <KeyBinding Key="Escape" Command="Close" />

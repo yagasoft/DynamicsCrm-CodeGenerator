@@ -71,7 +71,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 						+ (exception.InnerException != null ? "\n" + exception.InnerException.Message : "");
 					MessageBox.Show(message, exception.GetType().FullName, MessageBoxButton.OK, MessageBoxImage.Error);
 
-					var error = exception.BuildExceptionMessage("[ERROR]");
+					var error = exception.BuildExceptionMessage("!! [ERROR]");
 					Update(error);
 				}, DispatcherPriority.Loaded);
 		}

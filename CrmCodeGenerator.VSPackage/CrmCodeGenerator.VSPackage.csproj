@@ -440,7 +440,6 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cache\MetadataCacheManager.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Connection\DisposableOrgSvc.cs" />
     <Compile Include="Dialogs\AddTemplate.xaml.cs">

@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +13,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Threading;
-using CrmCodeGenerator.VSPackage.Cache;
 using CrmCodeGenerator.VSPackage.Connection;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.Model;
@@ -20,10 +20,12 @@ using EnvDTE80;
 using Xceed.Wpf.Toolkit;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Mapper;
+using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Mapper;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
+using CacheHelpers = Yagasoft.Libraries.Common.CacheHelpers;
 using MessageBox = System.Windows.MessageBox;
 using MetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
 
@@ -39,7 +41,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		public Context Context;
 		public bool StillOpen = true;
 
-		private MetadataCacheManager MetadataCacheManager
+		private MetadataCache MetadataCache
 		{
 			get
 			{
@@ -48,7 +50,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					cacheThread.Join();
 				}
 
-				return metadataCacheManager;
+				return metadataCache;
 			}
 		}
 
@@ -71,7 +73,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private Thread mapperThread;
 
 		private readonly ConnectionManager connectionManager;
-		private readonly MetadataCacheManager metadataCacheManager;
+		private MetadataCache metadataCache;
 		private Thread cacheThread;
 
 		#region Init
@@ -89,7 +91,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			connectionManager = CacheHelpers.GetFromMemCacheAdd(Constants.ConnCacheMemKey,
 				() => new ConnectionManager(settings.Threads));
-			metadataCacheManager = new MetadataCacheManager();
 
 			////EventManager.RegisterClassHandler(typeof(TextBox), MouseDoubleClickEvent, new RoutedEventHandler(SelectAddress));
 			////EventManager.RegisterClassHandler(typeof(TextBox), GotKeyboardFocusEvent, new RoutedEventHandler(SelectAddress));
@@ -116,7 +117,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			mapperThread = new Thread(
 				() =>
 				{
-					mapper = new Mapper(settings, connectionManager, MetadataCacheManager);
+					mapper = new Mapper(settings, connectionManager, MetadataCache);
 					RegisterMapperEvents();
 				});
 			mapperThread.Start();
@@ -181,6 +182,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						connectionManager.Threads = settings.Threads;
 					}
 
+					if (args.PropertyName == nameof(settings.ConnectionString))
+					{
+						new Thread(() => MetadataCache.Clear()).Start();
+					}
+
 					if (args.PropertyName != nameof(settings.Threads) && args.PropertyName != nameof(settings.ConnectionString))
 					{
 						return;
@@ -189,14 +195,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					WarmUpConnections();
 				};
 
-			if (settings.ConnectionString.IsEmpty()
-				|| connectionManager == null || metadataCacheManager == null)
+			if (settings.ConnectionString.IsEmpty() || connectionManager == null)
 			{
 				return;
 			}
 
 			// warm up the cache.
-			cacheThread = new Thread(() => metadataCacheManager.GetCache(settings.ConnectionString));
+			cacheThread = new Thread(() => metadataCache = Configuration.LoadCache(settings.Id));
 			cacheThread.Start();
 
 			WarmUpConnections();
@@ -227,7 +232,15 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   {
 							   if (isOnPane)
 							   {
-								   Status.Update(args.Message);
+								   if (args.Exception == null)
+								   {
+									   Status.Update($"[Generator] "
+										   + $"{Regex.Replace(args.Message, "^>> ", "[DONE] ")}");
+								   }
+								   else
+								   {
+									   Status.Update($"!! [Generator] ![ERROR]!\r\n{args.Exception.BuildExceptionMessage()}");
+								   }
 							   }
 							   
 							   if (isOnBusy)
@@ -252,7 +265,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   switch (args.Status)
 						   {
 							   case MapperStatus.Cancelled:
-								   Status.Update("Cancelled generator!");
+								   Status.Update("[Generator] [DONE] Cancelled generator!");
 								   StillOpen = false;
 								   Dispatcher.InvokeAsync(Close);
 								   break;
@@ -291,7 +304,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 									   LockNames(Context);
 								   }
 
-								   MetadataCacheManager.GetCache(settings.ConnectionString).ContextCache[settings.Id] = Context;
+								   MetadataCache.Context = Context;
 
 								   StillOpen = false;
 								   Dispatcher.InvokeAsync(Close);
@@ -316,8 +329,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						Status.Update("Processing non-standard inclusion/exclusion ... ");
-						MetadataHelpers.RefreshSettingsEntityMetadata(settings, connectionManager, MetadataCacheManager);
+						Status.Update("[Data] Processing non-standard inclusion/exclusion ... ");
+						MetadataHelpers.RefreshSettingsEntityMetadata(settings, connectionManager, MetadataCache);
 					}
 					catch (Exception ex)
 					{
@@ -325,7 +338,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					}
 					finally
 					{
-						Status.Update(">> Finished processing.");
+						Status.Update("[Data] [DONE] Processing.");
 					}
 				}).Start();
 		}
@@ -352,12 +365,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				Configuration.SaveSettings(settings);
 
-				Status.Update("Mapping entities, this might take a while depending on CRM server/connection speed ... ");
+				Status.Update("[Generator] Mapping entities, this might take a while depending on CRM server/connection speed ... ");
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.Update("Generator will split generated code into separate entity files.");
+					Status.Update("[Generator] Generator will split generated code into separate entity files.");
 				}
 
 				new Thread(
@@ -366,7 +379,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						try
 						{
 							Mapper.MapContext();
-							Configuration.SaveCache();
+							Configuration.SaveCache(settings.Id);
 						}
 						catch (Exception ex)
 						{
@@ -396,8 +409,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					settings.EntitiesSelected.Add(missingEntity);
 				}
 
-				var metadataCache = MetadataCacheManager.GetCache(settings.ConnectionString);
-				var context = metadataCache.GetCachedContext(settings.Id);
+				var context = MetadataCache.Context;
 
 				var excludeEntities = new[] { "" };
 				var selected = settings.EntitiesSelected.Where(s => !excludeEntities.Contains(s)).ToArray();
@@ -417,12 +429,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				Configuration.SaveSettings(settings);
 
-				Status.Update("Mapping entities using cache ... ");
+				Status.Update("[Generator] Mapping entities using cache ... ");
 
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.Update("Generator will split generated code into separate entity files.");
+					Status.Update("[Generator] Generator will split generated code into separate entity files.");
 				}
 
 				new Thread(
@@ -431,7 +443,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						try
 						{
 							Mapper.MapContext(true);
-							Configuration.SaveCache();
+							Configuration.SaveCache(settings.Id);
 						}
 						catch (Exception ex)
 						{
@@ -445,12 +457,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private void Cancel_Click(object sender, RoutedEventArgs e)
-		{
-			Mapper.CancelMapping = true;
-			Configuration.SaveCache();
-		}
-
 		private void ButtonCredits_Click(object sender, RoutedEventArgs e)
 		{
 			new Credits(this).ShowDialog();
@@ -458,12 +464,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonOptions_Click(object sender, RoutedEventArgs e)
 		{
-			new Options(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
+			new Options(this, settings, connectionManager, MetadataCache).ShowDialog();
 		}
 
 		private void ButtonCancel_Click(object sender, RoutedEventArgs e)
 		{
 			Mapper.CancelMapping = true;
+			Configuration.SaveCache(settings.Id);
 		}
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)
@@ -480,18 +487,18 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void EntitiesRefresh_Click(object sender, RoutedEventArgs events)
 		{
-			new EntitySelection(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
+			new EntitySelection(this, settings, connectionManager, MetadataCache).ShowDialog();
 		}
 
 		private void EntitiesProfiling_Click(object sender, RoutedEventArgs e)
 		{
-			new Filter(this, settings, connectionManager, MetadataCacheManager).ShowDialog();
+			new Filter(this, settings, connectionManager, MetadataCache).ShowDialog();
 		}
 
 		private void ClearCache_Click(object sender, RoutedEventArgs e)
 		{
-			Status.Update("Clearing cache ... ", false);
-			MetadataCacheManager.Clear(settings.ConnectionString);
+			Status.Update("[Cache] Clearing cache ... ", false);
+			MetadataCache.Clear();
 			Status.Update("done!");
 		}
 
@@ -538,7 +545,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			try
 			{
-				Status.Update("Locking friendly names ... ", false);
+				Status.Update("[Generator] Locking friendly names ... ", false);
 
 				foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.Select(filterList => filterList)
 					.SelectMany(filter => filter.EntityProfiles))

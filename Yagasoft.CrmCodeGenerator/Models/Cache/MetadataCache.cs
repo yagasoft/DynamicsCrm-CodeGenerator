@@ -22,7 +22,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 		public PlatformFeature? PlatformFeatures;
 
 		public IDictionary<Guid, MappingEntity> EntityMetadataCache;
-		public IDictionary<Guid, Context> ContextCache;
+		public Context Context;
 
 		public IDictionary<string, int> EntityCodesCache;
 
@@ -219,13 +219,21 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 			LookupEntitiesMetadataCache = LookupEntitiesMetadataCache ?? new Dictionary<string, LookupMetadata>();
 
 			EntityMetadataCache = EntityMetadataCache ?? new Dictionary<Guid, MappingEntity>();
-			ContextCache = ContextCache ?? new Dictionary<Guid, Context>();
 		}
 
-		public Context GetCachedContext(Guid id)
+		public void Clear()
 		{
-			ContextCache.TryGetValue(id, out var context);
-			return context;
+			PlatformFeatures = null;
+			EntityMetadataCache = null;
+			Context = null;
+			EntityCodesCache = null;
+			LookupKeysMetadataCache = null;
+			BasicAttributesMetadataCache = null;
+			LookupEntitiesMetadataCache = null;
+			ProfileEntityMetadataCache = null;
+			ProfileAttributeMetadataCache = null;
+
+			InitFields();
 		}
 	}
 }

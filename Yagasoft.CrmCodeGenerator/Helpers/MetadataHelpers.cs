@@ -10,9 +10,9 @@ using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
-using Yagasoft.CrmCodeGenerator.Cache.Metadata;
 using Yagasoft.CrmCodeGenerator.Connection;
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
+using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 
@@ -99,7 +99,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		};
 
 		public static List<EntityMetadata> RefreshSettingsEntityMetadata(Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{
 			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
 
@@ -128,11 +128,9 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 				result = ((RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest)).EntityMetadata;
 			}
 
-			var cache = metadataCacheManager.GetCache(settings.ConnectionString);
-
 			// cache the result
 			var resultFiltered =
-				cache.ProfileEntityMetadataCache =
+				metadataCache.ProfileEntityMetadataCache =
 					result.Where(entity =>
 								 {
 									 if (settings.IncludeNonStandard)
@@ -149,7 +147,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 								 }).ToList();
 
 			// reset attributes cache as well
-			cache.ProfileAttributeMetadataCache = new Dictionary<string, EntityMetadata>();
+			metadataCache.ProfileAttributeMetadataCache = new Dictionary<string, EntityMetadata>();
 
 			var newList = new ObservableCollection<string>();
 
@@ -170,10 +168,8 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		}
 		
 		public static IDictionary<string, int> GetEntityCodes(Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{
-			var metadataCache = metadataCacheManager.GetCache(settings.ConnectionString);
-
 			if (metadataCache.EntityCodesCache != null)
 			{
 				return metadataCache.EntityCodesCache;
@@ -207,7 +203,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		}
 
 		public static IEnumerable<string> RetrieveActionNames(Settings settings, 
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager,
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache,
 			string logicalName = "none")
 		{
 			var fetchXml =
@@ -219,7 +215,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
       <condition entityname='workflow' attribute='category' operator='eq' value='3' />
       <condition entityname='workflow' attribute='type' operator='neq' value='3' />
       <condition entityname='sdkmessagerequest' attribute='primaryobjecttypecode'
-		operator='eq' value='{(logicalName == "none" ? 0 : GetEntityCodes(settings, connectionManager, metadataCacheManager)[logicalName])}' />
+		operator='eq' value='{(logicalName == "none" ? 0 : GetEntityCodes(settings, connectionManager, metadataCache)[logicalName])}' />
     </filter>
     <link-entity name='sdkmessagepair' from='sdkmessageid' to='sdkmessageid'>
       <link-entity name='sdkmessagerequest' from='sdkmessagepairid' to='sdkmessagepairid'>

@@ -48,14 +48,14 @@ namespace CrmCodeGenerator.VSPackage.Connection
 			{
 				if (connectionString.IsFilled() && (connectionPool == null || connectionString != latestConnectionString))
 				{
-					Status.Update($"Creating connection pool to CRM ... ");
-					Status.Update($"Connection String: '{SecureConnectionString(connectionString)}'.");
+					Status.Update($"[Connection] Creating connection pool to CRM ... ");
+					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 
 					connectionPool = EnhancedServiceHelper.GetPool(connectionString, Threads);
 					connectionPool.WarmUp();
 					latestConnectionString = connectionString;
 
-					Status.Update($"Created connection pool.");
+					Status.Update($"[Connection] [DONE] Created connection pool.");
 				}
 			}
 

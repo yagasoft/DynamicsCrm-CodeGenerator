@@ -206,7 +206,7 @@ namespace CrmCodeGenerator.VSPackage
 					            Directory.CreateDirectory(dir);
 				            }
 
-				            Status.Update("Adding " + templatePath + " to project ... ");
+				            Status.Update("[Template] Adding " + templatePath + " to project ... ");
 				            // When you add a TT file to visual studio, it will try to automatically compile it, 
 				            // if there is error (and there will be error because we have custom generator) 
 				            // the error will persit until you close Visual Studio. The solution is to add 
@@ -223,7 +223,7 @@ namespace CrmCodeGenerator.VSPackage
 									var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
 									var workspace = workspaceInfo.GetWorkspace(server);
 									workspace.PendEdit(templatePath);
-									Status.Update("Checked out settings file from TFS' current workspace.");
+									Status.Update("[Template] Checked out template file from TFS' current workspace.");
 								}
 							}
 							catch (Exception)
@@ -243,7 +243,7 @@ namespace CrmCodeGenerator.VSPackage
 					            throw;
 				            }
 
-				            Status.Update("Done!");
+				            Status.Update("[Template] [DONE] Adding template file to project.");
 
 				            var p = project.ProjectItems.AddFromFile(templatePath);
 				            p.Properties.SetValue("CustomTool", "");

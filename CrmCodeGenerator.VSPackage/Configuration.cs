@@ -22,6 +22,7 @@ using Yagasoft.CrmCodeGenerator.Helpers.Assembly;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
+using CacheHelpers = Yagasoft.CrmCodeGenerator.Helpers.CacheHelpers;
 using Constants = CrmCodeGenerator.VSPackage.Model.Constants;
 using Settings = Yagasoft.CrmCodeGenerator.Models.Settings.Settings;
 using Thread = System.Threading.Thread;
@@ -32,8 +33,6 @@ namespace CrmCodeGenerator.VSPackage
 {
 	public class Configuration
 	{
-		private static readonly object lockObj = new object();
-
 		public static string FileName;
 
 		public static Settings LoadSettings()
@@ -44,24 +43,30 @@ namespace CrmCodeGenerator.VSPackage
 
 			try
 			{
-				Status.Update("Loading settings ... ");
+				Status.Update("[Settings] Loading settings ... ");
 
 				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
 				var project = dte.GetSelectedProject();
 				baseFileName = $@"{project.GetPath()}\{FileName}";
 
-				connectionString = LoadConnection(baseFileName);
+				connectionString = LoadConnection();
 
 				var file = $@"{baseFileName}-Config.json";
 
 				if (File.Exists(file))
 				{
-					Status.Update($"\tFound settings file: {file}.");
-					Status.Update($"\tReading content ...");
+					Status.Update($"[Settings] Found settings file: {file}.");
+					Status.Update($"[Settings] Reading content ...");
 
 					var fileContent = File.ReadAllText(file);
 					var settings = JsonConvert.DeserializeObject<Settings>(fileContent,
 						new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
+
+					var isLatest = settings.SettingsVersion.IsFilled()
+						&& new Version(settings.SettingsVersion) >= new Version(Constants.SettingsVersion);
+					Status.Update($"[Settings] Settings version:"
+						+ $" {(settings.SettingsVersion.IsFilled() ? settings.SettingsVersion : "--")}"
+						+ $" {(isLatest ? "(latest)" : "(old)")}");
 
 					if (settings.EntityProfilesHeaderSelector == null)
 					{
@@ -70,7 +75,7 @@ namespace CrmCodeGenerator.VSPackage
 
 						if (oldSettings.EntityDataFilterArray?.EntityFilters.Any() == true)
 						{
-							Status.Update($"\tMigrating pre-v9 JSON settings ...");
+							Status.Update($"[Settings] Migrating pre-v9 JSON settings ...");
 							MigrateOldSettings(settings, oldSettings);
 						}
 					}
@@ -82,7 +87,7 @@ namespace CrmCodeGenerator.VSPackage
 
 						if (oldSettings.EntityProfilesHeaderSelector?.EntityProfilesHeaders?.Any() == true)
 						{
-							Status.Update($"\tMigrating pre-v10 JSON settings ...");
+							Status.Update($"[Settings] Migrating pre-v10 JSON settings ...");
 							MigrateOldSettings2(settings, oldSettings);
 						}
 					}
@@ -90,21 +95,21 @@ namespace CrmCodeGenerator.VSPackage
 					settings.ConnectionString = connectionString ?? settings.ConnectionString;
 					settings.AppId = settings.AppId ?? Constants.AppId;
 					settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
-					settings.SettingsVersion = settings.SettingsVersion ?? Constants.SettingsVersion;
+					settings.SettingsVersion = Constants.SettingsVersion;
 					settings.BaseFileName = FileName;
 
 					SetTemplateInfo(settings, baseFileName);
 
-					Status.Update(">> Finished loading settings.");
+					Status.Update("[Settings] [DONE] Loading settings.");
 
 					return settings;
 				}
 
-				Status.Update("\tSettings file does not exist.");
+				Status.Update("[Settings] Settings file does not exist.");
 			}
 			catch (Exception ex)
 			{
-				Status.Update("\t [ERROR] Failed to load settings.");
+				Status.Update("!! [Settings] ![ERROR]! Failed to load settings.");
 				Status.Update(ex.BuildExceptionMessage(isUseExStackTrace: true));
 			}
 
@@ -119,7 +124,7 @@ namespace CrmCodeGenerator.VSPackage
 				SetTemplateInfo(newSettings, baseFileName);
 			}
 
-			Status.Update(">> Created new settings.");
+			Status.Update("[Settings] [DONE] Creating new settings.");
 
 			return newSettings;
 		}
@@ -144,12 +149,12 @@ namespace CrmCodeGenerator.VSPackage
 						return;
 					}
 
-					Status.Update("\t [ERROR] Could not find template file.");
+					Status.Update("!! [Template] ![ERROR]! Could not find template file.");
 					return;
 				}
 
-				Status.Update($"\tFound template file: {file}.");
-				Status.Update($"\tReading content ...");
+				Status.Update($"[Template] Found template file: {file}.");
+				Status.Update($"[Template] Reading content ...");
 
 				var fileContent = File.ReadAllText(file);
 
@@ -158,26 +163,26 @@ namespace CrmCodeGenerator.VSPackage
 				if (templateInfo?.DetectedTemplateVersion.IsFilled() == true)
 				{
 					settings.DetectedTemplateVersion = templateInfo.DetectedTemplateVersion;
-					Status.Update($"\tTemplate version: {settings.DetectedTemplateVersion}.");
+					Status.Update($"[Template] Template version: {settings.DetectedTemplateVersion}.");
 				}
 				else
 				{
-					Status.Update($"\tCould not detect template version.");
+					Status.Update($"!! [Template] ![ERROR]! Could not detect template version.");
 				}
 
 				if (templateInfo?.DetectedMinAppVersion.IsFilled() == true)
 				{
 					settings.DetectedMinAppVersion = templateInfo.DetectedMinAppVersion;
-					Status.Update($"\tMinimum app version: {settings.DetectedMinAppVersion}.");
+					Status.Update($"[Template] Minimum app version: {settings.DetectedMinAppVersion}.");
 				}
 				else
 				{
-					Status.Update($"\tCould not detect minimum app version.");
+					Status.Update($"!! [Template] ![ERROR]! Could not detect minimum app version.");
 				}
 			}
 			catch
 			{
-				Status.Update("\t [ERROR] Failed to detect template version.");
+				Status.Update("!! [Template] ![ERROR]! Failed to detect template version.");
 			}
 		}
 
@@ -310,8 +315,12 @@ namespace CrmCodeGenerator.VSPackage
 				};
 		}
 
-		private static string LoadConnection(string baseFileName)
+		private static string LoadConnection()
 		{
+			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
+			var project = dte.GetSelectedProject();
+			var baseFileName = $@"{project.GetPath()}\{FileName}";
+
 			var file = $@"{baseFileName}-Connection.dat";
 
 			if (!File.Exists(file))
@@ -319,13 +328,13 @@ namespace CrmCodeGenerator.VSPackage
 				return null;
 			}
 
-			Status.Update($"\tFound connection file: {file}.");
-			Status.Update($"\tReading content ...");
+			Status.Update($"[Settings] Found connection file: {file}.");
+			Status.Update($"[Settings] Reading content ...");
 
 			var fileContent = File.ReadAllText(file);
 			var connectionString = Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
 
-			Status.Update($"\tConnection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
+			Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 
 			return connectionString;
 		}
@@ -340,103 +349,26 @@ namespace CrmCodeGenerator.VSPackage
 			}
 			else
 			{
-				var cache = LoadCache();
+				var latest = LoadLatestConnectionString();
 
-				if (cache?.LatestUsedConnectionString.IsNotEmpty() == true)
+				if (latest.IsNotEmpty())
 				{
-					newSettings.ConnectionString = cache.LatestUsedConnectionString;
+					newSettings.ConnectionString = latest;
 				}
 			}
 
 			return newSettings;
 		}
 
-		public static MetadataCacheArray LoadCache()
-		{
-			lock (lockObj)
-			{
-				try
-				{
-					var cache = CacheHelpers.GetFromMemCache<MetadataCacheArray>(Constants.MetaCacheMemKey);
-
-					if (cache != null)
-					{
-						return cache;
-					}
-
-					Status.Update("Loading cache ... ");
-
-					var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-					var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
-
-					if (File.Exists(file))
-					{
-						// get latest file if in TFS
-						try
-						{
-							var workspaceInfo = Workstation.Current.GetLocalWorkspaceInfo(file);
-
-							if (workspaceInfo != null)
-							{
-								var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
-								var workspace = workspaceInfo.GetWorkspace(server);
-
-								var pending = workspace.GetPendingChanges(new[] { file });
-
-								if (!pending.Any())
-								{
-									workspace.Get(new[] { file }, VersionSpec.Latest, RecursionType.Full, GetOptions.GetAll | GetOptions.Overwrite);
-									Status.Update("\tRetrieved latest settings file from TFS' current workspace.");
-								}
-							}
-						}
-						catch (Exception)
-						{
-							// ignored
-						}
-
-						//Open the file written above and read values from it.
-						using (var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read))
-						{
-							var bformatter = new BinaryFormatter { Binder = new Binder() };
-							stream.Position = 0;
-							cache = bformatter.Deserialize(stream) as MetadataCacheArray;
-
-							if (cache == null)
-							{
-								throw new Exception("Invalid settings format.");
-							}
-
-							CacheHelpers.AddToMemCache(Constants.MetaCacheMemKey, cache);
-
-							Status.Update(">> Finished loading cache.");
-
-							return cache;
-						}
-					}
-					else
-					{
-						Status.Update("[ERROR] cache file does not exist.");
-					}
-				}
-				catch (Exception ex)
-				{
-					Status.Update("Failed to read cache => " + ex.BuildExceptionMessage(isUseExStackTrace: true));
-				}
-
-				return CacheHelpers.AddToMemCache(Constants.MetaCacheMemKey, new MetadataCacheArray());
-			}
-		}
-
 		public static void SaveSettings(Settings settings)
 		{
-			Status.Update("Writing settings ... ");
+			Status.Update("[Settings] Writing settings ... ");
 
 			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
 			var project = dte.GetSelectedProject();
 			var baseFileName = $@"{project.GetPath()}\{FileName}";
 
-			SaveConnection(settings, baseFileName);
+			SaveConnection(settings);
 
 			var file = $@"{baseFileName}-Config.json";
 
@@ -445,7 +377,7 @@ namespace CrmCodeGenerator.VSPackage
 				File.Create(file).Dispose();
 				project.ProjectItems.AddFromFile(file);
 				project.Save();
-				Status.Update("\tCreated a new settings file.");
+				Status.Update("[Settings] Created a new settings file.");
 			}
 
 			// check out file if in TFS
@@ -458,32 +390,38 @@ namespace CrmCodeGenerator.VSPackage
 				// ignored
 			}
 
-			Status.Update("\tCleaning redundant settings ...");
+			Status.Update("[Settings] Cleaning redundant settings ...");
 
 			if (settings.IsCleanSave)
 			{
 				CleanSettings(settings);
 			}
 
-			Status.Update("\tSerialising settings ...");
+			Status.Update("[Settings] Serialising settings ...");
 			var serialisedSettings = JsonConvert.SerializeObject(settings, Formatting.Indented,
 				new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate });
 
-			Status.Update("\tWriting to file ...");
+			Status.Update("[Settings] Writing to file ...");
 			File.WriteAllText(file, serialisedSettings);
 
-			Status.Update(">> Finished writing settings.");
+			Status.Update("[Settings] [DONE] Writing settings.");
 		}
 
-		private static void SaveConnection(Settings settings, string baseFileName)
+		private static void SaveConnection(Settings settings)
 		{
+			SaveLatestConnectionString(settings.ConnectionString);
+
+			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
+			var project = dte.GetSelectedProject();
+			var baseFileName = $@"{project.GetPath()}\{FileName}";
+
 			var file = $@"{baseFileName}-Connection.dat";
 			var connectionString = settings.ConnectionString;
 
 			if (!File.Exists(file) && connectionString.IsFilled())
 			{
 				File.Create(file).Dispose();
-				Status.Update("\tCreated a new connection file.");
+				Status.Update("[Settings] Created a new connection file.");
 			}
 
 			if (!File.Exists(file))
@@ -491,12 +429,12 @@ namespace CrmCodeGenerator.VSPackage
 				return;
 			}
 
-			Status.Update("\tWriting to file ...");
+			Status.Update("[Settings] Writing to file ...");
 
-			var encodedString = Convert.ToBase64String(Encoding.UTF8.GetBytes(settings.ConnectionString));
+			var encodedString = Convert.ToBase64String(Encoding.UTF8.GetBytes(connectionString));
 			File.WriteAllText(file, encodedString);
 
-			Status.Update($"\tConnection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
+			Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 		}
 
 		private static void CheckoutTfs(string file)
@@ -519,10 +457,10 @@ namespace CrmCodeGenerator.VSPackage
 			}
 
 			workspace.Get(new[] { file }, VersionSpec.Latest, RecursionType.Full, GetOptions.GetAll | GetOptions.Overwrite);
-			Status.Update("\tRetrieved latest settings file from TFS' current workspace.");
+			Status.Update("[Settings] Retrieved latest settings file from TFS' current workspace.");
 
 			workspace.PendEdit(file);
-			Status.Update("\tChecked out settings file from TFS' current workspace.");
+			Status.Update("[Settings] Checked out settings file from TFS' current workspace.");
 		}
 
 		private static void CleanSettings(Settings settings)
@@ -582,42 +520,78 @@ namespace CrmCodeGenerator.VSPackage
 			}
 		}
 
-		public static void SaveCache()
+		public static MetadataCache LoadCache(Guid settingsId)
 		{
-			SaveCache(LoadCache());
+			return CacheHelpers.LoadCache(settingsId, GetCachePath(), entry => Status.Update(entry));
 		}
 
-		public static void SaveCache(MetadataCacheArray metadataCache)
+		public static void SaveCache(Guid settingsId)
 		{
-			Status.Update("Writing cache ... ");
+			CacheHelpers.SaveCache(settingsId, GetCachePath(), entry => Status.Update(entry));
+		}
 
+		private static string GetCachePath()
+		{
 			var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-			var file = $@"{dte.Solution.GetPath()}\{FileName}-Cache.dat";
+			var folder = $@"{dte.Solution.GetPath()}\.ys\gen-ext\cache\meta";
 
-			lock (lockObj)
+			Directory.CreateDirectory(folder);
+
+			return folder;
+		}
+
+		private static string LoadLatestConnectionString()
+		{
+			try
 			{
+				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+				var folder = $@"{dte.Solution.GetPath()}\.ys\gen-ext\cache";
+
+				Directory.CreateDirectory(folder);
+
+				var file = $@"{folder}\conn";
+
 				if (!File.Exists(file))
 				{
-					File.Create(file).Dispose();
-					Status.Update("\tCreated a new cache file.");
+					return null;
 				}
 
-				new Thread(
-					() =>
-					{
-						Status.Update("\t Moved write operation to a new thread.");
+				var fileContent = File.ReadAllText(file);
+				return Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
+			}
+			catch
+			{
+				return null;
+			}
+		}
 
-						using (var stream = File.Open(file, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
-						{
-						// clear the file to start from scratch
-						stream.SetLength(0);
+		private static void SaveLatestConnectionString(string connectionString)
+		{
+			try
+			{
+				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+				var folder = $@"{dte.Solution.GetPath()}\.ys\gen-ext\cache";
 
-							var bformatter = new BinaryFormatter { Binder = new Binder() };
-							bformatter.Serialize(stream, metadataCache);
+				Directory.CreateDirectory(folder);
 
-							Status.Update(">> Finished writing cache.");
-						}
-					}).Start(); 
+				var file = $@"{folder}\conn";
+
+				if (!File.Exists(file) && connectionString.IsFilled())
+				{
+					File.Create(file).Dispose();
+				}
+
+				if (!File.Exists(file))
+				{
+					return;
+				}
+
+				var encodedString = Convert.ToBase64String(Encoding.UTF8.GetBytes(connectionString));
+				File.WriteAllText(file, encodedString);
+			}
+			catch
+			{
+				// ignored
 			}
 		}
 	}

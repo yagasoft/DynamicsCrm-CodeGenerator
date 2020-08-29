@@ -133,7 +133,7 @@ namespace CrmCodeGenerator.VSPackage
 				return Cancel(wszInputFilePath, rgbOutputFileContents, out pcbOutput);
 			}
 
-			Status.Update("Generating code from template ... ");
+			Status.Update("[Generator] Generating code from template ... ");
 
 			if (!(Package.GetGlobalService(typeof(STextTemplating)) is ITextTemplating t4))
 			{
@@ -159,7 +159,7 @@ namespace CrmCodeGenerator.VSPackage
 			foreach (var err in cb.ErrorMessages)
 			{
 				// The templating system (eg t4.ProcessTemplate) will automatically add error/warning to the ErrorList 
-				Status.Update($"[{(err.Warning ? "WARN" : "ERROR")}] {err.Message} {err.Line}, {err.Column}");
+				Status.Update($"[Generator] [{(err.Warning ? "WARN" : "ERROR")}] {err.Message} {err.Line}, {err.Column}");
 			}
 
 			// If there was an output directive in the TemplateFile, then cb.SetFileExtension() will have been called.
@@ -168,13 +168,13 @@ namespace CrmCodeGenerator.VSPackage
 				extension = cb.FileExtension;
 			}
 
-			Status.Update(">> Finished generating code.");
+			Status.Update("[Generator] [DONE] Generating code.");
 
-			Status.Update("Writing code to disk ... ");
+			Status.Update("[Generator] Writing code to disk ... ");
 
 			SaveOutputContent(rgbOutputFileContents, out pcbOutput, content);
 
-			Status.Update(">> Finished writing code.");
+			Status.Update("[Generator] [DONE] Writing code.");
 
 			return VSConstants.S_OK;
 		}

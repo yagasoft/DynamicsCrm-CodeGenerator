@@ -14,10 +14,10 @@ using System.Windows.Interop;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using Yagasoft.CrmCodeGenerator;
-using Yagasoft.CrmCodeGenerator.Cache.Metadata;
 using Yagasoft.CrmCodeGenerator.Connection;
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
+using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Application = System.Windows.Forms.Application;
 
@@ -31,7 +31,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	public partial class Options : INotifyPropertyChanged
 	{
 		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
-		private readonly MetadataCacheManagerBase metadataCacheManager;
+		private readonly MetadataCache metadataCache;
 
 		#region Hide close button stuff
 
@@ -104,12 +104,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public Options(Window parentWindow, Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCacheManagerBase metadataCacheManager)
+			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{
 			InitializeComponent();
 
 			this.connectionManager = connectionManager;
-			this.metadataCacheManager = metadataCacheManager;
+			this.metadataCache = metadataCache;
 
 			Owner = parentWindow;
 			Settings = settings;
@@ -150,7 +150,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					try
 					{
 						Status.ShowBusy(Dispatcher, BusyIndicator, "Loading Global Actions ...");
-						var actions = MetadataHelpers.RetrieveActionNames(Settings, connectionManager, metadataCacheManager).ToArray();
+						var actions = MetadataHelpers.RetrieveActionNames(Settings, connectionManager, metadataCache).ToArray();
 						Dispatcher.Invoke(
 							() =>
 							{

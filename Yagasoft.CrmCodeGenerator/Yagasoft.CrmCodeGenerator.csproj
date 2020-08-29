@@ -77,15 +77,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cache\ICacheManager.cs" />
     <Compile Include="Connection\IConnectionManager.cs" />
     <Compile Include="Connection\OrgSvcs\IDisposableOrgSvc.cs" />
     <Compile Include="Connection\OrgSvcs\DisposableOrgSvcBase.cs" />
     <Compile Include="Helpers\Assembly\AssemblyHelpers.cs" />
     <Compile Include="Helpers\Assembly\Binder.cs" />
+    <Compile Include="Helpers\CacheHelpers.cs" />
     <Compile Include="Helpers\ConnectionHelpers.cs" />
     <Compile Include="Helpers\Helpers.cs" />
-    <Compile Include="Cache\Metadata\MetadataCacheManagerBase.cs" />
     <Compile Include="Helpers\MetadataHelpers.cs" />
     <Compile Include="Helpers\NamingHelpers.cs" />
     <Compile Include="Helpers\ObjectCopier.cs" />
@@ -93,7 +92,6 @@
     <Compile Include="Mapper\Mapper.cs" />
     <Compile Include="Models\Attributes\CrmAttribute.cs" />
     <Compile Include="Models\Cache\MetadataCache.cs" />
-    <Compile Include="Models\Cache\MetadataCacheArray.cs" />
     <Compile Include="Models\Mapper\MapperEventArgs.cs" />
     <Compile Include="Models\Mapper\Context.cs" />
     <Compile Include="Models\Mapping\MappingAction.cs" />
