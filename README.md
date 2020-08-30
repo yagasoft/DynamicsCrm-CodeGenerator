@@ -47,7 +47,7 @@ A Visual Studio extension that allows generating early bound classes for Microso
 
 I will post a complete guide soon ...
 
-Install the Visual Studio extension.
+Install the Visual Studio extension ([here](https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator)).
 
 #### Add a template to your project
 
