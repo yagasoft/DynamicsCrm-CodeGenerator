@@ -9,6 +9,7 @@ using Yagasoft.CrmCodeGenerator.Connection;
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.Libraries.Common;
 using Yagasoft.Libraries.EnhancedOrgService.Helpers;
+using Yagasoft.Libraries.EnhancedOrgService.Params;
 using Yagasoft.Libraries.EnhancedOrgService.Pools;
 using Yagasoft.Libraries.EnhancedOrgService.Services;
 using static Yagasoft.CrmCodeGenerator.Helpers.ConnectionHelpers;
@@ -51,7 +52,16 @@ namespace CrmCodeGenerator.VSPackage.Connection
 					Status.Update($"[Connection] Creating connection pool to CRM ... ");
 					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 
-					connectionPool = EnhancedServiceHelper.GetPool(connectionString, Threads);
+					connectionPool = EnhancedServiceHelper.GetPool(
+						new EnhancedServiceParams(connectionString)
+						{
+							PoolParams = 
+								new PoolParams
+								{
+									PoolSize = Threads,
+									DequeueTimeoutInMillis = 20 * 1000
+								}
+						});
 					connectionPool.WarmUp();
 					latestConnectionString = connectionString;
 

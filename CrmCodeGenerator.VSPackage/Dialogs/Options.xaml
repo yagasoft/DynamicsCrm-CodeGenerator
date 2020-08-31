@@ -318,11 +318,13 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="5">
                                 <Label Content="Threads" Margin="0" />
-                                <xctk:IntegerUpDown x:Name="IntSpinnerThreads" AllowTextInput="True" Increment="1" Minimum="1" Height="20" />
+                                <xctk:IntegerUpDown x:Name="IntSpinnerThreads" AllowTextInput="True"
+                                                    Increment="1" Minimum="2" Height="20" />
                             </StackPanel>
                             <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="5" Grid.Column="1">
                                 <Label Content="Max entities per thread" Margin="0" />
-                                <xctk:IntegerUpDown x:Name="IntSpinnerEntitiesPerThread" AllowTextInput="True" Increment="1" Minimum="1" Height="20" />
+                                <xctk:IntegerUpDown x:Name="IntSpinnerEntitiesPerThread" AllowTextInput="True"
+                                                    Increment="1" Minimum="1" Height="20" />
                             </StackPanel>
                         </Grid>
                     </GroupBox>

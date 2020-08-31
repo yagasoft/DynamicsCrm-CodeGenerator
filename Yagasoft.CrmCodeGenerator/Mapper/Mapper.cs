@@ -54,18 +54,12 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 		{
 			get
 			{
-				if (actionsThread != null)
+				if (actionsThread?.IsAlive == true)
 				{
-					lock (actionsThread)
-					{
-						if (actionsThread.IsAlive)
-						{
-							var message = OnMessage("Waiting for Actions thread ... ");
-							actionsThread.Join();
-							OnMessage(">> Actions thread finished.", false);
-							message.FinishedProgress(progress);
-						}
-					}
+					var message = OnMessage("Waiting for Actions thread ... ");
+					actionsThread.Join();
+					OnMessage(">> Actions thread finished.", false);
+					message.FinishedProgress(progress);
 				}
 
 				return actions;
@@ -77,18 +71,12 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 		{
 			get
 			{
-				if (langThread != null)
+				if (langThread?.IsAlive == true)
 				{
-					lock (langThread)
-					{
-						if (langThread.IsAlive)
-						{
-							var message = OnMessage("Waiting for languages thread ... ");
-							langThread.Join();
-							OnMessage(">> Languages thread finished.", false);
-							message.FinishedProgress(progress);
-						}
-					}
+					var message = OnMessage("Waiting for languages thread ... ");
+					langThread.Join();
+					OnMessage(">> Languages thread finished.", false);
+					message.FinishedProgress(progress);
 				}
 
 				return languages;
@@ -129,18 +117,12 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 		{
 			get
 			{
-				if (featuresThread != null)
+				if (featuresThread?.IsAlive == true)
 				{
-					lock (featuresThread)
-					{
-						if (featuresThread.IsAlive)
-						{
-							var message = OnMessage("Waiting for features thread ... ");
-							featuresThread.Join();
-							OnMessage(">> Features thread finished.", false);
-							message.FinishedProgress(progress);
-						}
-					} 
+					var message = OnMessage("Waiting for features thread ... ");
+					featuresThread.Join();
+					OnMessage(">> Features thread finished.", false);
+					message.FinishedProgress(progress);
 				}
 
 				return platformFeatures;
@@ -424,7 +406,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 		internal MappingEntity[] GetEntities(List<string> originalSelectedEntities)
 		{
-			var threadCount = Settings.Threads;
+			var threadCount = Math.Max(1, Settings.Threads - 1);
 
 			// group entities by their server stamp to fetch them together in bulk
 			// if not stamp is found, mark it

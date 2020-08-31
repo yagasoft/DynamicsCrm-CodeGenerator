@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.1.3
+### Version: 10.1.4
 ---
 
 A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -93,6 +93,9 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.1.4 (2020-08-31)_
++ Improved: reduces connection pool timeout (20 secs) to get a new connection faster when none are available
++ Fixed: deadlock issue
 #### _v10.1.3 (2020-08-30)_
 + Improved: cache folder structure
 + Improved: cache performance
