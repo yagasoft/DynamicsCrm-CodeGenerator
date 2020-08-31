@@ -5,7 +5,7 @@
 ### Version: 10.1.4
 ---
 
-A Visual Studio extension that allows generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
+A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
 
 ## Features
 

@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="CrmCodeGenerator" Version="10.1.4" Language="en-US" Publisher="Ahmed Elsawalhy (Yagasoft.com)" />
         <DisplayName>Dynamics CRM - Template-based Code Generator</DisplayName>
-        <Description xml:space="preserve">A Visual Studio extension that for generating early-bound classes for Microsoft Dynamics CRM entities based on a template.</Description>
+        <Description xml:space="preserve">A Visual Studio extension for generating early-bound classes for Microsoft Dynamics CRM entities based on a template, similar to Entity Framework.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator</MoreInfo>
         <License>license.txt</License>
         <ReleaseNotes>README.txt</ReleaseNotes>
