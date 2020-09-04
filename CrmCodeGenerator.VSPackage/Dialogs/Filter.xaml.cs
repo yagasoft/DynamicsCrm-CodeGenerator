@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -166,8 +168,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		private readonly IDictionary<EntityProfilesHeader, List<EntityProfileGridRow>> rowMap = new Dictionary<EntityProfilesHeader, List<EntityProfileGridRow>>();
-		private List<EntityProfileGridRow> rowList;
+		private readonly IDictionary<EntityProfilesHeader, ConcurrentBag<EntityProfileGridRow>> rowSourceMap =
+			new Dictionary<EntityProfilesHeader, ConcurrentBag<EntityProfileGridRow>>();
+		private ConcurrentBag<EntityProfileGridRow> rowListSource = new ConcurrentBag<EntityProfileGridRow>();
 
 		#region Property events
 
@@ -255,51 +258,60 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			Dispatcher.Invoke(Entities.Clear);
 
-			if (!rowMap.TryGetValue(SelectedEntityProfilesHeader, out rowList))
+			var isFoundSource = rowSourceMap.TryGetValue(SelectedEntityProfilesHeader, out rowListSource);
+			var rowList = new ConcurrentBag<EntityProfileGridRow>();
+
+			if (!isFoundSource)
 			{
-				rowList = rowMap[SelectedEntityProfilesHeader] = new List<EntityProfileGridRow>();
+				rowListSource = rowSourceMap[SelectedEntityProfilesHeader] = new ConcurrentBag<EntityProfileGridRow>();
+			}
 
-				var filteredEntities = EntityMetadataCache
-					.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
+			var filteredEntities = EntityMetadataCache
+				.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
 
-				foreach (var entity in filteredEntities)
+			var missingProfiles = new ConcurrentBag<EntityProfile>();
+
+			Parallel.ForEach(filteredEntities,
+				entity =>
 				{
 					var entityAsync = entity;
 
-					Dispatcher.Invoke(
-						() =>
-						{
-							var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
-								.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+					var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
+						.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
 
-							if (entityProfile == null)
-							{
-								entityProfile = new EntityProfile(entityAsync.LogicalName);
-								SelectedEntityProfilesHeader.EntityProfiles.Add(entityProfile);
-							}
+					if (entityProfile == null)
+					{
+						entityProfile = new EntityProfile(entityAsync.LogicalName);
+						missingProfiles.Add(entityProfile);
+					}
 
-							var row =
-								new EntityProfileGridRow
-								{
-									EntityProfile = entityProfile,
-									IsSelected = !entityProfile.IsExcluded,
-									Name = entityAsync.LogicalName,
-									DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-										? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
-										: Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
-									Rename = entityProfile.EntityRename,
-									IsGenerateMeta = entityProfile.IsGenerateMeta,
-									IsOptionsetLabels = entityProfile.IsOptionsetLabels,
-									IsLookupLabels = entityProfile.IsLookupLabels,
-									ValueClearMode = entityProfile.ValueClearMode == null
-										? ClearModeEnumUi.Default
-										: (ClearModeEnumUi)entityProfile.ValueClearMode
-								};
+					var row = rowListSource.FirstOrDefault(r => r.Name == entityAsync.LogicalName)
+						?? new EntityProfileGridRow
+						   {
+							   EntityProfile = entityProfile,
+							   IsSelected = !entityProfile.IsExcluded,
+							   Name = entityAsync.LogicalName,
+							   DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+								   ? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
+								   : Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
+							   Rename = entityProfile.EntityRename,
+							   IsGenerateMeta = entityProfile.IsGenerateMeta,
+							   IsOptionsetLabels = entityProfile.IsOptionsetLabels,
+							   IsLookupLabels = entityProfile.IsLookupLabels,
+							   ValueClearMode = entityProfile.ValueClearMode == null
+								   ? ClearModeEnumUi.Default
+								   : (ClearModeEnumUi)entityProfile.ValueClearMode
+						   };
 
-							rowList.Add(row);
-						});
-				}
-			}
+					rowList.Add(row);
+
+					if (rowListSource.All(r => r.Name != row.Name))
+					{
+						rowListSource.Add(row);
+					}
+				});
+
+			SelectedEntityProfilesHeader.EntityProfiles.AddRange(missingProfiles);
 
 			foreach (var row in rowList.OrderByDescending(row => row.IsSelected).ThenBy(row => row.Name))
 			{
@@ -337,7 +349,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void SaveFilter()
 		{
-			foreach (var row in rowMap.Values.SelectMany(e => e))
+			foreach (var row in rowSourceMap.Values.SelectMany(e => e))
 			{
 				var entityProfile = row.EntityProfile;
 				entityProfile.IsExcluded = !row.IsSelected;

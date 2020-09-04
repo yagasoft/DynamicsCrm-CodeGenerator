@@ -2,46 +2,41 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.1.4
+### Version: 10.2.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
 
 ## Features
 
+  + Built for Visual Studio
+    + You never have to leave Visual Studio to regenerate the code
+	+ All the configurations are saved in the project itself, which facilitates Version Control
   + Preserved the original CrmSvcUtil structure and logic
-	+ Replaced the SDK types with .NET types
-	  + E.g. OptionSetValue => Enum (Enum[] for Multi-select), EntityReference => Guid, Money => decimal, ... etc.
-	+ Only choose the Entities required
-	+ Only the Fields required
-	+ Option to use Display Names of entities and fields as Variable names instead of Logical Names
-	+ Option to override Field names inside the tool's UI
-	+ Option to lock Variable names to avoid code errors on regeneration
+  + Customize the way the code is generated
+    + You get a default T4 template for the code that is generated, with a multitude more features than the official tool (features below)
+	+ You can rewrite the whole template if you wish for any possible requirements
+  + Replaced the SDK types with .NET types
+    + E.g. OptionSetValue => Enum (Enum[] for Multi-select), EntityReference => Guid, Money => decimal, ... etc.
+  + Generate only what's needed
+    + Only choose the entities required
+    + Only the fields required
+  + Additional control
+    + Option to use display names of entities and fields as variable names instead of logical names
+    + Override field names inside the tool's UI
+    + Ability to Lock variable names to avoid code errors on regeneration
   + Greatly enhanced regeneration speed by only fetching changed metadata from the server
-  + Support for strongly-typed Alternate Keys, for Entities and Entity References
-  + Add Annotations for model validation
-  + Generate Metadata
-	+ Field Logical and Schema Names
-	+ Localised labels
-  + Many options to optimise generated code size
-	+ Filter attributes to reduce size
+  + Support for strongly-typed alternate keys, for entities and Entity References
+  + Add annotations for model validation
+  + Generate metadata
+    + Field logical and schema names
+    + Localised labels
+  + Many options to optimise generated code size even further
   + Define web service contracts with different profiles
-	+ Option to mark certain Fields as 'ready only'
+    + Option to mark certain fields as 'read-only'
   + Generate concrete classes for CRM Actions
   + Support bulk relation loading
-	+ Support filtering on relation loading
-
-### Benefits of using this tool over the standard tool
-
-  + Control which entities to generate classes.
-	+ Optmises the size of the generated code, keeping it at the minimum required.
-    + If you use the CrmSvcUtil.exe to generate, the code file will be 200,000 lines, compared to ~1000 lines for each entity you select.
-  + Customize the way the code is generated
-    + You get a default T4 template for the code that is generated, with a multitude more features than the official tool.
-	+ The template is fully customisable (even from scratch) for any possible needs that arise.
-  + Built for Visual Studio
-    + You never have to leave Visual Studio to regenerate the code.
-	+ All the configurations are saved in the project itself, which facilitates Version Control.
+    + Support filtering on relation loading
 
 ## How To Use
 
@@ -69,7 +64,7 @@ If you make schema changes in CRM and you want to refresh the code, right click 
 
 When you make changes to the template and save, Visual Studio will automatically attempt to regenerate the code.
 
-### Screenshots
+## Screenshots
 
 ![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-01.png)
 
@@ -93,6 +88,10 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.2.1 (2020-09-04)_
++ Added: pre-v7 settings migration, to avoid a longer migration cycle
++ Improved: table rendering performance
++ Fixed: filtering issue
 #### _v10.1.4 (2020-08-31)_
 + Improved: reduces connection pool timeout (20 secs) to get a new connection faster when none are available
 + Fixed: deadlock issue
@@ -130,7 +129,7 @@ When you make changes to the template and save, Visual Studio will automatically
 + Removed: pre-v7 settings migration (to migrate to v7+, download v8.1.3 below first)
 + Fixed: issue with assembly binding
 + Fixed: issues
-#### _v8.1.3 (2020-08-17)_ [Download](http://blog.yagasoft.com/wp-content/uploads/CrmCodeGenerator.vsix)
+#### _v8.1.3 (2020-08-17)_
 + Fixed: handling older versions of CRM when it comes to new features
 + Fixed: obsolete Action Names not removed from selection
 + Fixed: image length to be in bytes instead of KBs

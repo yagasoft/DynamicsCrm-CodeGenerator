@@ -9,6 +9,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
 using CrmCodeGenerator.VSPackage.Helpers;
+using CrmCodeGenerator.VSPackage.Model;
 using CrmCodeGenerator.VSPackage.Model.OldSettings2;
 using EnvDTE;
 using Microsoft.TeamFoundation.Client;
@@ -23,6 +24,7 @@ using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using CacheHelpers = Yagasoft.CrmCodeGenerator.Helpers.CacheHelpers;
+using ClearModeEnum = Yagasoft.CrmCodeGenerator.Models.Settings.ClearModeEnum;
 using Constants = CrmCodeGenerator.VSPackage.Model.Constants;
 using Settings = Yagasoft.CrmCodeGenerator.Models.Settings.Settings;
 using Thread = System.Threading.Thread;
@@ -92,15 +94,19 @@ namespace CrmCodeGenerator.VSPackage
 						}
 					}
 
-					settings.ConnectionString = connectionString ?? settings.ConnectionString;
-					settings.AppId = settings.AppId ?? Constants.AppId;
-					settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
-					settings.SettingsVersion = Constants.SettingsVersion;
-					settings.BaseFileName = FileName;
+					ProcessSettings(settings, connectionString, baseFileName);
 
-					SetTemplateInfo(settings, baseFileName);
+					return settings;
+				}
 
-					Status.Update("[Settings] [DONE] Loading settings.");
+				file = $@"{baseFileName}.dat";
+
+				if (File.Exists(file))
+				{
+					Status.Update($"[Settings] Migrating pre-v7 JSON settings ...");
+					var settings = MigrateOldSettings3(file, project);
+
+					ProcessSettings(settings, connectionString, baseFileName);
 
 					return settings;
 				}
@@ -113,20 +119,25 @@ namespace CrmCodeGenerator.VSPackage
 				Status.Update(ex.BuildExceptionMessage(isUseExStackTrace: true));
 			}
 
-			var newSettings = CreateNewSettings(connectionString);
-			newSettings.AppId = Constants.AppId;
-			newSettings.AppVersion = Constants.AppVersion;
-			newSettings.SettingsVersion = Constants.SettingsVersion;
-			newSettings.BaseFileName = FileName;
-
-			if (baseFileName.IsFilled())
-			{
-				SetTemplateInfo(newSettings, baseFileName);
-			}
+			var newSettings = new Settings();
+			ProcessSettings(newSettings, connectionString, baseFileName);
 
 			Status.Update("[Settings] [DONE] Creating new settings.");
 
 			return newSettings;
+		}
+
+		private static void ProcessSettings(Settings settings, string connectionString, string baseFileName)
+		{
+			settings.AppId = settings.AppId ?? Constants.AppId;
+			settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
+			settings.SettingsVersion = Constants.SettingsVersion;
+			settings.BaseFileName = FileName;
+
+			FillDefaultConnString(connectionString, settings);
+			SetTemplateInfo(settings, baseFileName);
+
+			Status.Update("[Settings] [DONE] Loading settings.");
 		}
 
 		private static void SetTemplateInfo(Settings settings, string baseFileName, bool isRetry = false)
@@ -315,6 +326,93 @@ namespace CrmCodeGenerator.VSPackage
 				};
 		}
 
+		private static Settings MigrateOldSettings3(string file, Project project)
+		{
+			// get latest file if in TFS
+			try
+			{
+				var workspaceInfo = Workstation.Current.GetLocalWorkspaceInfo(file);
+
+				if (workspaceInfo != null)
+				{
+					var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
+					var workspace = workspaceInfo.GetWorkspace(server);
+
+					var pending = workspace.GetPendingChanges(new[] { file });
+
+					if (!pending.Any())
+					{
+						workspace.Get(new[] { file }, VersionSpec.Latest, RecursionType.Full, GetOptions.GetAll | GetOptions.Overwrite);
+						Status.Update("[Settings] Retrieved latest settings file from TFS' current workspace.");
+					}
+				}
+			}
+			catch (Exception)
+			{
+				// ignored
+			}
+
+			SettingsArray oldSettings3;
+
+			//Open the file written above and read values from it.
+			using (var stream = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read))
+			{
+				var bformatter = new BinaryFormatter { Binder = new Binder() };
+				stream.Position = 0;
+				var settingsObject = bformatter.Deserialize(stream);
+
+				if (settingsObject is SettingsArray array)
+				{
+					oldSettings3 = array;
+				}
+				else
+				{
+					throw new Exception("[Settings] Invalid settings format.");
+				}
+
+				Status.Update("[Settings] Finished reading settings file.");
+			}
+
+			Status.Update("[Settings] Converting settings ...");
+
+			var selectedSettings = oldSettings3.GetSelectedSettings();
+			selectedSettings.EntityMetadataCache = null;
+			selectedSettings.LookupEntitiesMetadataCacheSerialised = null;
+			selectedSettings.ProfileEntityMetadataCacheSerialised = null;
+			selectedSettings.ProfileAttributeMetadataCacheSerialised = null;
+			selectedSettings.Context = null;
+			selectedSettings.Folder = "";
+			selectedSettings.Template = "";
+
+			var serialisedSettings = JsonConvert.SerializeObject(selectedSettings);
+			var oldSettings = JsonConvert.DeserializeObject<Model.OldSettings.Settings>(serialisedSettings);
+
+			oldSettings.ConnectionString = selectedSettings.GetOrganizationCrmConnectionString();
+
+			serialisedSettings = JsonConvert.SerializeObject(oldSettings);
+			var newSettings = JsonConvert.DeserializeObject<Settings>(serialisedSettings);
+
+			if (oldSettings.EntityDataFilterArray?.EntityFilters.Any() == true)
+			{
+				MigrateOldSettings(newSettings, oldSettings);
+			}
+			
+			Status.Update("[Settings] Deleting old settings file ...");
+
+			foreach (var item in project.ProjectItems.Cast<ProjectItem>().Where(item => item.Name == Path.GetFileName(file)))
+			{
+				item.Delete();
+			}
+
+			project.Save();
+
+			Status.Update("[Settings] Finished deleting old settings file.");
+
+			Status.Update("[Settings] Finished loading settings.");
+
+			return newSettings;
+		}
+
 		private static string LoadConnection()
 		{
 			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
@@ -339,10 +437,8 @@ namespace CrmCodeGenerator.VSPackage
 			return connectionString;
 		}
 
-		private static Settings CreateNewSettings(string connectionString)
+		private static void FillDefaultConnString(string connectionString, Settings newSettings)
 		{
-			var newSettings = new Settings();
-
 			if (connectionString.IsFilled())
 			{
 				newSettings.ConnectionString = connectionString;
@@ -356,8 +452,6 @@ namespace CrmCodeGenerator.VSPackage
 					newSettings.ConnectionString = latest;
 				}
 			}
-
-			return newSettings;
 		}
 
 		public static void SaveSettings(Settings settings)
@@ -469,55 +563,65 @@ namespace CrmCodeGenerator.VSPackage
 
 			foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
 			{
-				var list = filter.EntityProfiles.ToArray();
+				CleanProfiles(filter.EntityProfiles, isCleanProfiles);
+			}
+		}
 
-				for (var i = list.Length - 1; i >= 0; i--)
+		private static void CleanProfiles(List<EntityProfile> entityProfiles, bool isCleanProfiles)
+		{
+			var list = entityProfiles.ToArray();
+
+			for (var i = list.Length - 1; i >= 0; i--)
+			{
+				var dataFilter = list[i];
+
+				var isKeepFilter = IsKeepProfile(dataFilter, isCleanProfiles);
+
+				if (!isKeepFilter)
 				{
-					var dataFilter = list[i];
-
-					var isIncluded = !dataFilter.IsExcluded;
-
-					if (isCleanProfiles && !isIncluded)
-					{
-						filter.EntityProfiles.RemoveAt(i);
-						continue;
-					}
-
-					dataFilter.Attributes?.RemoveEmpty();
-					dataFilter.AttributeRenames?.RemoveEmpty();
-					dataFilter.AttributeLanguages?.RemoveEmpty();
-					dataFilter.ReadOnly?.RemoveEmpty();
-					dataFilter.ClearFlag?.RemoveEmpty();
-					dataFilter.OneToN?.RemoveEmpty();
-					dataFilter.OneToNRenames?.RemoveEmpty();
-					dataFilter.OneToNReadOnly?.RemoveEmpty();
-					dataFilter.NToOne?.RemoveEmpty();
-					dataFilter.NToOneRenames?.RemoveEmpty();
-					dataFilter.NToOneFlatten?.RemoveEmpty();
-					dataFilter.NToOneReadOnly?.RemoveEmpty();
-					dataFilter.NToN?.RemoveEmpty();
-					dataFilter.NToNRenames?.RemoveEmpty();
-					dataFilter.NToNReadOnly?.RemoveEmpty();
-
-					var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
-					var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
-					var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
-					var isIsLookupLabelsFilled = dataFilter.IsLookupLabels;
-					var isValueClearModeFilled = dataFilter.ValueClearMode != null;
-					var isEnglishLabelFieldFilled = dataFilter.EnglishLabelField.IsFilled();
-					var isCollectionsFilled = dataFilter.IsBasicDataFilled;
-
-					var isKeepFilter = isIncluded || isEntityRenameFilled || isIsGenerateMetaFilled
-						|| isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
-						|| isValueClearModeFilled || isEnglishLabelFieldFilled
-						|| isCollectionsFilled;
-
-					if (!isKeepFilter)
-					{
-						filter.EntityProfiles.RemoveAt(i);
-					}
+					entityProfiles.RemoveAt(i);
 				}
 			}
+		}
+
+		private static bool IsKeepProfile(EntityProfile dataFilter, bool isCleanProfiles)
+		{
+			var isIncluded = !dataFilter.IsExcluded;
+
+			if (isCleanProfiles && !isIncluded)
+			{
+				return false;
+			}
+
+			dataFilter.Attributes?.RemoveEmpty();
+			dataFilter.AttributeRenames?.RemoveEmpty();
+			dataFilter.AttributeLanguages?.RemoveEmpty();
+			dataFilter.ReadOnly?.RemoveEmpty();
+			dataFilter.ClearFlag?.RemoveEmpty();
+			dataFilter.OneToN?.RemoveEmpty();
+			dataFilter.OneToNRenames?.RemoveEmpty();
+			dataFilter.OneToNReadOnly?.RemoveEmpty();
+			dataFilter.NToOne?.RemoveEmpty();
+			dataFilter.NToOneRenames?.RemoveEmpty();
+			dataFilter.NToOneFlatten?.RemoveEmpty();
+			dataFilter.NToOneReadOnly?.RemoveEmpty();
+			dataFilter.NToN?.RemoveEmpty();
+			dataFilter.NToNRenames?.RemoveEmpty();
+			dataFilter.NToNReadOnly?.RemoveEmpty();
+
+			var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
+			var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
+			var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
+			var isIsLookupLabelsFilled = dataFilter.IsLookupLabels;
+			var isValueClearModeFilled = dataFilter.ValueClearMode != null;
+			var isEnglishLabelFieldFilled = dataFilter.EnglishLabelField.IsFilled();
+			var isCollectionsFilled = dataFilter.IsBasicDataFilled;
+
+			var isKeepFilter = isIncluded || isEntityRenameFilled || isIsGenerateMetaFilled
+				|| isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
+				|| isValueClearModeFilled || isEnglishLabelFieldFilled
+				|| isCollectionsFilled;
+			return isKeepFilter;
 		}
 
 		public static MetadataCache LoadCache(Guid settingsId)

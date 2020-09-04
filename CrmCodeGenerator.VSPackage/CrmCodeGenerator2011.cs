@@ -117,11 +117,25 @@ namespace CrmCodeGenerator.VSPackage
 
 			if (File.Exists(file))
 			{
-				DteHelper.ShowInfo("Pre-v7 settings found, which needs to be converted to the current format.\r\n\r\n"
-					+ "Install pre-v8.2 Generator and select the profile you would like migrated,"
-					+ " and then upgrade again."
-					+ "v8.1.3 download link can be found in the changelog of this extension on Visual Studio Marketplace.",
+				var isMigrate = DteHelper.IsConfirmed("Pre-v7 settings found, which will be converted to the current format.\r\n\r\n"
+					+ "Only the LAST selected profile will be migrated -- all other profiles will be DELETED.\r\n\r\n"
+					+ "If unsure, reinstall pre-v7 Generator and select the profile you would like migrated,"
+					+ " and then upgrade again.\r\n\r\n"
+					+ "Would you like to proceed?",
 					">> WARNING << Settings Migration");
+
+				if (isMigrate)
+				{
+					isMigrate = DteHelper.IsConfirmed("Only the LAST selected profile will be migrated"
+						+ " -- all other profiles will be DELETED.\r\n\r\n"
+						+ "Are you sure?",
+						">> WARNING << Settings Migration");
+				}
+
+				if (!isMigrate)
+				{
+					return Cancel(wszInputFilePath, rgbOutputFileContents, out pcbOutput);
+				}
 			}
 
 			var m = new Login(dte);

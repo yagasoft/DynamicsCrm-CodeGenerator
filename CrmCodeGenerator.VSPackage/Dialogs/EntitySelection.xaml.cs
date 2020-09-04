@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -144,7 +146,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		#endregion
 
-		private List<EntitySelectionGridRow> rowList;
+		private readonly ConcurrentBag<EntitySelectionGridRow> rowListSource = new ConcurrentBag<EntitySelectionGridRow>();
 
 		#region Init
 
@@ -209,44 +211,46 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			Dispatcher.Invoke(Entities.Clear);
 
-			rowList = new List<EntitySelectionGridRow>();
+			var rowList = new ConcurrentBag<EntitySelectionGridRow>();
 
 			var filteredEntities = EntityMetadataCache
 				.Where(entity => filter == null || filter.Contains(entity.LogicalName)).ToArray();
 
-			foreach (var entity in filteredEntities)
-			{
-				var entityAsync = entity;
+			Parallel.ForEach(filteredEntities,
+				entity =>
+				{
+					var entityAsync = entity;
 
-				var profile = Settings.CrmEntityProfiles
-					.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+					var profile = Settings.CrmEntityProfiles
+						.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
 
-				Dispatcher.Invoke(
-					() =>
+					var row = rowListSource.FirstOrDefault(r => r.Name == entityAsync.LogicalName)
+						?? new EntitySelectionGridRow
+						   {
+							   Entity = entityAsync,
+							   EntityProfile = profile?.Copy(),
+							   IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
+							   Name = entityAsync.LogicalName,
+							   Rename = profile?.EntityRename,
+							   DisplayName =
+								   entityAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+									   ? Naming.GetProperHybridName(entityAsync.SchemaName, entityAsync.LogicalName)
+									   : Naming.Clean(entityAsync.DisplayName.UserLocalizedLabel.Label),
+							   IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entityAsync.LogicalName),
+							   IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entityAsync.LogicalName),
+							   IsEntityFiltered = Settings.EarlyBoundFilteredSelected.Contains(entityAsync.LogicalName),
+							   IsOptionsetLabels = Settings.OptionsetLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
+							   IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
+							   SelectedActions = Settings.SelectedActions?.FirstNotNullOrDefault(entityAsync.LogicalName)
+						   };
+
+					rowList.Add(row);
+
+					if (rowListSource.All(r => r.Name != row.Name))
 					{
-						var row =
-							new EntitySelectionGridRow
-							{
-								Entity = entityAsync,
-								EntityProfile = profile?.Copy(),
-								IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
-								Name = entityAsync.LogicalName,
-								Rename = profile?.EntityRename,
-								DisplayName =
-									entityAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-										? Naming.GetProperHybridName(entityAsync.SchemaName, entityAsync.LogicalName)
-										: Naming.Clean(entityAsync.DisplayName.UserLocalizedLabel.Label),
-								IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entityAsync.LogicalName),
-								IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entityAsync.LogicalName),
-								IsEntityFiltered = Settings.EarlyBoundFilteredSelected.Contains(entityAsync.LogicalName),
-								IsOptionsetLabels = Settings.OptionsetLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
-								IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
-								SelectedActions = Settings.SelectedActions?.FirstNotNullOrDefault(entityAsync.LogicalName)
-							};
-
-						rowList.Add(row);
-					});
-			}
+						rowListSource.Add(row);
+					}
+				});
 
 			foreach (var row in rowList.OrderByDescending(row => row.IsSelected).ThenBy(row => row.Name))
 			{
@@ -299,7 +303,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void SaveFilter()
 		{
-			foreach (var row in rowList)
+			foreach (var row in rowListSource)
 			{
 				var entity = row.Entity;
 

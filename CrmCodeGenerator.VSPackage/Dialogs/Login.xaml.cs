@@ -26,8 +26,10 @@ using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
 using CacheHelpers = Yagasoft.Libraries.Common.CacheHelpers;
+using Context = Yagasoft.CrmCodeGenerator.Models.Mapper.Context;
 using MessageBox = System.Windows.MessageBox;
 using MetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
+using Settings = Yagasoft.CrmCodeGenerator.Models.Settings.Settings;
 
 #endregion
 
@@ -194,11 +196,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 					WarmUpConnections();
 				};
-
-			if (settings.ConnectionString.IsEmpty() || connectionManager == null)
-			{
-				return;
-			}
 
 			// warm up the cache.
 			cacheThread = new Thread(() => metadataCache = Configuration.LoadCache(settings.Id));

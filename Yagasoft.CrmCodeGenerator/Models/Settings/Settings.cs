@@ -27,9 +27,9 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 	{
 		public Guid Id = Guid.NewGuid();
 
-		public string AppId { get; set; } = "test";
-		public string AppVersion { get; set; } = "0.0.1";
-		public string SettingsVersion { get; set; } = "0.0.1";
+		public string AppId { get; set; }
+		public string AppVersion { get; set; }
+		public string SettingsVersion { get; set; }
 
 		public string DetectedTemplateVersion { get; set; }
 		public string DetectedMinAppVersion { get; set; }
