@@ -472,8 +472,17 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)
 		{
-			settings = new Settings();
-			Initialise();
+			var isMigrate = DteHelper.IsConfirmed("Current settings will be deleted and new settings will be created.\r\n\r\n"
+				+ "Would you like to proceed?",
+				">> WARNING << Settings Reset");
+
+			if (isMigrate)
+			{
+				settings = Configuration.CreateNewSettings();
+				Initialise();
+				DteHelper.ShowInfo("Settings has been reset.",
+					"Settings Reset");
+			}
 		}
 
 		private void ButtonSaveSettings_Click(object sender, RoutedEventArgs e)

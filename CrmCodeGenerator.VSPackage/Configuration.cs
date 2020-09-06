@@ -39,19 +39,11 @@ namespace CrmCodeGenerator.VSPackage
 
 		public static Settings LoadSettings()
 		{
-			string connectionString = null;
-
-			string baseFileName = null;
-
 			try
 			{
 				Status.Update("[Settings] Loading settings ... ");
 
-				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
-				var project = dte.GetSelectedProject();
-				baseFileName = $@"{project.GetPath()}\{FileName}";
-
-				connectionString = LoadConnection();
+				var baseFileName = BuildBaseFileName();
 
 				var file = $@"{baseFileName}-Config.json";
 
@@ -94,7 +86,7 @@ namespace CrmCodeGenerator.VSPackage
 						}
 					}
 
-					ProcessSettings(settings, connectionString, baseFileName);
+					ProcessSettings(settings);
 
 					return settings;
 				}
@@ -104,9 +96,9 @@ namespace CrmCodeGenerator.VSPackage
 				if (File.Exists(file))
 				{
 					Status.Update($"[Settings] Migrating pre-v7 JSON settings ...");
-					var settings = MigrateOldSettings3(file, project);
+					var settings = MigrateOldSettings3(file);
 
-					ProcessSettings(settings, connectionString, baseFileName);
+					ProcessSettings(settings);
 
 					return settings;
 				}
@@ -119,29 +111,49 @@ namespace CrmCodeGenerator.VSPackage
 				Status.Update(ex.BuildExceptionMessage(isUseExStackTrace: true));
 			}
 
+			return CreateNewSettings();
+		}
+
+		private static string BuildBaseFileName()
+		{
+			return $@"{GetProjectObject().GetPath()}\{FileName}";
+		}
+
+		private static Project GetProjectObject()
+		{
+			var project = ((DTE)Package.GetGlobalService(typeof(SDTE))).GetSelectedProject();
+			return project;
+		}
+
+		public static Settings CreateNewSettings()
+		{
+			Status.Update("[Settings] Creating new settings ...");
+
 			var newSettings = new Settings();
-			ProcessSettings(newSettings, connectionString, baseFileName);
+			ProcessSettings(newSettings);
 
 			Status.Update("[Settings] [DONE] Creating new settings.");
 
 			return newSettings;
 		}
 
-		private static void ProcessSettings(Settings settings, string connectionString, string baseFileName)
+		private static void ProcessSettings(Settings settings)
 		{
 			settings.AppId = settings.AppId ?? Constants.AppId;
 			settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
 			settings.SettingsVersion = Constants.SettingsVersion;
 			settings.BaseFileName = FileName;
 
-			FillDefaultConnString(connectionString, settings);
-			SetTemplateInfo(settings, baseFileName);
+			LoadConnection(settings);
+			SetTemplateInfo(settings);
 
 			Status.Update("[Settings] [DONE] Loading settings.");
 		}
 
-		private static void SetTemplateInfo(Settings settings, string baseFileName, bool isRetry = false)
+		private static void SetTemplateInfo(Settings settings, bool isRetry = false)
 		{
+			var baseFileName = BuildBaseFileName();
+
 			if (baseFileName.IsEmpty())
 			{
 				return;
@@ -156,7 +168,7 @@ namespace CrmCodeGenerator.VSPackage
 					if (!isRetry)
 					{
 						Thread.Sleep(500);
-						SetTemplateInfo(settings, baseFileName, true);
+						SetTemplateInfo(settings, true);
 						return;
 					}
 
@@ -326,7 +338,7 @@ namespace CrmCodeGenerator.VSPackage
 				};
 		}
 
-		private static Settings MigrateOldSettings3(string file, Project project)
+		private static Settings MigrateOldSettings3(string file)
 		{
 			// get latest file if in TFS
 			try
@@ -399,6 +411,8 @@ namespace CrmCodeGenerator.VSPackage
 			
 			Status.Update("[Settings] Deleting old settings file ...");
 
+			var project = GetProjectObject();
+
 			foreach (var item in project.ProjectItems.Cast<ProjectItem>().Where(item => item.Name == Path.GetFileName(file)))
 			{
 				item.Delete();
@@ -413,35 +427,28 @@ namespace CrmCodeGenerator.VSPackage
 			return newSettings;
 		}
 
-		private static string LoadConnection()
+		private static string LoadConnection(Settings settings)
 		{
-			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
-			var project = dte.GetSelectedProject();
-			var baseFileName = $@"{project.GetPath()}\{FileName}";
+			var baseFileName = BuildBaseFileName();
 
 			var file = $@"{baseFileName}-Connection.dat";
 
-			if (!File.Exists(file))
+			string connectionString = null;
+
+			if (File.Exists(file))
 			{
-				return null;
+				Status.Update($"[Settings] Found connection file: {file}.");
+				Status.Update($"[Settings] Reading content ...");
+
+				var fileContent = File.ReadAllText(file);
+				connectionString = Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
+
+				Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 			}
 
-			Status.Update($"[Settings] Found connection file: {file}.");
-			Status.Update($"[Settings] Reading content ...");
-
-			var fileContent = File.ReadAllText(file);
-			var connectionString = Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
-
-			Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
-
-			return connectionString;
-		}
-
-		private static void FillDefaultConnString(string connectionString, Settings newSettings)
-		{
 			if (connectionString.IsFilled())
 			{
-				newSettings.ConnectionString = connectionString;
+				settings.ConnectionString = connectionString;
 			}
 			else
 			{
@@ -449,18 +456,19 @@ namespace CrmCodeGenerator.VSPackage
 
 				if (latest.IsNotEmpty())
 				{
-					newSettings.ConnectionString = latest;
+					settings.ConnectionString = latest;
+					Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 				}
 			}
+
+			return connectionString;
 		}
 
 		public static void SaveSettings(Settings settings)
 		{
 			Status.Update("[Settings] Writing settings ... ");
 
-			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
-			var project = dte.GetSelectedProject();
-			var baseFileName = $@"{project.GetPath()}\{FileName}";
+			var baseFileName = BuildBaseFileName();
 
 			SaveConnection(settings);
 
@@ -469,6 +477,7 @@ namespace CrmCodeGenerator.VSPackage
 			if (!File.Exists(file))
 			{
 				File.Create(file).Dispose();
+				var project = GetProjectObject();
 				project.ProjectItems.AddFromFile(file);
 				project.Save();
 				Status.Update("[Settings] Created a new settings file.");
@@ -505,9 +514,7 @@ namespace CrmCodeGenerator.VSPackage
 		{
 			SaveLatestConnectionString(settings.ConnectionString);
 
-			var dte = Package.GetGlobalService(typeof(SDTE)) as DTE;
-			var project = dte.GetSelectedProject();
-			var baseFileName = $@"{project.GetPath()}\{FileName}";
+			var baseFileName = BuildBaseFileName();
 
 			var file = $@"{baseFileName}-Connection.dat";
 			var connectionString = settings.ConnectionString;

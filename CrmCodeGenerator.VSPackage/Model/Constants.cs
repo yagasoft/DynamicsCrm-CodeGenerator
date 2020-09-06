@@ -4,7 +4,7 @@
     {
 	    public const string AppName = "Dynamics CRM T4 Template Generator";
 	    public const string AppId = "vs-code-gen-ext";
-	    public const string AppVersion = "10.2.1";
+	    public const string AppVersion = "10.2.2";
 
 	    public const string SettingsVersion = "10.1.2";
 

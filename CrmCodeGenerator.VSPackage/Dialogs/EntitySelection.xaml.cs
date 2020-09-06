@@ -708,13 +708,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					{
 						Status.ShowBusy(Dispatcher, BusyIndicator, $"Loading {row.Name} Actions ...");
 						var actions = InnerMetadataHelpers.RetrieveActionNames(Settings,
-							connectionManager, metadataCache, row.Name);
+							connectionManager, metadataCache, row.Name).ToArray();
 						Dispatcher.InvokeAsync(
 							() =>
 							{
 								row.ActionNames = new ObservableCollection<string>(actions);
-								row.SelectedActions = new ObservableCollection<string>(Settings
-									.SelectedActions.FirstNotNullOrDefault(row.Name) ?? Array.Empty<string>());
+								row.SelectedActions = new ObservableCollection<string>(
+									row.SelectedActions?.Intersect(actions) ?? Array.Empty<string>());
 								action();
 							});
 					}

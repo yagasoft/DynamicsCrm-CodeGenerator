@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.2.1
+### Version: 10.2.2
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -37,6 +37,8 @@ A Visual Studio extension for generating early bound classes for Microsoft Dynam
   + Generate concrete classes for CRM Actions
   + Support bulk relation loading
     + Support filtering on relation loading
+
+This tool is available as an XrmToolBox plugin as well ([here](https://www.xrmtoolbox.com/plugins/plugininfo/?id=45abdb43-f0e5-ea11-bf21-281878877ebf)).
 
 ## How To Use
 
@@ -88,6 +90,9 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.2.2 (2020-09-06)_
++ Fixed: Actions selection issue
++ Fixed: settings reset issue
 #### _v10.2.1 (2020-09-04)_
 + Added: pre-v7 settings migration, to avoid a longer migration cycle
 + Improved: table rendering performance
