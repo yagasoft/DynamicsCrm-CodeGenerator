@@ -456,7 +456,7 @@ namespace CrmCodeGenerator.VSPackage
 
 				if (latest.IsNotEmpty())
 				{
-					settings.ConnectionString = latest;
+					connectionString = settings.ConnectionString = latest;
 					Status.Update($"[Settings] Connection string: {ConnectionHelpers.SecureConnectionString(connectionString)}");
 				}
 			}
