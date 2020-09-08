@@ -49,6 +49,8 @@ namespace CrmCodeGenerator.VSPackage.Connection
 			{
 				if (connectionString.IsFilled() && (connectionPool == null || connectionString != latestConnectionString))
 				{
+					connectionPool?.EndWarmup();
+
 					Status.Update($"[Connection] Creating connection pool to CRM ... ");
 					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 

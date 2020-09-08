@@ -125,6 +125,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
+			DialogResult = false;
 			Dispatcher.InvokeAsync(Close);
 		}
 

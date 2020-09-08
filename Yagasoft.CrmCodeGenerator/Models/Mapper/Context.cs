@@ -13,6 +13,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapper
 		public string FileName { get; set; }
 
 		public bool SplitFiles { get; set; }
+		public bool SplitContractFiles { get; set; }
 
 		public bool UseDisplayNames { get; set; }
 

@@ -41,9 +41,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public string LogicalName { get; set; }
 
-		public EntityProfilesHeaderSelector EntityProfiles { get; set; }
-		public EntityProfilesHeader EntityProfilesHeader { get; set; }
-
 		public EntityProfile EntityProfile { get; set; }
 
 		public Settings Settings { get; set; }
@@ -259,9 +256,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					try
 					{
-						EntityProfiles = Settings.EntityProfilesHeaderSelector;
-						EntityProfilesHeader = EntityProfiles.GetSelectedFilter();
-
 						Status.ShowBusy(Dispatcher, BusyIndicator, "Initialising ...");
 
 						Dispatcher.Invoke(
@@ -301,8 +295,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void Initialise()
 		{
-			EntityProfilesHeader = Settings.EntityProfilesHeaderSelector.GetSelectedFilter();
-
 			if (EntityProfile == null)
 			{
 				throw new Exception("Entity Profile not provided to this window.");
@@ -1023,6 +1015,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
+			DialogResult = false;
 			Dispatcher.InvokeAsync(Close);
 		}
 

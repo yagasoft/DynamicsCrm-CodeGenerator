@@ -566,6 +566,31 @@ namespace CrmCodeGenerator.VSPackage
 
 		private static void CleanSettings(Settings settings)
 		{
+			// clean redundant profiles
+			foreach (var header in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
+			{
+				var groups = header.EntityProfiles.GroupBy(e => e.LogicalName);
+
+				foreach (var group in groups.Where(e => e.Count() > 1))
+				{
+					foreach (var profile in group.Skip(1))
+					{
+						header.EntityProfiles.Remove(profile);
+					}
+				}
+			}
+
+			// clean redundant profiles
+			var crmProfileGroups = settings.CrmEntityProfiles.GroupBy(e => e.LogicalName);
+
+			foreach (var group in crmProfileGroups.Where(e => e.Count() > 1))
+			{
+				foreach (var profile in group.Skip(1))
+				{
+					settings.CrmEntityProfiles.Remove(profile);
+				}
+			}
+
 			var isCleanProfiles = settings.IsRemoveUnselectedProfiles;
 
 			foreach (var filter in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)

@@ -276,8 +276,15 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					var entityAsync = entity;
 
-					var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
-						.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+					EntityProfile[] entityProfiles;
+
+					lock (this)
+					{
+						entityProfiles = SelectedEntityProfilesHeader.EntityProfiles
+							.Where(e => e.LogicalName == entityAsync.LogicalName).ToArray();
+					}
+
+					var  entityProfile = entityProfiles.FirstOrDefault();
 
 					if (entityProfile == null)
 					{
@@ -285,10 +292,23 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						missingProfiles.Add(entityProfile);
 					}
 
+					// clean redundant profiles
+					if (entityProfiles.Length > 1)
+					{
+						foreach (var profile in entityProfiles.Skip(1))
+						{
+							lock (this)
+							{
+								SelectedEntityProfilesHeader.EntityProfiles.Remove(profile);
+							}
+						}
+					}
+
 					var row = rowListSource.FirstOrDefault(r => r.Name == entityAsync.LogicalName)
 						?? new EntityProfileGridRow
 						   {
-							   EntityProfile = entityProfile,
+							   OriginalEntityProfile = entityProfile,
+							   EntityProfile = entityProfile.Copy(),
 							   IsSelected = !entityProfile.IsExcluded,
 							   Name = entityAsync.LogicalName,
 							   DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
@@ -349,24 +369,38 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void SaveFilter()
 		{
-			foreach (var row in rowSourceMap.Values.SelectMany(e => e))
+			foreach (var pair in rowSourceMap)
 			{
-				var entityProfile = row.EntityProfile;
-				entityProfile.IsExcluded = !row.IsSelected;
-				entityProfile.IsGenerateMeta = row.IsGenerateMeta;
-				entityProfile.IsOptionsetLabels = row.IsOptionsetLabels;
-				entityProfile.IsLookupLabels = row.IsLookupLabels;
-				entityProfile.EntityRename = row.Rename;
+				var header = pair.Key;
 
-				switch (row.ValueClearMode)
+				foreach (var row in pair.Value)
 				{
-					case ClearModeEnumUi.Default:
-						entityProfile.ValueClearMode = null;
-						break;
+					var original = row.OriginalEntityProfile;
+					var profile = row.EntityProfile;
 
-					default:
-						entityProfile.ValueClearMode = (ClearModeEnum?)row.ValueClearMode;
-						break;
+					profile.IsExcluded = !row.IsSelected;
+					profile.IsGenerateMeta = row.IsGenerateMeta;
+					profile.IsOptionsetLabels = row.IsOptionsetLabels;
+					profile.IsLookupLabels = row.IsLookupLabels;
+					profile.EntityRename = row.Rename;
+
+					switch (row.ValueClearMode)
+					{
+						case ClearModeEnumUi.Default:
+							profile.ValueClearMode = null;
+							break;
+
+						default:
+							profile.ValueClearMode = (ClearModeEnum?)row.ValueClearMode;
+							break;
+					}
+
+					header.EntityProfiles.Remove(original);
+
+					if (profile.IsContainsData)
+					{
+						header.EntityProfiles.Add(profile);
+					}
 				}
 			}
 
@@ -588,18 +622,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					// get logical name and re-init
 					LogicalName = rowData.Name;
 
-					var entityProfile = SelectedEntityProfilesHeader.EntityProfiles
-						.FirstOrDefault(filter => filter.LogicalName == LogicalName)
-						?? new EntityProfile(LogicalName);
+					var entityProfile = rowData.EntityProfile = rowData.EntityProfile ?? new EntityProfile(LogicalName);
 
 					new FilterDetails(this, LogicalName, Settings, entityProfile,
 						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCache)
 						.ShowDialog();
-
-					if (entityProfile.IsContainsData)
-					{
-						SelectedEntityProfilesHeader.EntityProfiles.Add(entityProfile);
-					}
 				}
 			}
 		}
@@ -811,6 +838,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
+			DialogResult = false;
 			Dispatcher.InvokeAsync(Close);
 		}
 

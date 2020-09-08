@@ -221,8 +221,19 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					var entityAsync = entity;
 
-					var profile = Settings.CrmEntityProfiles
-						.FirstOrDefault(e => e.LogicalName == entityAsync.LogicalName);
+					var profiles = Settings.CrmEntityProfiles
+						.Where(e => e.LogicalName == entityAsync.LogicalName).ToArray();
+
+					var  profile = profiles.FirstOrDefault();
+
+					// clean redundant profiles
+					if (profiles.Length > 1)
+					{
+						foreach (var profileQ in profiles.Skip(1))
+						{
+							Settings.CrmEntityProfiles.Remove(profileQ);
+						}
+					}
 
 					var row = rowListSource.FirstOrDefault(r => r.Name == entityAsync.LogicalName)
 						?? new EntitySelectionGridRow
@@ -830,6 +841,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
+			DialogResult = false;
 			Dispatcher.InvokeAsync(Close);
 		}
 

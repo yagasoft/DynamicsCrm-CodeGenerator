@@ -270,6 +270,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							   case MapperStatus.Finished:
 								   Context = Mapper.Context;
 								   Context.SplitFiles = settings.SplitFiles;
+								   Context.SplitContractFiles = settings.SplitContractFiles;
 								   Context.UseDisplayNames = settings.UseDisplayNames;
 								   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
 								   Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
@@ -367,7 +368,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.Update("[Generator] Generator will split generated code into separate entity files.");
+					Status.Update("[Generator] Generator will split [CRM entities] into separate  files.");
+				}
+
+				if (settings.SplitContractFiles)
+				{
+					Status.Update("[Generator] Generator will split [contracts] into separate files.");
 				}
 
 				new Thread(
@@ -431,7 +437,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// check user's 'split files'
 				if (settings.SplitFiles)
 				{
-					Status.Update("[Generator] Generator will split generated code into separate entity files.");
+					Status.Update("[Generator] Generator will split [CRM entities] into separate  files.");
+				}
+
+				if (settings.SplitContractFiles)
+				{
+					Status.Update("[Generator] Generator will split [contracts] into separate files.");
 				}
 
 				new Thread(
@@ -467,6 +478,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void ButtonCancel_Click(object sender, RoutedEventArgs e)
 		{
 			Mapper.CancelMapping = true;
+			DialogResult = false;
 			Configuration.SaveCache(settings.Id);
 		}
 

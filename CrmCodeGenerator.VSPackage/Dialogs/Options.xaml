@@ -69,19 +69,6 @@
                                 <ComboBox x:Name="ComboBoxClearMode" Margin="7,0,7,0"
                                           SelectedItem="{Binding SelectedClearMode, Mode=TwoWay}" />
                             </DockPanel>
-                            <CheckBox x:Name="CheckBoxSplitFiles" Content="One entity per file"
-                                      Grid.Row="1"
-                                      IsChecked="{Binding SplitFiles, Mode=TwoWay}" HorizontalAlignment="Left"
-					            Margin="5" ToolTipService.ShowDuration="30000">
-                                <CheckBox.ToolTip>
-                                    <ToolTip>
-                                        <StackPanel>
-                                            <TextBlock FontWeight="Bold"><Run Text="One Entity Per File"/></TextBlock>
-                                            <TextBlock><Run Text="A main file will be created,"/><LineBreak /><Run Text=" along with a file named after each entity containing its own schema."/></TextBlock>
-                                        </StackPanel>
-                                    </ToolTip>
-                                </CheckBox.ToolTip>
-                            </CheckBox>
                             <CheckBox x:Name="CheckBoxIsUseCustomDictionary" Grid.Row="2" Grid.ColumnSpan="2" Content="Use a custom type for label collections"
 				                Margin="5" IsChecked="{Binding IsUseCustomDictionary, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
                                 <CheckBox.ToolTip>
@@ -252,6 +239,39 @@
                                         <StackPanel>
                                             <TextBlock FontWeight="Bold"><Run Text="Add Annotations to Contracts"/></TextBlock>
                                             <TextBlock><Run Text="Add 'Required', 'MaxLength', ... etc. Attributes to Properties on generated Contracts."/></TextBlock>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>
+                            </CheckBox>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Margin="5" Padding="2">
+                        <GroupBox.Header>
+                            File Management
+                        </GroupBox.Header>
+                        <StackPanel>
+                            <CheckBox x:Name="CheckBoxSplitFiles" Content="One CRM entity per file"
+                                      Grid.Row="1"
+                                      IsChecked="{Binding SplitFiles, Mode=TwoWay}" HorizontalAlignment="Left"
+                                      Margin="5" ToolTipService.ShowDuration="30000">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold"><Run Text="One CRM Entity Per File"/></TextBlock>
+                                            <TextBlock><Run Text="A main file will be created,"/><LineBreak /><Run Text=" along with a file named after each entity containing its own schema."/></TextBlock>
+                                        </StackPanel>
+                                    </ToolTip>
+                                </CheckBox.ToolTip>
+                            </CheckBox>
+                            <CheckBox x:Name="CheckBoxSplitContractFiles" Content="One contract per file"
+                                      Grid.Row="1"
+                                      IsChecked="{Binding SplitContractFiles, Mode=TwoWay}" HorizontalAlignment="Left"
+                                      Margin="5" ToolTipService.ShowDuration="30000">
+                                <CheckBox.ToolTip>
+                                    <ToolTip>
+                                        <StackPanel>
+                                            <TextBlock FontWeight="Bold"><Run Text="One Contract Per File"/></TextBlock>
+                                            <TextBlock><Run Text="A file will be created for each profile group (contract),"/><LineBreak /><Run Text=" which makes it easier to share with other teams."/></TextBlock>
                                         </StackPanel>
                                     </ToolTip>
                                 </CheckBox.ToolTip>

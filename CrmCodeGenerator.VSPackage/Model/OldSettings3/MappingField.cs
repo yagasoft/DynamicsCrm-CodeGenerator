@@ -193,6 +193,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 					{
 						LogicalName = attribute.LogicalName,
 						IsLookup = attribute.AttributeType == AttributeTypeCode.Lookup
+							|| attribute.AttributeType == AttributeTypeCode.Owner
 							|| attribute.AttributeType == AttributeTypeCode.Customer
 					};
 			}

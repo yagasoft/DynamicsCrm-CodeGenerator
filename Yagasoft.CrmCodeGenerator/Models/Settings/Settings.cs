@@ -112,6 +112,16 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
+		public bool SplitContractFiles
+		{
+			get => splitContractFiles;
+			set
+			{
+				splitContractFiles = value;
+				OnPropertyChanged();
+			}
+		}
+
 		public bool UseDisplayNames
 		{
 			get => useDisplayNames;
@@ -441,6 +451,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		private IDictionary<string, string[]> selectedActions;
 		private bool includeNonStandard;
 		private bool splitFiles;
+		private bool splitContractFiles;
 		private bool useDisplayNames = true;
 		private bool isUseCustomDictionary;
 		private bool isUseCustomEntityReference;

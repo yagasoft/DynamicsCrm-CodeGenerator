@@ -194,6 +194,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 					{
 						LogicalName = attribute.LogicalName,
 						IsLookup = attribute.AttributeType == AttributeTypeCode.Lookup
+							|| attribute.AttributeType == AttributeTypeCode.Owner
 							|| attribute.AttributeType == AttributeTypeCode.Customer,
 						IsImage = attribute is ImageAttributeMetadata
 					};

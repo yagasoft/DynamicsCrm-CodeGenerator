@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.2.2
+### Version: 10.3.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -42,9 +42,9 @@ This tool is available as an XrmToolBox plugin as well ([here](https://www.xrmto
 
 ## How To Use
 
-I will post a complete guide soon ...
+You can read a quick overview of the tool and its functionality [here](http://blog.yagasoft.com/2020/09/dynamics-template-based-code-generator-supercharged).
 
-Install the Visual Studio extension ([here](https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator)).
+To get started, install the Visual Studio extension ([here](https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator)).
 
 #### Add a template to your project
 
@@ -90,6 +90,18 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.3.1 (2020-09-09)_
++ Added: option to split contracts (profile groups) into separate files, to ease sharing with other teams
++ Improved: contracts are now grouped into a single separate file by default (even if the option is disabled), with a base file for common code with CRM
++ Improved: base and contract files do not require the SDK assemblies anymore, to ease sharing with non-CRM teams
++ Improved: [template] removed annotation attribute references when none need to be generated to save an assembly reference
++ Fixed: stop warmup on changing connection
++ Fixed: duplicate profiles saved in JSON
++ Fixed: [template] ApplyFilter issues
++ Fixed: [template] data annotations issue
++ Fixed: [template] helper method issues
++ Fixed: [template] issues
++ Fixed: issues
 #### _v10.2.2 (2020-09-06)_
 + Fixed: Actions selection issue
 + Fixed: settings reset issue

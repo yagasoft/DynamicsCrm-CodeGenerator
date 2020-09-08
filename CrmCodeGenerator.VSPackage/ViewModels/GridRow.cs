@@ -14,6 +14,8 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 
 		public bool IsFiltered => EntityProfile?.IsBasicDataFilled == true;
 
+		public EntityProfile OriginalEntityProfile { get; set; }
+
 		public EntityProfile EntityProfile
 		{
 			get => entityProfile;
