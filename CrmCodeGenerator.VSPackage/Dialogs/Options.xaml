@@ -80,7 +80,7 @@
                                     </ToolTip>
                                 </CheckBox.ToolTip>
                             </CheckBox>
-                            <CheckBox x:Name="CheckBoxIsMakeCrmEntitiesJsonFriendly" Content="Make CRM Entities JSON Friendly"
+                            <CheckBox x:Name="CheckBoxIsMakeCrmEntitiesJsonFriendly" Content="Make CRM entities JSON friendly"
 				                Margin="5" IsChecked="{Binding IsMakeCrmEntitiesJsonFriendly, Mode=TwoWay}" ToolTipService.ShowDuration="30000">
                                 <CheckBox.ToolTip>
                                     <ToolTip>

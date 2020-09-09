@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.3.1
+### Version: 10.3.2
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -90,6 +90,9 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.3.2 (2020-09-10)_
++ Improved: [template] small enhancements
++ Fixed: [template] ConvertTo and GetLabel issues
 #### _v10.3.1 (2020-09-09)_
 + Added: option to split contracts (profile groups) into separate files, to ease sharing with other teams
 + Improved: contracts are now grouped into a single separate file by default (even if the option is disabled), with a base file for common code with CRM
