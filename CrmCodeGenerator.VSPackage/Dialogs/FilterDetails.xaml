@@ -103,7 +103,8 @@
                         <DataGridTextColumn Binding="{Binding Path=Name}" Header="Logical Name" IsReadOnly="True" Width="2*"/>
                         <DataGridTextColumn Binding="{Binding Path=DisplayName}" Header="Display Name" IsReadOnly="True" Width="2*"/>
                         <DataGridTextColumn Binding="{Binding Path=Rename, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="New Name" Width="2*"/>
-                        <DataGridTextColumn Binding="{Binding Path=Language, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Language" Width="*"/>
+                        <DataGridTextColumn Binding="{Binding Path=Language, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Language" Width="1.1*"/>
+                        <DataGridTextColumn Binding="{Binding Path=Annotations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Header="Annotations" Width="1.5*"/>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
                                 <CheckBox x:Name="CheckBoxReadOnlySelectAll"

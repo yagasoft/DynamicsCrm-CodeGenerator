@@ -131,6 +131,8 @@
                                             IsReadOnly="True" Width="*" />
                         <DataGridTextColumn Binding="{Binding Path=Rename, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             Header="New Name" Width="*"/>
+                        <DataGridTextColumn Binding="{Binding Path=Annotations, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            Header="Annotations" Width="0.75*"/>
                         <DataGridTemplateColumn>
                             <DataGridTemplateColumn.Header>
                                 <CheckBox x:Name="CheckBoxJsEarlySelectAll"

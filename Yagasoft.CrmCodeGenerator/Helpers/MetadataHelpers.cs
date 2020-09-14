@@ -98,28 +98,39 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 			, "rollupjob"
 		};
 
+			// the following cause duplicate errors in generated code
+		public static string[] SkipEntities =
+		{
+			"bulkdeleteoperation",
+			"reportlink",
+			"rollupjob"
+		};
+
 		public static List<EntityMetadata> RefreshSettingsEntityMetadata(Settings settings,
 			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{
 			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
 
-			var entityProperties = new MetadataPropertiesExpression
-								   {
-									   AllProperties = false
-								   };
+			var entityProperties =
+				new MetadataPropertiesExpression
+				{
+					AllProperties = false
+				};
 			entityProperties.PropertyNames.AddRange("DisplayName", "SchemaName");
 
-			var entityQueryExpression = new EntityQueryExpression
-										{
-											Criteria = entityFilter,
-											Properties = entityProperties,
-										};
+			var entityQueryExpression =
+				new EntityQueryExpression
+				{
+					Criteria = entityFilter,
+					Properties = entityProperties,
+				};
 
-			var retrieveMetadataChangesRequest = new RetrieveMetadataChangesRequest
-												 {
-													 Query = entityQueryExpression,
-													 ClientVersionStamp = null
-												 };
+			var retrieveMetadataChangesRequest =
+				new RetrieveMetadataChangesRequest
+				{
+					Query = entityQueryExpression,
+					ClientVersionStamp = null
+				};
 
 			EntityMetadataCollection result;
 
@@ -131,20 +142,26 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 			// cache the result
 			var resultFiltered =
 				metadataCache.ProfileEntityMetadataCache =
-					result.Where(entity =>
-								 {
-									 if (settings.IncludeNonStandard)
-									 {
-										 return true;
-									 }
+					result.Where(
+						entity =>
+						{
+							if (entity.SchemaName == null || entity.LogicalName == null)
+							{
+								return false;
+							}
 
-									 if (entity.SchemaName == null || entity.LogicalName == null)
-									 {
-										 return false;
-									 }
+							if (SkipEntities.Contains(entity.LogicalName))
+							{
+								return false;
+							}
 
-									 return !NonStandard.Contains(entity.LogicalName);
-								 }).ToList();
+							if (settings.IncludeNonStandard)
+							{
+								return true;
+							}
+
+							return !NonStandard.Contains(entity.LogicalName);
+						}).ToList();
 
 			// reset attributes cache as well
 			metadataCache.ProfileAttributeMetadataCache = new Dictionary<string, EntityMetadata>();
@@ -164,9 +181,11 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 				filter.EntityProfiles.RemoveAll(entity => !settings.EntityList.Contains(entity.LogicalName));
 			}
 
+			settings.CrmEntityProfiles.RemoveAll(entity => !settings.EntityList.Contains(entity.LogicalName));
+
 			return resultFiltered;
 		}
-		
+
 		public static IDictionary<string, int> GetEntityCodes(Settings settings,
 			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
 		{

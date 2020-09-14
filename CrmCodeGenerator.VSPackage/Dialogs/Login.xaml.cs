@@ -237,6 +237,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								   else
 								   {
 									   Status.Update($"!! [Generator] ![ERROR]!\r\n{args.Exception.BuildExceptionMessage()}");
+									   return null;
 								   }
 							   }
 							   
@@ -263,8 +264,29 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   {
 							   case MapperStatus.Cancelled:
 								   Status.Update("[Generator] [DONE] Cancelled generator!");
+								   Status.HideBusy(Dispatcher, BusyIndicator);
 								   StillOpen = false;
-								   Dispatcher.InvokeAsync(Close);
+								   Dispatcher.Invoke(Close, DispatcherPriority.Send);
+								   break;
+
+							   case MapperStatus.Error:
+								   Status.Update("[Generator] [ERROR] Generator failed!");
+
+								   var message = args.Exception.Message;
+								   var inner = args.Exception?.InnerException;
+
+								   if (inner?.Message.IsFilled() == true)
+								   {
+									   message += $" | {inner.Message}";
+								   }
+
+								   if (args.Exception is NullReferenceException)
+								   {
+									   message = $"Generator failed. Clear the cache and try again.";
+								   }
+
+								   Status.PopException(Dispatcher, message);
+								   Status.HideBusy(Dispatcher, BusyIndicator);
 								   break;
 
 							   case MapperStatus.Finished:
@@ -304,14 +326,16 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 								   MetadataCache.Context = Context;
 
+								   Status.HideBusy(Dispatcher, BusyIndicator);
 								   StillOpen = false;
-								   Dispatcher.InvokeAsync(Close);
+								   Dispatcher.Invoke(Close, DispatcherPriority.Send);
 								   break;
 						   }
 					   }
-					   catch
+					   catch (Exception ex)
 					   {
-						   // ignored
+						   Status.PopException(Dispatcher, ex);
+						   Status.HideBusy(Dispatcher, BusyIndicator);
 					   }
 				   };
 		}
@@ -379,15 +403,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				new Thread(
 					() =>
 					{
-						try
-						{
-							Mapper.MapContext();
-							Configuration.SaveCache(settings.Id);
-						}
-						catch (Exception ex)
-						{
-							Status.PopException(Dispatcher, ex);
-						}
+						Mapper.MapContext();
+						Configuration.SaveCache(settings.Id);
 					}).Start();
 			}
 			catch (Exception ex)
@@ -448,15 +465,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				new Thread(
 					() =>
 					{
-						try
-						{
-							Mapper.MapContext(true);
-							Configuration.SaveCache(settings.Id);
-						}
-						catch (Exception ex)
-						{
-							Status.PopException(Dispatcher, ex);
-						}
+						Mapper.MapContext(true);
+						Configuration.SaveCache(settings.Id);
 					}).Start();
 			}
 			catch (Exception ex)
@@ -477,9 +487,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void ButtonCancel_Click(object sender, RoutedEventArgs e)
 		{
-			Mapper.CancelMapping = true;
-			DialogResult = false;
 			Configuration.SaveCache(settings.Id);
+			DialogResult = false;
+
+			if (mapper.Status == MapperStatus.Started)
+			{
+				Mapper.CancelMapping = true;
+			}
 		}
 
 		private void ButtonNewSettings_Click(object sender, RoutedEventArgs e)

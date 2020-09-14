@@ -62,9 +62,18 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 		    }
 	    }
 
+		public static void PopException(Dispatcher dispatcher, string message)
+		{
+			dispatcher.Invoke(
+				() =>
+				{
+					MessageBox.Show(message, "ERROR", MessageBoxButton.OK, MessageBoxImage.Error);
+				}, DispatcherPriority.Send);
+		}
+
 		public static void PopException(Dispatcher dispatcher, Exception exception)
 		{
-			dispatcher.InvokeAsync(
+			dispatcher.Invoke(
 				() =>
 				{
 					var message = exception.Message
@@ -73,7 +82,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 
 					var error = exception.BuildExceptionMessage("!! [ERROR]");
 					Update(error);
-				}, DispatcherPriority.Loaded);
+				}, DispatcherPriority.Send);
 		}
 
 	    private static Style originalProgressBarStyle;
@@ -179,7 +188,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 				return;
 			}
 
-			dispatcher.InvokeAsync(
+			dispatcher.Invoke(
 				() =>
 				{
 					busyStack.Clear();

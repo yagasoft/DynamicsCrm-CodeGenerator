@@ -1,7 +1,7 @@
 ﻿#region Imports
 
 using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
-using Yagasoft.Libraries.EnhancedOrgService.Services;
+using Yagasoft.Libraries.EnhancedOrgService.Services.Enhanced;
 
 #endregion
 

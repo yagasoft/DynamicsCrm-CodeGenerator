@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.3.2
+### Version: 10.4.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -31,6 +31,7 @@ A Visual Studio extension for generating early bound classes for Microsoft Dynam
   + Generate metadata
     + Field logical and schema names
     + Localised labels
+  + Automatically limit attributes retrieved from CRM on any entity in a LINQ to the ones choosen (filtered) in the tool (check new entity constructors)
   + Many options to optimise generated code size even further
   + Define web service contracts with different profiles
     + Option to mark certain fields as 'read-only'
@@ -45,6 +46,8 @@ This tool is available as an XrmToolBox plugin as well ([here](https://www.xrmto
 You can read a quick overview of the tool and its functionality [here](http://blog.yagasoft.com/2020/09/dynamics-template-based-code-generator-supercharged).
 
 To get started, install the Visual Studio extension ([here](https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator)).
+
+Note: any window can be closed by pressing the _ESC_ button on the keyboard, even if the generator is busy.
 
 #### Add a template to your project
 
@@ -88,8 +91,36 @@ When you make changes to the template and save, Visual Studio will automatically
 	+ Greatly enhanced the generation and regeneration speed
 	+ Added the features that don't exist in the official tool
 
+## Upcoming/planned
+
++ Add: option to add alternate keys to contracts
++ Add: option to use CRM-only contracts to replace Contract classes, optionally
++ Add: [template] File field, with a Get and Set that uses the SDK message
++ Add: [template] an attribute/annotation to the Clear Flag fields in contracts, to ease parsing them in helper methods
++ Add: [template] XrmDefinitelyTyped support, and generate form structure
++ Add: enum annotations (DisplayName ... etc.)
++ Improve: switch to async extension VS API
+  + The 'sync extension' warning in VS is definitely annoying, but I have to make sure that a single version will be backward compatible back to at least VS 2015
++ Improve: [template] rework lookup labels localisation
+  + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
++ Improve: [template] unify global option-sets into a single enum
++ Update: [template] XrmToolBox template to match this extension's
++ Fix: catch and fix the extremely rare 'null reference' error that requires clearing the cache for the tool to work again
++ Fix: [template] helpers to support new stuff since v7
+  + LoadRelation methods
+
 ## Changes
 
+#### _v10.4.1 (2020-09-15)_
++ Added: option to define entity, attribute, and contract custom annotations through the UI
++ Added: [template] helper to automatically limit attributes retrieved from CRM on any entity in a LINQ to the ones choosen (filtered) in the tool (check new entity constructors)
++ Added: [template] helper to automatically parse Aliased Values into their respective early-bound properties in entity records retrieved by a FetchXML query
++ Improved: tool startup speed
++ Improved: mapper error-handling
++ Improved: handling the extremely rare 'null reference' error by showing a meaningful message, which indicates that clearing the cache fixes the issue (still trying to catch it)
++ Changed: [template] fell back to an older version of C# to avoid tranformation errors on older VS versions
++ Fixed: 'missing assembly' errors (if one still persists, please report it)
++ Fixed: cancelling the mapper (ESC button) causes the window to rarely hang
 #### _v10.3.2 (2020-09-10)_
 + Improved: [template] small enhancements
 + Fixed: [template] ConvertTo and GetLabel issues
@@ -109,7 +140,7 @@ When you make changes to the template and save, Visual Studio will automatically
 + Fixed: Actions selection issue
 + Fixed: settings reset issue
 #### _v10.2.1 (2020-09-04)_
-+ Added: pre-v7 settings migration, to avoid a longer migration cycle
++ Added: pre-v7 settings migration is back in, to avoid a longer migration cycle
 + Improved: table rendering performance
 + Fixed: filtering issue
 #### _v10.1.4 (2020-08-31)_
@@ -138,51 +169,36 @@ When you make changes to the template and save, Visual Studio will automatically
 + Removed: 'Apply to CRM Entity' option and moved it to Entity Selection window
 + Removed: metadata refresh buttons
 + Removed: redundant and obsolete settings entries
-#### _v9.1.1 (2020-08-25)_
-+ Added: 'cancel' option in the Profiles window
-+ Added: pre-v9 settings migration
-+ Improved: moved the 'Apply to CRM Entity' option to be on a per-Entity level for more control
-+ Improved: 'Apply to CRM Entity' filters Attributes and Relations similar to how Contracts work
-+ Improved: refactoring to prepare for XrmToolBox Plugin and improve extensibility
-+ Improved: error messages
-+ Updated: licence
-+ Removed: pre-v7 settings migration (to migrate to v7+, download v8.1.3 below first)
-+ Fixed: issue with assembly binding
-+ Fixed: issues
-#### _v8.1.3 (2020-08-17)_
-+ Fixed: handling older versions of CRM when it comes to new features
-+ Fixed: obsolete Action Names not removed from selection
-+ Fixed: image length to be in bytes instead of KBs
-+ Fixed: updating Connection String has no effect after first connnection made
-#### _v8.1.2 (2020-08-14)_
+#### _v7 to v9 (since 2020-08-09)_
 + Added: Multi-option Option-set and Image support (File Field requires a special SDK Message to handle)
 + Added: new Annotation Attributes for Image Fields
-+ Added: Custom multi-typed EntityReference type (Customer, Owner ... etc.)
-+ Added: options to optimise the resulting code by removing some extra data
++ Added: Entity list view filtering in profiles
 + Added: selection control for CRM Actions
-+ Improved: use .NET Annotation Attributes when possible, instead of the custom ones
-+ Improved: label dictionary property initialisation
++ Added: [template] custom multi-typed EntityReference type (Customer, Owner ... etc.)
++ Added: options to optimise the resulting code by removing some extra data
++ Added: option to optimise settings file size
++ Added: 'cancel' option in the Profiles window
++ Added: pre-v9 settings migration
++ Improved: [template] use .NET Annotation Attributes when possible, instead of the custom ones
 + Improved: optmised CRM Actions generation
 + Improved: increased threading of independent logic
 + Improved: optimised saved and generated data
-+ Improved: cleaned and refactored code
-+ Fixed: contract label dictionary wrong type definition
-+ Fixed: issues
-#### _v7.1.3 (2020-08-11)_
-+ Changed: save connection in a separate file outside of source control
-#### _v7.1.2 (2020-08-10)_
-+ Improved: connection pooling
-+ Fixed: issues
-#### _v7.1.1 (2020-08-09)_
-+ Added: Entity list view filtering in profiles
-+ Added: option to optimise settings file size
++ Improved: switched to EnhancedOrgService package for improved connection pooling and caching
++ Improved: moved the 'Apply to CRM Entity' option to be on a per-Entity level for more control
++ Improved: 'Apply to CRM Entity' filters Attributes and Relations similar to how Contracts work
++ Improved: [template] label dictionary property initialisation
++ Improved: cleaned and refactored to prepare for XrmToolBox Plugin and improve extensibility
++ Improved: error messages
 + Changed: switched to explicit or raw Connection Strings to allow for a broader support of newer features
 + Changed: separated settings from cache data (cache saved at the solution level)
 + Changed: save settings as JSON (per project)
++ Changed: save connection in a separate file outside of source control
 + Changed: exclude cache data from Source Control
 + Updated: SDK packages
-+ Improved: switched to EnhancedOrgService package for improved connection pooling and caching
-+ Improved: performance
++ Updated: licence
++ Fixed: issue with assembly binding
++ Fixed: handling older versions of CRM when it comes to new features
++ Fixed: [template] contract label dictionary has wrong type definition
 + Fixed: issues
 + Removed: connection profiles to encourage generating from a single model source for the selected project
 

@@ -120,13 +120,13 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Close_Click(object sender, RoutedEventArgs e)
 		{
 			callback(SelectedData);
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			DialogResult = false;
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		#endregion

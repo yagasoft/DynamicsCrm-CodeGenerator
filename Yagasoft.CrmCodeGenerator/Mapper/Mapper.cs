@@ -48,7 +48,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 		public Settings Settings { get; set; }
 
-		public Context Context { get; set; }
+		public Context Context { get; private set; }
 
 		public List<MappingAction> Actions
 		{
@@ -64,7 +64,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 				return actions;
 			}
-			set => actions = value;
+			private set => actions = value;
 		}
 
 		public List<int> Languages
@@ -81,7 +81,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 				return languages;
 			}
-			set => languages = value;
+			private set => languages = value;
 		}
 
 		public bool CancelMapping
@@ -94,10 +94,10 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			}
 		}
 
-		private MapperStatus Status
+		public MapperStatus Status
 		{
 			get => status;
-			set
+			private set
 			{
 				status = value;
 
@@ -198,7 +198,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			try
 			{
 				Status = MapperStatus.Started;
-
+				
 				metadataCache.Require(nameof(metadataCache));
 
 				var contextP = metadataCache.Context;
@@ -275,6 +275,11 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				}
 
 				#endregion
+				
+				if (CancelMapping)
+				{
+					return;
+				}
 
 				#region Features
 
@@ -383,10 +388,9 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			}
 			catch (Exception ex)
 			{
-				OnMessage(ex.Message, false, true, false, ex);
 				exception = ex;
 				Status = MapperStatus.Error;
-				throw;
+				OnMessage(ex.Message, false, true, false, ex);
 			}
 		}
 
@@ -490,7 +494,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 									if (CancelMapping || error != null)
 									{
 										state.Stop();
-										throw new OperationCanceledException("Mapping cancelled.");
+										return;
 									}
 
 									try
@@ -558,7 +562,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 											if (CancelMapping)
 											{
 												state.Stop();
-												throw new OperationCanceledException("Mapping cancelled.");
+												return;
 											}
 
 											MappingEntity.UpdateCache(newUpdatedEntities
@@ -608,7 +612,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 			if (CancelMapping)
 			{
-				throw new OperationCanceledException("Mapping cancelled.");
+				return new MappingEntity[0];
 			}
 
 			if (Settings.IsGenerateAlternateKeys)
@@ -630,7 +634,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 			if (CancelMapping)
 			{
-				throw new OperationCanceledException("Mapping cancelled.");
+				return new MappingEntity[0];
 			}
 
 			var lookupMessage = OnMessage("Building lookup labels info ... ");

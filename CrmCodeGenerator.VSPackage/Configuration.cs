@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Helpers.Assembly;
+using Yagasoft.CrmCodeGenerator.Models;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
@@ -179,9 +180,15 @@ namespace CrmCodeGenerator.VSPackage
 				Status.Update($"[Template] Found template file: {file}.");
 				Status.Update($"[Template] Reading content ...");
 
-				var fileContent = File.ReadAllText(file);
+				var bytes = new byte[2000];
 
-				var templateInfo = TemplateHelpers.ParseTemplateInfo(fileContent);
+				using (var reader = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+				{
+					reader.Seek(500, SeekOrigin.Begin);
+					reader.Read(bytes, 0, bytes.Length);
+				}
+
+				var templateInfo = TemplateHelpers.ParseTemplateInfo(Encoding.UTF8.GetString(bytes));
 
 				if (templateInfo?.DetectedTemplateVersion.IsFilled() == true)
 				{
@@ -628,6 +635,7 @@ namespace CrmCodeGenerator.VSPackage
 			dataFilter.Attributes?.RemoveEmpty();
 			dataFilter.AttributeRenames?.RemoveEmpty();
 			dataFilter.AttributeLanguages?.RemoveEmpty();
+			dataFilter.AttributeAnnotations?.RemoveEmpty();
 			dataFilter.ReadOnly?.RemoveEmpty();
 			dataFilter.ClearFlag?.RemoveEmpty();
 			dataFilter.OneToN?.RemoveEmpty();
@@ -642,6 +650,7 @@ namespace CrmCodeGenerator.VSPackage
 			dataFilter.NToNReadOnly?.RemoveEmpty();
 
 			var isEntityRenameFilled = dataFilter.EntityRename.IsFilled();
+			var isEntityAnnotationsFilled = dataFilter.EntityAnnotations.IsFilled();
 			var isIsGenerateMetaFilled = dataFilter.IsGenerateMeta;
 			var isIsOptionsetLabelsFilled = dataFilter.IsOptionsetLabels;
 			var isIsLookupLabelsFilled = dataFilter.IsLookupLabels;
@@ -649,7 +658,7 @@ namespace CrmCodeGenerator.VSPackage
 			var isEnglishLabelFieldFilled = dataFilter.EnglishLabelField.IsFilled();
 			var isCollectionsFilled = dataFilter.IsBasicDataFilled;
 
-			var isKeepFilter = isIncluded || isEntityRenameFilled || isIsGenerateMetaFilled
+			var isKeepFilter = isIncluded || isEntityRenameFilled || isEntityAnnotationsFilled || isIsGenerateMetaFilled
 				|| isIsOptionsetLabelsFilled || isIsLookupLabelsFilled
 				|| isValueClearModeFilled || isEnglishLabelFieldFilled
 				|| isCollectionsFilled;

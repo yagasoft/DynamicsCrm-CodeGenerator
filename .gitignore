@@ -455,3 +455,4 @@ nuget-access-key.txt
 /crm-solution/log.csv
 /LinkDev.DataMigration.WebApp.Tests
 /LinkDev.DataMigration.Tests
+*.dll

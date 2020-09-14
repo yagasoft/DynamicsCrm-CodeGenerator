@@ -26,7 +26,9 @@ using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
+using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
+using MetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
 
 #endregion
 
@@ -249,7 +251,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					catch (Exception ex)
 					{
 						Status.PopException(Dispatcher, ex);
-						Dispatcher.InvokeAsync(Close);
+						Dispatcher.Invoke(Close);
 					}
 				}).Start();
 		}
@@ -315,6 +317,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								   ? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
 								   : Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
 							   Rename = entityProfile.EntityRename,
+							   Annotations = entityProfile.EntityAnnotations,
 							   IsGenerateMeta = entityProfile.IsGenerateMeta,
 							   IsOptionsetLabels = entityProfile.IsOptionsetLabels,
 							   IsLookupLabels = entityProfile.IsLookupLabels,
@@ -383,6 +386,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					profile.IsOptionsetLabels = row.IsOptionsetLabels;
 					profile.IsLookupLabels = row.IsLookupLabels;
 					profile.EntityRename = row.Rename;
+					profile.EntityAnnotations = row.Annotations;
 
 					switch (row.ValueClearMode)
 					{
@@ -675,6 +679,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						item.Rename = "";
 					}
 
+					foreach (var item in grid.SelectedItems.Cast<GridRow>()
+						.Where(item => !string.IsNullOrEmpty(item.Annotations)))
+					{
+						item.Annotations = "";
+					}
+
 					break;
 			}
 		}
@@ -820,7 +830,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					catch (Exception ex)
 					{
 						Status.PopException(Dispatcher, ex);
-						Dispatcher.InvokeAsync(Close);
+						Dispatcher.Invoke(Close);
 					}
 				}).Start();
 		}
@@ -832,14 +842,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
 			DialogResult = false;
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		#endregion

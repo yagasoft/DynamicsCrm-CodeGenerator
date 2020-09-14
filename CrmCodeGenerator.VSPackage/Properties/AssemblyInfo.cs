@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Shell;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
@@ -32,5 +33,26 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
 
+[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",
+	CodeBase = @"$PackageFolder$\Microsoft.Xrm.Sdk.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "9.0.0.0")]
 
+[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk.Deployment",
+	CodeBase = @"$PackageFolder$\Microsoft.Xrm.Sdk.Deployment.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "9.0.0.0")]
 
+[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Crm.Sdk.Proxy",
+	CodeBase = @"$PackageFolder$\Microsoft.Crm.Sdk.Proxy.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "9.0.0.0")]
+
+[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Tooling.Connector",
+	CodeBase = @"$PackageFolder$\Microsoft.Xrm.Tooling.Connector.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "4.0.0.0")]
+
+[assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.IdentityModel.Clients.ActiveDirectory",
+	CodeBase = @"$PackageFolder$\Microsoft.IdentityModel.Clients.ActiveDirectory.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "3.19.8.16603")]
+
+[assembly: ProvideBindingRedirection(AssemblyName = "Newtonsoft.Json",
+	CodeBase = @"$PackageFolder$\Newtonsoft.Json.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "10.0.0.0")]

@@ -288,7 +288,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					catch (Exception ex)
 					{
 						Status.PopException(Dispatcher, ex);
-						Dispatcher.InvokeAsync(Close);
+						Dispatcher.Invoke(Close);
 					}
 				}).Start();
 		}
@@ -372,6 +372,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 									: Naming.Clean(attributeAsync.DisplayName.UserLocalizedLabel.Label),
 								Rename = EntityProfile.AttributeRenames?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
 								Language = EntityProfile.AttributeLanguages?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
+								Annotations = EntityProfile.AttributeAnnotations?.FirstNotNullOrEmpty(attributeAsync.LogicalName),
 								IsReadOnly = EntityProfile.ReadOnly?.Contains(attributeAsync.LogicalName) == true
 									|| (attributeAsync.IsValidForCreate != true && attributeAsync.IsValidForUpdate != true),
 								IsReadOnlyEnabled = attributeAsync.IsValidForCreate == true || attributeAsync.IsValidForUpdate == true,
@@ -517,6 +518,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				.ToDictionary(field => field.Name, field => field.Rename);
 			EntityProfile.AttributeLanguages = Fields.Where(field => !string.IsNullOrWhiteSpace(field.Language))
 				.ToDictionary(field => field.Name, field => field.Language);
+			EntityProfile.AttributeAnnotations = Fields.Where(field => !string.IsNullOrWhiteSpace(field.Annotations))
+				.ToDictionary(field => field.Name, field => field.Annotations);
 			EntityProfile.ReadOnly = Fields.Where(field => field.IsReadOnly).Select(field => field.Name).ToArray();
 			EntityProfile.ClearFlag = Fields.Where(field => field.IsClearFlag).Select(field => field.Name).ToArray();
 
@@ -1009,14 +1012,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
 			DialogResult = false;
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		#endregion

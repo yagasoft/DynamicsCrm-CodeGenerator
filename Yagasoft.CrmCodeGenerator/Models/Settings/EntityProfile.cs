@@ -34,6 +34,16 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
+		public string EntityAnnotations
+		{
+			get => entityAnnotations;
+			set
+			{
+				entityAnnotations = string.IsNullOrEmpty(value) ? null : value;
+				OnPropertyChanged();
+			}
+		}
+
 		public bool IsGenerateMeta
 		{
 			get => isGenerateMeta;
@@ -98,7 +108,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		public bool IsFiltered => Attributes.Any() || OneToN.Any() || NToOne.Any() || NToN.Any();
 
 		[JsonIgnore]
-		public bool IsBasicDataFilled => IsFiltered || AttributeRenames.Any() || AttributeLanguages.Any()
+		public bool IsBasicDataFilled => IsFiltered || AttributeRenames.Any() || AttributeAnnotations.Any()
 			|| OneToNRenames.Any() || NToOneRenames.Any() || NToNRenames.Any();
 
 		[JsonIgnore]
@@ -109,6 +119,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		public string[] Attributes { get; set; } = new string[0];
 		public IDictionary<string, string> AttributeRenames { get; set; } = new Dictionary<string, string>();
 		public IDictionary<string, string> AttributeLanguages { get; set; } = new Dictionary<string, string>();
+		public IDictionary<string, string> AttributeAnnotations { get; set; } = new Dictionary<string, string>();
 		public string[] ReadOnly { get; set; } = new string[0];
 		public string[] ClearFlag { get; set; } = new string[0];
 
@@ -140,6 +151,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		}
 
 		private string entityRename;
+		private string entityAnnotations;
 		private bool isExcluded = true;
 		private bool isGenerateMeta;
 		private bool isOptionsetLabels;

@@ -188,7 +188,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				Settings.SelectedGlobalActions = SelectedGlobalActions.ToArray();
 			}
 
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		#endregion

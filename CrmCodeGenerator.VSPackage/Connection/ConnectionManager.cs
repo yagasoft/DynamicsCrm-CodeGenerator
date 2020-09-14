@@ -11,7 +11,7 @@ using Yagasoft.Libraries.Common;
 using Yagasoft.Libraries.EnhancedOrgService.Helpers;
 using Yagasoft.Libraries.EnhancedOrgService.Params;
 using Yagasoft.Libraries.EnhancedOrgService.Pools;
-using Yagasoft.Libraries.EnhancedOrgService.Services;
+using Yagasoft.Libraries.EnhancedOrgService.Services.Enhanced;
 using static Yagasoft.CrmCodeGenerator.Helpers.ConnectionHelpers;
 
 #endregion

@@ -19,7 +19,6 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using CrmCodeGenerator.VSPackage.ViewModels;
-using Microsoft.Xrm.Client.Collections.Generic;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Connection;
@@ -202,7 +201,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					catch (Exception ex)
 					{
 						Status.PopException(Dispatcher, ex);
-						Dispatcher.InvokeAsync(Close);
+						Dispatcher.Invoke(Close);
 					}
 				}).Start();
 		}
@@ -243,6 +242,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							   IsSelected = Settings.EntitiesSelected.Contains(entity.LogicalName),
 							   Name = entityAsync.LogicalName,
 							   Rename = profile?.EntityRename,
+							   Annotations = profile?.EntityAnnotations,
 							   DisplayName =
 								   entityAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
 									   ? Naming.GetProperHybridName(entityAsync.SchemaName, entityAsync.LogicalName)
@@ -351,7 +351,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					profile = row.EntityProfile = null;
 				}
 
-				if ((row.Rename.IsFilled() || row.IsEntityFiltered) && profile == null)
+				if ((row.Rename.IsFilled() || row.Annotations.IsFilled() || row.IsEntityFiltered) && profile == null)
 				{
 					profile = row.EntityProfile = new EntityProfile(entity.LogicalName);
 				}
@@ -363,6 +363,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				else
 				{
 					profile.EntityRename = row.Rename;
+					profile.EntityAnnotations = row.Annotations;
 					Settings.CrmEntityProfiles.Add(profile);
 				}
 
@@ -560,7 +561,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				var location = PointToScreen(Mouse.GetPosition(this));
 				LoadActions(rowDataCast,
 					() => new PopupSelector(this, rowDataCast.ActionNames, rowDataCast.SelectedActions,
-						selectedActions => Dispatcher.InvokeAsync(() => rowDataCast.SelectedActions = selectedActions),
+						selectedActions => Dispatcher.Invoke(() => rowDataCast.SelectedActions = selectedActions),
 						location.X, location.Y).ShowDialog());
 			}
 			else
@@ -693,6 +694,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						item.Rename = "";
 					}
 
+					foreach (var item in grid.SelectedItems.Cast<GridRow>()
+						.Where(item => !string.IsNullOrEmpty(item.Annotations)))
+					{
+						item.Annotations = "";
+					}
+
 					break;
 			}
 		}
@@ -720,7 +727,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						Status.ShowBusy(Dispatcher, BusyIndicator, $"Loading {row.Name} Actions ...");
 						var actions = InnerMetadataHelpers.RetrieveActionNames(Settings,
 							connectionManager, metadataCache, row.Name).ToArray();
-						Dispatcher.InvokeAsync(
+						Dispatcher.Invoke(
 							() =>
 							{
 								row.ActionNames = new ObservableCollection<string>(actions);
@@ -823,7 +830,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   catch (Exception ex)
 						   {
 							   Status.PopException(Dispatcher, ex);
-							   Dispatcher.InvokeAsync(Close);
+							   Dispatcher.Invoke(Close);
 						   }
 					   }).Start();
 		}
@@ -835,14 +842,14 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private void Logon_Click(object sender, RoutedEventArgs e)
 		{
 			SaveFilter();
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		private void Cancel_Click(object sender, RoutedEventArgs e)
 		{
 			StillOpen = false;
 			DialogResult = false;
-			Dispatcher.InvokeAsync(Close);
+			Dispatcher.Invoke(Close);
 		}
 
 		#endregion

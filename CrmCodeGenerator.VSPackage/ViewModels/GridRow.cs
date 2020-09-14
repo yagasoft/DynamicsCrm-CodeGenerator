@@ -59,8 +59,19 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 			}
 		}
 
+		public string Annotations
+		{
+			get => annotations;
+			set
+			{
+				annotations = value;
+				OnPropertyChanged();
+			}
+		}
+
 		private bool isFiltered;
 		private string rename;
+		private string annotations;
 		private EntityMetadata entity;
 		private EntityProfile entityProfile;
 		private bool isSelected;
