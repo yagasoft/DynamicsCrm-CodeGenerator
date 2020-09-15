@@ -105,11 +105,11 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		}
 
 		[JsonIgnore]
-		public bool IsFiltered => Attributes.Any() || OneToN.Any() || NToOne.Any() || NToN.Any();
+		public bool IsFiltered => Attributes?.Any() == true || OneToN?.Any() == true || NToOne?.Any() == true || NToN?.Any() == true;
 
 		[JsonIgnore]
-		public bool IsBasicDataFilled => IsFiltered || AttributeRenames.Any() || AttributeAnnotations.Any()
-			|| OneToNRenames.Any() || NToOneRenames.Any() || NToNRenames.Any();
+		public bool IsBasicDataFilled => IsFiltered || AttributeRenames?.Any() == true || AttributeAnnotations?.Any() == true
+			|| OneToNRenames?.Any() == true || NToOneRenames?.Any() == true || NToNRenames?.Any() == true;
 
 		[JsonIgnore]
 		public bool IsContainsData => GetType().GetProperties()

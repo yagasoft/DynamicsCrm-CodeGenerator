@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.4.1
+### Version: 10.4.2
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -111,7 +111,7 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
-#### _v10.4.1 (2020-09-15)_
+#### _v10.4.2 (2020-09-15)_
 + Added: option to define entity, attribute, and contract custom annotations through the UI
 + Added: [template] helper to automatically limit attributes retrieved from CRM on any entity in a LINQ to the ones choosen (filtered) in the tool (check new entity constructors)
 + Added: [template] helper to automatically parse Aliased Values into their respective early-bound properties in entity records retrieved by a FetchXML query

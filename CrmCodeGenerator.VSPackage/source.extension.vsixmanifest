@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="CrmCodeGenerator" Version="10.4.1" Language="en-US" Publisher="Ahmed Elsawalhy (Yagasoft.com)" />
+        <Identity Id="CrmCodeGenerator" Version="10.4.2" Language="en-US" Publisher="Ahmed Elsawalhy (Yagasoft.com)" />
         <DisplayName>Dynamics CRM - Template-based Code Generator</DisplayName>
         <Description xml:space="preserve">A Visual Studio extension for generating early-bound classes for Microsoft Dynamics CRM entities based on a template, similar to Entity Framework.</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator</MoreInfo>
