@@ -373,10 +373,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 					var contracts = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.SelectMany(p => p.EntityProfiles)
 						.Where(p => p.LogicalName == entity.LogicalName).ToArray();
-					profile.Attributes = contracts.SelectMany(p => p.Attributes).Distinct().OrderBy(a => a).ToArray();
-					profile.OneToN = contracts.SelectMany(p => p.OneToN).Distinct().OrderBy(a => a).ToArray();
-					profile.NToOne = contracts.SelectMany(p => p.NToOne).Distinct().OrderBy(a => a).ToArray();
-					profile.NToN = contracts.SelectMany(p => p.NToN).Distinct().OrderBy(a => a).ToArray();
+					profile.Attributes = contracts.SelectMany(p => p.Attributes).Union(profile.Attributes ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					profile.OneToN = contracts.SelectMany(p => p.OneToN).Union(profile.OneToN ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					profile.NToOne = contracts.SelectMany(p => p.NToOne).Union(profile.NToOne ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					profile.NToN = contracts.SelectMany(p => p.NToN).Union(profile.NToN ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
 				}
 
 				if (profile == null)
@@ -670,22 +670,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					LogicalName = rowData.Name;
 
 					var entityProfile = rowData.EntityProfile ?? new EntityProfile(LogicalName);
-					var tempProfile = entityProfile.Copy();
 
 					new FilterDetails(this, LogicalName, Settings, entityProfile,
 						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCache)
 						.ShowDialog();
 
 					rowData.EntityProfile = entityProfile.IsBasicDataFilled ? entityProfile : null;
-
-					// remove 'link' if attributes change
-					if (!tempProfile.Attributes.IsMembersEquals(entityProfile.Attributes)
-						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.OneToN)
-						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.NToOne)
-						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.NToN))
-					{
-						rowData.IsLinkToContracts = false;
-					}
 				}
 			}
 		}

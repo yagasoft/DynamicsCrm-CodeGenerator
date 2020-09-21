@@ -434,10 +434,10 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				{
 					var contracts = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.SelectMany(p => p.EntityProfiles)
 						.Where(p => p.LogicalName == entity).ToArray();
-					crmProfile.Attributes = contracts.SelectMany(p => p.Attributes).Distinct().OrderBy(a => a).ToArray();
-					crmProfile.OneToN = contracts.SelectMany(p => p.OneToN).Distinct().OrderBy(a => a).ToArray();
-					crmProfile.NToOne = contracts.SelectMany(p => p.NToOne).Distinct().OrderBy(a => a).ToArray();
-					crmProfile.NToN = contracts.SelectMany(p => p.NToN).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.Attributes = contracts.SelectMany(p => p.Attributes).Union(crmProfile.Attributes ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.OneToN = contracts.SelectMany(p => p.OneToN).Union(crmProfile.OneToN ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.NToOne = contracts.SelectMany(p => p.NToOne).Union(crmProfile.NToOne ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.NToN = contracts.SelectMany(p => p.NToN).Union(crmProfile.NToN ?? new string[0]).Distinct().OrderBy(a => a).ToArray();
 				}
 			}
 		}
