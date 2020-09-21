@@ -146,8 +146,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			LabelTemplateVersion.Foreground = Brushes.Blue;
 
 			var isTemplateLatest = new Version(templateVersion) >= new Version(Constants.LatestTemplateVersion);
-			LabelTemplateLatest.Content = isTemplateLatest ? "(latest)" : "";
-			LabelTemplateLatest.Foreground = isTemplateLatest ? Brushes.Green : Brushes.Black;
+			LabelTemplateLatest.Content = isTemplateLatest ? "(latest)" : "(outdated)";
+			LabelTemplateLatest.Foreground = isTemplateLatest ? Brushes.Green : Brushes.PaleVioletRed;
 
 			var isTemplateCompatible = new Version(templateVersion) >= new Version(Constants.MinTemplateVersion);
 			LabelCompatibility.Content = isTemplateCompatible ? "YES" : "NO";

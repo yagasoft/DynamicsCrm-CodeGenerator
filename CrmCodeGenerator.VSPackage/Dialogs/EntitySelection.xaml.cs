@@ -250,6 +250,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							   IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entityAsync.LogicalName),
 							   IsJsEarly = Settings.JsEarlyBoundEntitiesSelected.Contains(entityAsync.LogicalName),
 							   IsEntityFiltered = Settings.EarlyBoundFilteredSelected.Contains(entityAsync.LogicalName),
+							   IsLinkToContracts = Settings.EarlyBoundLinkedSelected.Contains(entityAsync.LogicalName),
 							   IsOptionsetLabels = Settings.OptionsetLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
 							   IsLookupLabels = Settings.LookupLabelsEntitiesSelected.Contains(entityAsync.LogicalName),
 							   SelectedActions = Settings.SelectedActions?.FirstNotNullOrDefault(entityAsync.LogicalName)
@@ -336,6 +337,15 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					Settings.EarlyBoundFilteredSelected.Remove(entity.LogicalName);
 				}
 
+				if (row.IsLinkToContracts && !Settings.EarlyBoundLinkedSelected.Contains(entity.LogicalName))
+				{
+					Settings.EarlyBoundLinkedSelected.Add(entity.LogicalName);
+				}
+				else if (!row.IsLinkToContracts && Settings.EarlyBoundLinkedSelected.Contains(entity.LogicalName))
+				{
+					Settings.EarlyBoundLinkedSelected.Remove(entity.LogicalName);
+				}
+
 				var profile = Settings.CrmEntityProfiles
 					.FirstOrDefault(e => e.LogicalName == entity.LogicalName);
 
@@ -356,9 +366,23 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					profile = row.EntityProfile = new EntityProfile(entity.LogicalName);
 				}
 
+				// copy attributes from contracts to CRM entity
+				if (row.IsLinkToContracts)
+				{
+					profile = row.EntityProfile = profile ?? new EntityProfile(entity.LogicalName);
+
+					var contracts = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.SelectMany(p => p.EntityProfiles)
+						.Where(p => p.LogicalName == entity.LogicalName).ToArray();
+					profile.Attributes = contracts.SelectMany(p => p.Attributes).Distinct().OrderBy(a => a).ToArray();
+					profile.OneToN = contracts.SelectMany(p => p.OneToN).Distinct().OrderBy(a => a).ToArray();
+					profile.NToOne = contracts.SelectMany(p => p.NToOne).Distinct().OrderBy(a => a).ToArray();
+					profile.NToN = contracts.SelectMany(p => p.NToN).Distinct().OrderBy(a => a).ToArray();
+				}
+
 				if (profile == null)
 				{
 					Settings.EarlyBoundFilteredSelected.Remove(entity.LogicalName);
+					Settings.EarlyBoundLinkedSelected.Remove(entity.LogicalName);
 				}
 				else
 				{
@@ -526,6 +550,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				var rowDataCast = (EntitySelectionGridRow)row.Item;
 				rowDataCast.IsEntityFiltered = !rowDataCast.IsEntityFiltered;
 			}
+			else if (d != null && (d.IsCheckboxClickedParentCheck("IsLinkToContracts")
+				|| d.IsCheckboxClickedParentCheck("IsLinkToContracts")))
+			{
+				var rowDataCast = (EntitySelectionGridRow)row.Item;
+				rowDataCast.IsLinkToContracts = !rowDataCast.IsLinkToContracts;
+			}
 			else if (d != null && (d.IsCheckboxClickedParentCheck("IsOptionsetLabels")
 				|| d.IsCheckboxClickedParentCheck("IsOptionsetLabels")))
 			{
@@ -640,12 +670,22 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					LogicalName = rowData.Name;
 
 					var entityProfile = rowData.EntityProfile ?? new EntityProfile(LogicalName);
+					var tempProfile = entityProfile.Copy();
 
 					new FilterDetails(this, LogicalName, Settings, entityProfile,
 						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCache)
 						.ShowDialog();
 
 					rowData.EntityProfile = entityProfile.IsBasicDataFilled ? entityProfile : null;
+
+					// remove 'link' if attributes change
+					if (!tempProfile.Attributes.IsMembersEquals(entityProfile.Attributes)
+						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.OneToN)
+						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.NToOne)
+						|| !tempProfile.OneToN.IsMembersEquals(entityProfile.NToN))
+					{
+						rowData.IsLinkToContracts = false;
+					}
 				}
 			}
 		}

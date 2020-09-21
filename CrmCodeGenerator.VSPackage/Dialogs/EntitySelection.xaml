@@ -160,6 +160,21 @@
                                     <CheckBox x:Name="IsEntityFiltered"
                                               IsChecked="{Binding Path=IsEntityFiltered, Mode=TwoWay}"
                                               Click="CheckBoxIsSelected_OnClick"
+                                              HorizontalAlignment="Stretch"  IsEnabled="{Binding IsApplyFilterEnabled}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn>
+                            <DataGridTemplateColumn.Header>
+                                <Label VerticalContentAlignment="Center"
+                                       Content="Link to&#x0a;Contracts" FontSize="9" Margin="0"
+                                       HorizontalAlignment="Stretch" />
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox x:Name="IsLinkToContracts"
+                                              IsChecked="{Binding Path=IsLinkToContracts, Mode=TwoWay}"
+                                              Click="CheckBoxIsSelected_OnClick"
                                               HorizontalAlignment="Stretch" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

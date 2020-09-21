@@ -23,6 +23,27 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 			{
 				isEntityFiltered = value;
 				OnPropertyChanged();
+
+				if (!value && IsLinkToContracts)
+				{
+					IsLinkToContracts = false;
+				}
+			}
+		}
+
+		public bool IsLinkToContracts
+		{
+			get => isLinkToContracts;
+			set
+			{
+				isLinkToContracts = value;
+				OnPropertyChanged();
+				OnPropertyChanged(nameof(IsApplyFilterEnabled));
+
+				if (value && !IsEntityFiltered)
+				{
+					IsEntityFiltered = true;
+				}
 			}
 		}
 
@@ -48,6 +69,7 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 			}
 		}
 
+		public bool IsApplyFilterEnabled => !IsLinkToContracts;
 		public Brush ActionColour => SelectedActions?.Any() == true ? Brushes.Red : Brushes.Black;
 
 		public string ActionCount
@@ -61,6 +83,7 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 
 		private bool isJsEarly;
 		private bool isEntityFiltered;
+		private bool isLinkToContracts;
 		private IEnumerable<string> actionNames;
 		private IEnumerable<string> selectedActions;
 	}

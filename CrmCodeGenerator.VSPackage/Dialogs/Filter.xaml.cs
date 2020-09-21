@@ -423,6 +423,23 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					Settings.LookupLabelsEntitiesSelected.Add(entityRow.Name);
 				}
 			}
+
+			foreach (var entity in Settings.EntityList)
+			{
+				var isLinked = Settings.EarlyBoundLinkedSelected.Contains(entity);
+				var crmProfile = Settings.CrmEntityProfiles.FirstOrDefault(p => p.LogicalName == entity);
+
+				// copy attributes from contracts to CRM entity
+				if (isLinked && crmProfile != null)
+				{
+					var contracts = Settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.SelectMany(p => p.EntityProfiles)
+						.Where(p => p.LogicalName == entity).ToArray();
+					crmProfile.Attributes = contracts.SelectMany(p => p.Attributes).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.OneToN = contracts.SelectMany(p => p.OneToN).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.NToOne = contracts.SelectMany(p => p.NToOne).Distinct().OrderBy(a => a).ToArray();
+					crmProfile.NToN = contracts.SelectMany(p => p.NToN).Distinct().OrderBy(a => a).ToArray();
+				}
+			}
 		}
 
 		#region CRM

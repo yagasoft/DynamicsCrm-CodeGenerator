@@ -46,11 +46,13 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			get => connectionString;
 			set
 			{
-				var clauses = value?.Split(';').Select(e => e.Trim()).Where(e => e.Contains("=")).ToArray();
+				var clauses = value?.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+					.Select(e => e.Trim()).Where(e => e.Contains("=")).ToArray();
 
 				if (clauses?.Any() == true)
 				{
-					var subclauses = clauses.Select(e => e.Split('=').Select(s => s.Trim())).ToArray();
+					var subclauses = clauses.Select(e => e.Split(new[] { '=' }, 2, StringSplitOptions.RemoveEmptyEntries)
+						.Select(s => s.Trim())).ToArray();
 					var longestKeyLength = subclauses.Select(e => e.FirstOrDefault()?.Length ?? 0).Max();
 					clauses = subclauses?
 						.Select(e => e.StringAggregate(" = ".PadLeft(longestKeyLength + 3 - e.FirstOrDefault()?.Length ?? 0)))
@@ -391,6 +393,13 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		}
 
 		[JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+		public ObservableCollection<string> EarlyBoundLinkedSelected
+		{
+			get => earlyBoundLinkedSelected = earlyBoundLinkedSelected ?? new ObservableCollection<string>();
+			set => SetField(ref earlyBoundLinkedSelected, value);
+		}
+
+		[JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
 		public ObservableCollection<string> JsEarlyBoundEntitiesSelected
 		{
 			get => jsEarlyBoundEntitiesSelected = jsEarlyBoundEntitiesSelected ?? new ObservableCollection<string>();
@@ -445,6 +454,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		private ObservableCollection<string> pluginMetadataEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> jsEarlyBoundEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> earlyBoundFilteredSelected = new ObservableCollection<string>();
+		private ObservableCollection<string> earlyBoundLinkedSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> optionsetLabelsEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> lookupLabelsEntitiesSelected = new ObservableCollection<string>();
 		private ObservableCollection<string> entityList = new ObservableCollection<string>();
