@@ -59,7 +59,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 					var message = OnMessage("Waiting for Actions thread ... ");
 					actionsThread.Join();
 					OnMessage(">> Actions thread finished.", false);
-					message.FinishedProgress(progress);
+					message?.FinishedProgress(progress);
 				}
 
 				return actions;
@@ -76,7 +76,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 					var message = OnMessage("Waiting for languages thread ... ");
 					langThread.Join();
 					OnMessage(">> Languages thread finished.", false);
-					message.FinishedProgress(progress);
+					message?.FinishedProgress(progress);
 				}
 
 				return languages;
@@ -122,7 +122,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 					var message = OnMessage("Waiting for features thread ... ");
 					featuresThread.Join();
 					OnMessage(">> Features thread finished.", false);
-					message.FinishedProgress(progress);
+					message?.FinishedProgress(progress);
 				}
 
 				return platformFeatures;
@@ -237,7 +237,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 							}
 
 							OnMessage(">> Fetching languages.", false);
-							message.FinishedProgress(progress);
+							message?.FinishedProgress(progress);
 						});
 					langThread.Start();
 				}
@@ -269,7 +269,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 								.Distinct().ToArray()).ToList();
 
 							OnMessage(">> Fetching Actions.", false);
-							message.FinishedProgress(progress);
+							message?.FinishedProgress(progress);
 						});
 					actionsThread.Start();
 				}
@@ -299,7 +299,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 									connectionManager)).Value;
 
 							OnMessage(">> Fetching platform features.", false);
-							message.FinishedProgress(progress);
+							message?.FinishedProgress(progress);
 						});
 					featuresThread.Start();
 				}
@@ -333,7 +333,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				}
 
 				OnMessage(">> Parsing Entity Actions.", false);
-				parseActionMessage.FinishedProgress(progress);
+				parseActionMessage?.FinishedProgress(progress);
 
 				if (CancelMapping)
 				{
@@ -344,7 +344,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				var parseGlobalMessage = OnMessage("Parsing Global Actions ... ");
 				contextT.GlobalActions = Actions.Where(action => action.TargetEntityName == "none").ToArray();
 				OnMessage(">> Parsing Global Actions.", false);
-				parseGlobalMessage.FinishedProgress(progress);
+				parseGlobalMessage?.FinishedProgress(progress);
 
 				if (CancelMapping)
 				{
@@ -364,7 +364,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 					var lookupMessage = OnMessage("Waiting for Alternate Keys thread ... ");
 					lookupKeysThread?.Join();
 					OnMessage(">> Alternate Keys thread finished.", false);
-					lookupMessage.FinishedProgress(progress);
+					lookupMessage?.FinishedProgress(progress);
 				}
 				
 				if (CancelMapping)
@@ -375,14 +375,14 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				var sortMessage = OnMessage("Sorting Entities ... ");
 				SortEntities(contextT);
 				OnMessage(">> Sorting Entities.", false);
-				sortMessage.FinishedProgress(progress);
+				sortMessage?.FinishedProgress(progress);
 
 				contextT.EntityProfilesHeaderSelector = Settings.EntityProfilesHeaderSelector;
 
 				Context = contextT;
 
 				OnMessage(">> Gathering metadata.", false);
-				gatheringMessage.FinishedProgress(progress);
+				gatheringMessage?.FinishedProgress(progress);
 
 				Status = MapperStatus.Finished;
 			}
@@ -436,7 +436,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 					}).ToList();
 
 			OnMessage(">> Grouping entities.", false);
-			groupingMessage.FinishedProgress(progress);
+			groupingMessage?.FinishedProgress(progress);
 
 			#region Get metadata
 
@@ -573,7 +573,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 											progress = (int)((totalTaken / (double)originalSelectedEntities.Count) * 100.0);
 										}
 
-										message.FinishedProgress(progress);
+										message?.FinishedProgress(progress);
 									}
 									catch (Exception ex)
 									{
@@ -630,7 +630,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			}
 			
 			OnMessage(">> Creating missing filters.", false);
-			missingMessage.FinishedProgress(progress);
+			missingMessage?.FinishedProgress(progress);
 
 			if (CancelMapping)
 			{
@@ -645,7 +645,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			}
 
 			OnMessage(">> Building lookup labels info.", false);
-			lookupMessage.FinishedProgress(progress);
+			lookupMessage?.FinishedProgress(progress);
 
 			return filteredEntities;
 		}
@@ -694,7 +694,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 						}
 
 						OnMessage(">> Retrieving Alternate Key information.", false);
-						altMessage.FinishedProgress(progress);
+						altMessage?.FinishedProgress(progress);
 					});
 				lookupKeysThread.Start();
 			}

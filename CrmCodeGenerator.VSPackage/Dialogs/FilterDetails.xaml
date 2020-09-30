@@ -79,13 +79,28 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Label Content="Attributes" FontWeight="Bold"></Label>
-                <DataGrid x:Name="FieldsGrid" Grid.Row="1" AutoGenerateColumns="False" SelectionMode="Extended"
-                                CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                ScrollViewer.HorizontalScrollBarVisibility="Hidden" Margin="0,0,5,0"
+                <Grid Grid.Row="1" Grid.ColumnSpan="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition MaxWidth="50" />
+                        <ColumnDefinition MaxWidth="50" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TextBoxFilterAttributes" Margin="0" Grid.Column="1"
+                             KeyDown="TextBoxFilter_OnKeyDown" />
+                    <Button x:Name="ButtonFilterAttributes" Grid.Column="2" Margin="2,2,0,2" Content="Filter"
+                            Click="ButtonFilter_Click" />
+                    <Button x:Name="ButtonFilterClearAttributes" Grid.Column="3" Margin="2,2,5,2" Content="Clear"
+                            Click="ButtonFilterClear_Click" />
+                </Grid>
+                <DataGrid x:Name="FieldsGrid" Grid.Row="2" AutoGenerateColumns="False" SelectionMode="Extended"
+                          CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden" Margin="0,0,5,0"
                           CanUserDeleteRows="False" KeyUp="Grid_KeyUp">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn>
@@ -145,17 +160,33 @@
             <Grid Grid.Column="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="1.5*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="1.5*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Label Content="One to Many Relations" FontWeight="Bold"></Label>
-                <DataGrid x:Name="Relations1NGrid" Grid.Row="1" AutoGenerateColumns="False" SelectionMode="Extended"
-                                CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                <Grid Grid.Row="1" Grid.ColumnSpan="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition MaxWidth="50" />
+                        <ColumnDefinition MaxWidth="50" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TextBoxFilter1N" Margin="0" Grid.Column="1"
+                             KeyDown="TextBoxFilter_OnKeyDown" />
+                    <Button x:Name="ButtonFilter1N" Grid.Column="2" Margin="2,2,0,2" Content="Filter"
+                            Click="ButtonFilter_Click" />
+                    <Button x:Name="ButtonFilterClear1N" Grid.Column="3" Margin="2,2,0,2" Content="Clear"
+                            Click="ButtonFilterClear_Click" />
+                </Grid>
+                <DataGrid x:Name="Relations1NGrid" Grid.Row="2" AutoGenerateColumns="False" SelectionMode="Extended"
+                          CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                           CanUserDeleteRows="False" KeyUp="Grid_KeyUp">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn>
@@ -190,11 +221,25 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-                <Label Content="Many to One Relations" Grid.Row="2" FontWeight="Bold"></Label>
-                <DataGrid x:Name="RelationsN1Grid" Grid.Row="3" AutoGenerateColumns="False" SelectionMode="Extended"
-                                CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                <Label Content="Many to One Relations" Grid.Row="3" FontWeight="Bold"></Label>
+                <Grid Grid.Row="4" Grid.ColumnSpan="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition MaxWidth="50" />
+                        <ColumnDefinition MaxWidth="50" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TextBoxFilterN1" Margin="0" Grid.Column="1"
+                             KeyDown="TextBoxFilter_OnKeyDown" />
+                    <Button x:Name="ButtonFilterN1" Grid.Column="2" Margin="2,2,0,2" Content="Filter"
+                            Click="ButtonFilter_Click" />
+                    <Button x:Name="ButtonFilterClearN1" Grid.Column="3" Margin="2,2,0,2" Content="Clear"
+                            Click="ButtonFilterClear_Click" />
+                </Grid>
+                <DataGrid x:Name="RelationsN1Grid" Grid.Row="5" AutoGenerateColumns="False" SelectionMode="Extended"
+                          CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                           CanUserDeleteRows="False" KeyUp="Grid_KeyUp">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn>
@@ -241,8 +286,8 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-                <Label Content="Many to Many Relations" Grid.Row="4" FontWeight="Bold"></Label>
-                <DataGrid x:Name="RelationsNnGrid" Grid.Row="5" AutoGenerateColumns="False" SelectionMode="Extended"
+                <Label Content="Many to Many Relations" Grid.Row="6" FontWeight="Bold"></Label>
+                <DataGrid x:Name="RelationsNnGrid" Grid.Row="7" AutoGenerateColumns="False" SelectionMode="Extended"
                                 CanUserAddRows="False" ScrollViewer.CanContentScroll="True"
                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"

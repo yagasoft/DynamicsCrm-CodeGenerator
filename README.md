@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.5.2
+### Version: 10.5.3
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -94,25 +94,30 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Upcoming/planned
 
-+ Add: option to add alternate keys to contracts
-+ Add: option to use CRM-only contracts to replace Contract classes, optionally
-+ Add: [template] File field, with a Get and Set that uses the SDK message
-+ Add: [template] an attribute/annotation to the Clear Flag fields in contracts, to ease parsing them in helper methods
-+ Add: [template] XrmDefinitelyTyped support, and generate form structure
-+ Add: enum annotations (DisplayName ... etc.)
++ Add: undo/redo
 + Add: parse placeholders in annotations for LogicalName and variable name
-+ Improve: switch to async extension VS API
-  + The 'sync extension' warning in VS is definitely annoying, but I have to make sure that a single version will be backward compatible back to at least VS 2015
-+ Improve: [template] rework lookup labels localisation
-  + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
-+ Improve: [template] unify global option-sets into a single enum
-+ Update: [template] XrmToolBox template to match this extension's
++ Add: [template] File field, with a Get and Set that uses the SDK message
 + Fix: catch and fix the extremely rare 'null reference' error that requires clearing the cache for the tool to work again
 + Fix: [template] helpers to support new stuff since v7
   + LoadRelation methods
++ Update: [template] XrmToolBox template to match this extension's
++ Improve: switch to async extension VS API
++ Improve: [template] rework lookup labels localisation
+  + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
++ Add: enum annotations (DisplayName ... etc.)
++ Add: option to add alternate keys to contracts
++ Add: option to use CRM-only contracts to replace Contract classes, optionally
++ Improve: [template] unify global option-sets into a single enum
++ Add: [template] an attribute/annotation to the Clear Flag fields in contracts, to ease parsing them in helper methods
++ Add: [template] XrmDefinitelyTyped support, and generate form structure
+  + The 'sync extension' warning in VS is definitely annoying, but I have to make sure that a single version will be backward compatible back to at least VS 2015
 
 ## Changes
 
+#### _v10.5.3 (2020-10-01)_
++ Added: Filter Details window row filtering
++ Fixed: generated code 'labels' syntax error
++ Fixed: Actions 'loading' indicator issue
 #### _v10.5.2 (2020-09-21)_
 + Added: option to link CRM entity profile with contract profiles, effectively copying selection changes made in contracts to the CRM entity to keep them in sync
 + Fixed: connection string values containing '=' character causing connectivity issue (e.g. client secrets containing '=')

@@ -763,8 +763,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								row.ActionNames = new ObservableCollection<string>(actions);
 								row.SelectedActions = new ObservableCollection<string>(
 									row.SelectedActions?.Intersect(actions) ?? Array.Empty<string>());
-								action();
 							});
+						Dispatcher.InvokeAsync(action);
 					}
 					catch (Exception ex)
 					{
@@ -804,7 +804,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			if (!string.IsNullOrEmpty(TextBoxFilter.Text))
 			{
-
 				// get all regex
 				var prefixes = TextBoxFilter.Text.ToLower()
 					.Split(',').Select(prefix => prefix.Trim())
