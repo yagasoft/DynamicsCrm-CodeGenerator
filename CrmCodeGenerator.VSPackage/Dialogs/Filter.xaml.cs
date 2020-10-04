@@ -643,7 +643,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					// get logical name and re-init
 					LogicalName = rowData.Name;
 
-					var entityProfile = rowData.EntityProfile = rowData.EntityProfile ?? new EntityProfile(LogicalName);
+					var entityProfile = rowData.EntityProfile ??= new EntityProfile(LogicalName);
 
 					new FilterDetails(this, LogicalName, Settings, entityProfile,
 						new ObservableCollection<GridRow>(Entities), connectionManager, metadataCache)

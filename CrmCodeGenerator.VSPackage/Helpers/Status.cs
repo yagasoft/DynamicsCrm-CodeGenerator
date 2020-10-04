@@ -104,7 +104,7 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 					dispatcher.Invoke(
 						() =>
 						{
-							originalProgressBarStyle = originalProgressBarStyle ?? busyIndicator.ProgressBarStyle;
+							originalProgressBarStyle ??= busyIndicator.ProgressBarStyle;
 						});
 				}
 			}

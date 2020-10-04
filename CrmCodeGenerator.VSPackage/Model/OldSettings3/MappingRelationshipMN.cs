@@ -61,13 +61,13 @@ namespace CrmCodeGenerator.VSPackage.Model
 			MappingRelationshipMN relationshipManyToMany,
 			string thisEntityLogicalName)
 		{
-			relationshipManyToMany = relationshipManyToMany ?? new MappingRelationshipMN();
+			relationshipManyToMany ??= new MappingRelationshipMN();
 
 			if (rel.Entity1LogicalName != null)
 			{
 				if (rel.Entity1LogicalName == thisEntityLogicalName)
 				{
-					relationshipManyToMany.Attribute = relationshipManyToMany.Attribute ?? new CrmRelationshipAttribute();
+					relationshipManyToMany.Attribute ??= new CrmRelationshipAttribute();
 
 					relationshipManyToMany.Attribute.FromEntity = rel.Entity1LogicalName ?? relationshipManyToMany.Attribute.FromEntity;
 					relationshipManyToMany.Attribute.FromKey = rel.Entity1IntersectAttribute
@@ -77,7 +77,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 				}
 				else
 				{
-					relationshipManyToMany.Attribute = relationshipManyToMany.Attribute ?? new CrmRelationshipAttribute();
+					relationshipManyToMany.Attribute ??= new CrmRelationshipAttribute();
 
 					relationshipManyToMany.Attribute.ToEntity = rel.Entity1LogicalName ?? relationshipManyToMany.Attribute.ToEntity;
 					relationshipManyToMany.Attribute.ToKey = rel.Entity1IntersectAttribute ?? relationshipManyToMany.Attribute.ToKey;

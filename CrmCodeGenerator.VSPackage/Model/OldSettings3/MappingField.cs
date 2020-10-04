@@ -94,7 +94,7 @@ namespace CrmCodeGenerator.VSPackage.Model
 		public static MappingField GetMappingField(AttributeMetadata attribute, MappingEntity entity,
 			MappingField result, bool isTitleCaseLogicalName)
 		{
-			result = result ?? new MappingField();
+			result ??= new MappingField();
 
 			result.Entity = entity;
 			result.MetadataId = attribute.MetadataId;

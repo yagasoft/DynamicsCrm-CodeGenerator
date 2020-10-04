@@ -1227,38 +1227,38 @@ namespace CrmCodeGenerator.VSPackage.Model
 
 		private void InitFields()
 		{
-			EntityList = EntityList ?? new ObservableCollection<string>();
-			EntitiesSelected = EntitiesSelected ?? new ObservableCollection<string>();
-			PluginMetadataEntitiesSelected = PluginMetadataEntitiesSelected ?? new ObservableCollection<string>();
-			JsEarlyBoundEntitiesSelected = JsEarlyBoundEntitiesSelected ?? new ObservableCollection<string>();
-			ActionEntitiesSelected = ActionEntitiesSelected ?? new ObservableCollection<string>();
-			OptionsetLabelsEntitiesSelected = OptionsetLabelsEntitiesSelected ?? new ObservableCollection<string>();
-			LookupLabelsEntitiesSelected = LookupLabelsEntitiesSelected ?? new ObservableCollection<string>();
+			EntityList ??= new ObservableCollection<string>();
+			EntitiesSelected ??= new ObservableCollection<string>();
+			PluginMetadataEntitiesSelected ??= new ObservableCollection<string>();
+			JsEarlyBoundEntitiesSelected ??= new ObservableCollection<string>();
+			ActionEntitiesSelected ??= new ObservableCollection<string>();
+			OptionsetLabelsEntitiesSelected ??= new ObservableCollection<string>();
+			LookupLabelsEntitiesSelected ??= new ObservableCollection<string>();
 
-			ProfileEntityMetadataCache = ProfileEntityMetadataCache ?? new List<EntityMetadata>();
-			ProfileAttributeMetadataCache = ProfileAttributeMetadataCache ?? new Dictionary<string, EntityMetadata>();
+			ProfileEntityMetadataCache ??= new List<EntityMetadata>();
+			ProfileAttributeMetadataCache ??= new Dictionary<string, EntityMetadata>();
 			
-			LookupEntitiesMetadataCache = LookupEntitiesMetadataCache ?? new Dictionary<string, LookupMetadata>();
+			LookupEntitiesMetadataCache ??= new Dictionary<string, LookupMetadata>();
 
-			EntityMetadataCache = EntityMetadataCache ?? new Dictionary<Guid, MappingEntity>();
-			EntityDataFilterArray = EntityDataFilterArray ?? new EntityFilterArray();
+			EntityMetadataCache ??= new Dictionary<Guid, MappingEntity>();
+			EntityDataFilterArray ??= new EntityFilterArray();
 
-			OnLineServers = OnLineServers ?? new ObservableCollection<string>();
-			OrgList = OrgList ?? new ObservableCollection<string>();
-			EntitiesSelected = EntitiesSelected ?? new ObservableCollection<string>();
-			EntityList = EntityList ?? new ObservableCollection<string>();
-			TemplateList = TemplateList ?? new ObservableCollection<string>();
+			OnLineServers ??= new ObservableCollection<string>();
+			OrgList ??= new ObservableCollection<string>();
+			EntitiesSelected ??= new ObservableCollection<string>();
+			EntityList ??= new ObservableCollection<string>();
+			TemplateList ??= new ObservableCollection<string>();
 
-			CrmSdkUrl = CrmSdkUrl ?? @"https://disco.crm.dynamics.com/XRMServices/2011/Discovery.svc";
-			ProjectName = ProjectName ?? "";
-			Domain = Domain ?? "";
-			CrmOrg = CrmOrg ?? "";
-			EntitiesString = EntitiesString ?? "account,contact,lead,opportunity,systemuser";
-			EntitiesToIncludeString = EntitiesToIncludeString ?? "account,contact,lead,opportunity,systemuser";
-			OutputPath = OutputPath ?? "";
-			Username = Username ?? "";
-			Password = Password ?? "";
-			Namespace = Namespace ?? "";
+			CrmSdkUrl ??= @"https://disco.crm.dynamics.com/XRMServices/2011/Discovery.svc";
+			ProjectName ??= "";
+			Domain ??= "";
+			CrmOrg ??= "";
+			EntitiesString ??= "account,contact,lead,opportunity,systemuser";
+			EntitiesToIncludeString ??= "account,contact,lead,opportunity,systemuser";
+			OutputPath ??= "";
+			Username ??= "";
+			Password ??= "";
+			Namespace ??= "";
 			
 			if (string.IsNullOrWhiteSpace(ServerPort) || Regex.IsMatch(ServerPort, "^\\d+$"))
 			{

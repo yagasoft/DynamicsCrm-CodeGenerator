@@ -22,6 +22,7 @@ using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Mapper;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Mapper;
+using Yagasoft.CrmCodeGenerator.Models.Messages;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
 using Application = System.Windows.Forms.Application;
@@ -114,13 +115,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			SetInfoUiValues();
 
-			settings.EntityProfilesHeaderSelector = settings.EntityProfilesHeaderSelector ?? new EntityProfilesHeaderSelector();
+			settings.EntityProfilesHeaderSelector ??= new EntityProfilesHeaderSelector();
 
 			mapperThread = new Thread(
 				() =>
 				{
 					mapper = new Mapper(settings, connectionManager, MetadataCache);
-					RegisterMapperEvents();
 				});
 			mapperThread.Start();
 		}
@@ -166,7 +166,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						{
 							if (settings.ConnectionString.IsFilled())
 							{
-								connectionManager.Get(settings.ConnectionString).Dispose();
+								using var _ = connectionManager.Get(settings.ConnectionString);
 							}
 						}
 						catch
@@ -213,131 +213,140 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void RegisterMapperEvents()
 		{
-			mapper.Message
-				+= (o, args) =>
-				   {
-					   try
-					   {
-						   var isOnBusy = args.MessageTarget.HasFlag(StatusMessageTarget.BusyIndicator);
-						   var isOnPane = args.Status == MapperStatus.Started && args.MessageTarget.HasFlag(StatusMessageTarget.LogPane);
+			mapper.Message += MapperOnMessage;
+			mapper.StatusUpdate += MapperOnStatusUpdate;
+		}
 
-						   if (args.Status != MapperStatus.Started)
-						   {
-							   Status.HideBusy(Dispatcher, BusyIndicator);
-						   }
-						   else
-						   {
-							   if (isOnPane)
-							   {
-								   if (args.Exception == null)
-								   {
-									   Status.Update($"[Generator] "
-										   + $"{Regex.Replace(args.Message, "^>> ", "[DONE] ")}");
-								   }
-								   else
-								   {
-									   Status.Update($"!! [Generator] ![ERROR]!\r\n{args.Exception.BuildExceptionMessage()}");
-									   return null;
-								   }
-							   }
-							   
-							   if (isOnBusy)
-							   {
-								   return Status.ShowBusy(Dispatcher, BusyIndicator, args.Message, args.Progress);
-							   }
-						   }
-					   }
-					   catch
-					   {
-						   // ignored
-					   }
+		private void UnregisterMapperEvents()
+		{
+			mapper.Message -= MapperOnMessage;
+			mapper.StatusUpdate -= MapperOnStatusUpdate;
+		}
 
-					   return null;
-				   };
+		private void MapperOnStatusUpdate(object o, MapperEventArgs args)
+		{
+			try
+			{
+				switch (args.Status)
+				{
+					case MapperStatus.Cancelled:
+						UnregisterMapperEvents();
+						Status.Update("[Generator] [DONE] Cancelled generator!");
+						Status.HideBusy(Dispatcher, BusyIndicator);
+						StillOpen = false;
+						Dispatcher.Invoke(Close, DispatcherPriority.Send);
+						break;
 
-			mapper.StatusUpdate
-				+= (o, args) =>
-				   {
-					   try
-					   {
-						   switch (args.Status)
-						   {
-							   case MapperStatus.Cancelled:
-								   Status.Update("[Generator] [DONE] Cancelled generator!");
-								   Status.HideBusy(Dispatcher, BusyIndicator);
-								   StillOpen = false;
-								   Dispatcher.Invoke(Close, DispatcherPriority.Send);
-								   break;
+					case MapperStatus.Error:
+						UnregisterMapperEvents();
+						Status.Update("[Generator] [ERROR] Generator failed!");
 
-							   case MapperStatus.Error:
-								   Status.Update("[Generator] [ERROR] Generator failed!");
+						var message = args.Exception.Message;
+						var inner = args.Exception?.InnerException;
 
-								   var message = args.Exception.Message;
-								   var inner = args.Exception?.InnerException;
+						if (inner?.Message.IsFilled() == true)
+						{
+							message += $" | {inner.Message}";
+						}
 
-								   if (inner?.Message.IsFilled() == true)
-								   {
-									   message += $" | {inner.Message}";
-								   }
+						if (args.Exception is NullReferenceException)
+						{
+							message = $"Generator failed. Clear the cache and try again.";
+						}
 
-								   if (args.Exception is NullReferenceException)
-								   {
-									   message = $"Generator failed. Clear the cache and try again.";
-								   }
+						Status.PopException(Dispatcher, message);
+						Status.HideBusy(Dispatcher, BusyIndicator);
+						break;
 
-								   Status.PopException(Dispatcher, message);
-								   Status.HideBusy(Dispatcher, BusyIndicator);
-								   break;
+					case MapperStatus.Finished:
+						UnregisterMapperEvents();
+						Context = Mapper.Context;
+						Context.SplitFiles = settings.SplitFiles;
+						Context.SplitContractFiles = settings.SplitContractFiles;
+						Context.UseDisplayNames = settings.UseDisplayNames;
+						Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
+						Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
+						Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;
+						Context.IsAddContractAnnotations = settings.IsAddContractAnnotations;
+						Context.IsGenerateLoadPerRelation = settings.IsGenerateLoadPerRelation;
+						Context.IsGenerateEnumNames = settings.IsGenerateEnumNames;
+						Context.IsGenerateEnumLabels = settings.IsGenerateEnumLabels;
+						Context.IsGenerateFieldSchemaNames = settings.IsGenerateFieldSchemaNames;
+						Context.IsGenerateFieldLabels = settings.IsGenerateFieldLabels;
+						Context.IsGenerateRelationNames = settings.IsGenerateRelationNames;
+						Context.IsImplementINotifyProperty = settings.IsImplementINotifyProperty;
+						Context.GenerateGlobalActions = settings.GenerateGlobalActions;
+						Context.PluginMetadataEntities = settings.PluginMetadataEntitiesSelected.ToList();
+						Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
+						Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
+						Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
+						Context.EarlyBoundFilteredSelected = settings.EarlyBoundFilteredSelected.ToList();
+						Context.SelectedActions = settings.SelectedActions;
+						Context.ClearMode = settings.ClearMode;
+						Context.SelectedEntities = settings.EntitiesSelected.ToArray();
+						Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
+						Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
+						Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
+						Context.CrmEntityProfiles = settings.CrmEntityProfiles;
 
-							   case MapperStatus.Finished:
-								   Context = Mapper.Context;
-								   Context.SplitFiles = settings.SplitFiles;
-								   Context.SplitContractFiles = settings.SplitContractFiles;
-								   Context.UseDisplayNames = settings.UseDisplayNames;
-								   Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
-								   Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
-								   Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;
-								   Context.IsAddContractAnnotations = settings.IsAddContractAnnotations;
-								   Context.IsGenerateLoadPerRelation = settings.IsGenerateLoadPerRelation;
-								   Context.IsGenerateEnumNames = settings.IsGenerateEnumNames;
-								   Context.IsGenerateEnumLabels = settings.IsGenerateEnumLabels;
-								   Context.IsGenerateFieldSchemaNames = settings.IsGenerateFieldSchemaNames;
-								   Context.IsGenerateFieldLabels = settings.IsGenerateFieldLabels;
-								   Context.IsGenerateRelationNames = settings.IsGenerateRelationNames;
-								   Context.IsImplementINotifyProperty = settings.IsImplementINotifyProperty;
-								   Context.GenerateGlobalActions = settings.GenerateGlobalActions;
-								   Context.PluginMetadataEntities = settings.PluginMetadataEntitiesSelected.ToList();
-								   Context.OptionsetLabelsEntities = settings.OptionsetLabelsEntitiesSelected.ToList();
-								   Context.LookupLabelsEntities = settings.LookupLabelsEntitiesSelected.ToList();
-								   Context.JsEarlyBoundEntities = settings.JsEarlyBoundEntitiesSelected.ToList();
-								   Context.EarlyBoundFilteredSelected = settings.EarlyBoundFilteredSelected.ToList();
-								   Context.SelectedActions = settings.SelectedActions;
-								   Context.ClearMode = settings.ClearMode;
-								   Context.SelectedEntities = settings.EntitiesSelected.ToArray();
-								   Context.IsGenerateAlternateKeys = settings.IsGenerateAlternateKeys;
-								   Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
-								   Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
-								   Context.CrmEntityProfiles = settings.CrmEntityProfiles;
+						if (settings.LockNamesOnGenerate)
+						{
+							LockNames(Context);
+						}
 
-								   if (settings.LockNamesOnGenerate)
-								   {
-									   LockNames(Context);
-								   }
+						MetadataCache.Context = Context;
 
-								   MetadataCache.Context = Context;
+						Status.HideBusy(Dispatcher, BusyIndicator);
+						StillOpen = false;
+						Dispatcher.Invoke(Close, DispatcherPriority.Send);
+						break;
+				}
+			}
+			catch (Exception ex)
+			{
+				Status.PopException(Dispatcher, ex);
+				Status.HideBusy(Dispatcher, BusyIndicator);
+			}
+		}
 
-								   Status.HideBusy(Dispatcher, BusyIndicator);
-								   StillOpen = false;
-								   Dispatcher.Invoke(Close, DispatcherPriority.Send);
-								   break;
-						   }
-					   }
-					   catch (Exception ex)
-					   {
-						   Status.PopException(Dispatcher, ex);
-						   Status.HideBusy(Dispatcher, BusyIndicator);
-					   }
-				   };
+		private BusyMessage<Style> MapperOnMessage(object o, MapperEventArgs args)
+		{
+			try
+			{
+				var isOnBusy = args.MessageTarget.HasFlag(StatusMessageTarget.BusyIndicator);
+				var isOnPane = args.Status == MapperStatus.Started && args.MessageTarget.HasFlag(StatusMessageTarget.LogPane);
+
+				if (args.Status != MapperStatus.Started)
+				{
+					Status.HideBusy(Dispatcher, BusyIndicator);
+				}
+				else
+				{
+					if (isOnPane)
+					{
+						if (args.Exception == null)
+						{
+							Status.Update($"[Generator] " + $"{Regex.Replace(args.Message, "^>> ", "[DONE] ")}");
+						}
+						else
+						{
+							Status.Update($"!! [Generator] ![ERROR]!\r\n{args.Exception.BuildExceptionMessage()}");
+							return null;
+						}
+					}
+
+					if (isOnBusy)
+					{
+						return Status.ShowBusy(Dispatcher, BusyIndicator, args.Message, args.Progress);
+					}
+				}
+			}
+			catch
+			{
+				// ignored
+			}
+
+			return null;
 		}
 
 		#endregion
@@ -403,6 +412,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				new Thread(
 					() =>
 					{
+						RegisterMapperEvents();
 						Mapper.MapContext();
 						Configuration.SaveCache(settings.Id);
 					}).Start();
@@ -465,6 +475,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				new Thread(
 					() =>
 					{
+						RegisterMapperEvents();
 						Mapper.MapContext(true);
 						Configuration.SaveCache(settings.Id);
 					}).Start();

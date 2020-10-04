@@ -160,12 +160,12 @@ namespace CrmCodeGenerator.VSPackage.Model
 		private static MappingEntity GetMappingEntity(EntityMetadata entityMetadata, string serverStamp,
 			MappingEntity entity, bool isTitleCaseLogicalName)
 		{
-			entity = entity ?? new MappingEntity();
+			entity ??= new MappingEntity();
 
 			entity.MetadataId = entityMetadata.MetadataId;
 			entity.ServerStamp = serverStamp;
 
-			entity.Attribute = entity.Attribute ?? new CrmEntityAttribute();
+			entity.Attribute ??= new CrmEntityAttribute();
 			entity.TypeCode = entityMetadata.ObjectTypeCode ?? entity.TypeCode;
 			entity.Attribute.LogicalName = entityMetadata.LogicalName ?? entity.Attribute.LogicalName;
 			entity.IsIntersect = (entityMetadata.IsIntersect ?? entity.IsIntersect);

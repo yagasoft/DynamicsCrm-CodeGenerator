@@ -73,11 +73,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 					StringComparison.CurrentCultureIgnoreCase)).DisplayName;
 			}
 
-			relationshipOneToMany = relationshipOneToMany
-			                        ?? new MappingRelationship1N
-			                           {
-				                           Attribute = new CrmRelationshipAttribute(),
-			                           };
+			relationshipOneToMany ??= new MappingRelationship1N
+									  {
+										  Attribute = new CrmRelationshipAttribute(),
+									  };
 
 			relationshipOneToMany.Attribute.FromEntity = rel.ReferencedEntity ?? relationshipOneToMany.Attribute.FromEntity;
 			relationshipOneToMany.Attribute.FromKey = rel.ReferencedAttribute ?? relationshipOneToMany.Attribute.FromKey;

@@ -34,7 +34,7 @@ namespace CrmCodeGenerator.VSPackage.Connection
 			}
 		}
 
-		private IEnhancedServicePool<EnhancedOrgService> connectionPool;
+		private IEnhancedServicePool<IEnhancedOrgService> connectionPool;
 		private string latestConnectionString;
 		private int threads;
 
@@ -54,15 +54,11 @@ namespace CrmCodeGenerator.VSPackage.Connection
 					Status.Update($"[Connection] Creating connection pool to CRM ... ");
 					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 
-					connectionPool = EnhancedServiceHelper.GetPool(
-						new EnhancedServiceParams(connectionString)
+					connectionPool = EnhancedServiceHelper.GetPool(connectionString,
+						new PoolParams
 						{
-							PoolParams = 
-								new PoolParams
-								{
-									PoolSize = Threads,
-									DequeueTimeoutInMillis = 20 * 1000
-								}
+							PoolSize = Threads,
+							DequeueTimeoutInMillis = 20 * 1000
 						});
 					connectionPool.WarmUp();
 					latestConnectionString = connectionString;

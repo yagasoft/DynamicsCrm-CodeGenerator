@@ -24,11 +24,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 
 		public static MappingEnum GetMappingEnum(AttributeMetadata picklist, MappingEnum mappingEnum, bool isTitleCaseLogicalName)
 		{
-			mappingEnum = mappingEnum
-				?? new MappingEnum
-				   {
-					   MetadataId = picklist.MetadataId
-				   };
+			mappingEnum ??= new MappingEnum
+							{
+								MetadataId = picklist.MetadataId
+							};
 
 			if (picklist.SchemaName != null)
 			{

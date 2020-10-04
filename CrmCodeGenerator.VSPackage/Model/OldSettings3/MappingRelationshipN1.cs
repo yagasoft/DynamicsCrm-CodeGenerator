@@ -62,11 +62,10 @@ namespace CrmCodeGenerator.VSPackage.Model
 			MappingRelationshipN1 relationshipOneToMany,
 			MappingField[] properties)
 		{
-			relationshipOneToMany = relationshipOneToMany
-			                        ?? new MappingRelationshipN1
-			                           {
-				                           Attribute = new CrmRelationshipAttribute(),
-			                           };
+			relationshipOneToMany ??= new MappingRelationshipN1
+									  {
+										  Attribute = new CrmRelationshipAttribute(),
+									  };
 
 			relationshipOneToMany.Attribute.ToEntity = rel.ReferencedEntity ?? relationshipOneToMany.Attribute.FromEntity;
 			relationshipOneToMany.Attribute.ToKey = rel.ReferencedAttribute ?? relationshipOneToMany.Attribute.FromKey;

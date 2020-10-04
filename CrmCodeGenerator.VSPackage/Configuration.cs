@@ -140,8 +140,8 @@ namespace CrmCodeGenerator.VSPackage
 
 		private static void ProcessSettings(Settings settings)
 		{
-			settings.AppId = settings.AppId ?? Constants.AppId;
-			settings.AppVersion = settings.AppVersion ?? Constants.AppVersion;
+			settings.AppId ??= Constants.AppId;
+			settings.AppVersion ??= Constants.AppVersion;
 			settings.SettingsVersion = Constants.SettingsVersion;
 			settings.BaseFileName = FileName;
 
