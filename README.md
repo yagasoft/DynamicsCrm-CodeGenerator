@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.6.3
+### Version: 10.6.4
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -100,7 +100,6 @@ When you make changes to the template and save, Visual Studio will automatically
 + Fix: catch and fix the extremely rare 'null reference' error that requires clearing the cache for the tool to work again
 + Fix: [template] helpers to support new stuff since v7
   + LoadRelation methods
-+ Update: [template] XrmToolBox template to match this extension's
 + Improve: switch to async extension VS API
 + Improve: [template] rework lookup labels localisation
   + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
@@ -114,6 +113,11 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.6.4 (2020-10-14)_
++ Improved: sort profiles to aid in preventing source control merge conflicts in JSON
++ Fixed: [template] skip Guid.Empty-valued records when calling ProcessFetchXmlRelations
++ Fixed: [template] removed LimitAttributes, which caused issues in sandbox plugins
++ Fixed: connection issues
 #### _v10.6.3 (2020-10-04)_
 + Fixed: connection errors causing deadlocks
 #### _v10.6.2 (2020-10-01)_

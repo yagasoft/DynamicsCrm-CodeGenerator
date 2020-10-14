@@ -45,31 +45,39 @@ namespace CrmCodeGenerator.VSPackage.Connection
 
 		public IDisposableOrgSvc Get(string connectionString = null)
 		{
-			lock (this)
+			try
 			{
-				if (connectionString.IsFilled() && (connectionPool == null || connectionString != latestConnectionString))
+				lock (this)
 				{
-					connectionPool?.EndWarmup();
+					if (connectionString.IsFilled() && (connectionPool == null || connectionString != latestConnectionString))
+					{
+						connectionPool?.EndWarmup();
 
-					Status.Update($"[Connection] Creating connection pool to CRM ... ");
-					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
+						Status.Update($"[Connection] Creating connection pool to CRM ... ");
+						Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 
-					connectionPool = EnhancedServiceHelper.GetPool(connectionString,
-						new PoolParams
-						{
-							PoolSize = Threads,
-							DequeueTimeoutInMillis = 20 * 1000
-						});
-					connectionPool.WarmUp();
-					latestConnectionString = connectionString;
+						connectionPool = EnhancedServiceHelper.GetPool(connectionString,
+							new PoolParams
+							{
+								PoolSize = Threads,
+								DequeueTimeoutInMillis = 20 * 1000
+							});
+						connectionPool.WarmUp();
+						latestConnectionString = connectionString;
 
-					Status.Update($"[Connection] [DONE] Created connection pool.");
+						Status.Update($"[Connection] [DONE] Created connection pool.");
+					}
 				}
+
+				var service = new DisposableOrgSvc(connectionPool.GetService());
+
+				return service;
 			}
-
-			var service = new DisposableOrgSvc(connectionPool.GetService());
-
-			return service;
+			catch (Exception)
+			{
+				connectionPool = null;
+				throw;
+			}
 		}
 	}
 }

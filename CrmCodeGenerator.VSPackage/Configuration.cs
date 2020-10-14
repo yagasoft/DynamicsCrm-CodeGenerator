@@ -500,6 +500,21 @@ namespace CrmCodeGenerator.VSPackage
 				// ignored
 			}
 
+			Status.Update("[Settings] Ordering profiles ...");
+
+			settings.EntitiesSelected = new ObservableCollection<string>(settings.EntitiesSelected.OrderBy(e => e));
+			settings.CrmEntityProfiles = new List<EntityProfile>(settings.CrmEntityProfiles
+				.OrderBy(e => e.LogicalName));
+
+			settings.EntityProfilesHeaderSelector.EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader>(settings
+				.EntityProfilesHeaderSelector.EntityProfilesHeaders.OrderBy(e => e.DisplayName));
+
+			foreach (var header in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
+			{
+				header.EntityProfiles = new List<EntityProfile>(header.EntityProfiles
+					.OrderBy(e => e.LogicalName));
+			}
+
 			Status.Update("[Settings] Cleaning redundant settings ...");
 
 			if (settings.IsCleanSave)
