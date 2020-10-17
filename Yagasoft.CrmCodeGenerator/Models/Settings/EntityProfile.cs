@@ -84,12 +84,22 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
-		public bool IsExcluded
+		public bool IsIncluded
 		{
-			get => isExcluded;
+			get => isIncluded;
 			set
 			{
-				isExcluded = value;
+				isIncluded = value;
+				OnPropertyChanged();
+			}
+		}
+
+		public bool? IsExcluded
+		{
+			get => !isIncluded;
+			set
+			{
+				isIncluded = value != true;
 				OnPropertyChanged();
 			}
 		}
@@ -152,7 +162,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 
 		private string entityRename;
 		private string entityAnnotations;
-		private bool isExcluded = true;
+		private bool isIncluded;
 		private bool isGenerateMeta;
 		private bool isOptionsetLabels;
 		private bool isLookupLabels;

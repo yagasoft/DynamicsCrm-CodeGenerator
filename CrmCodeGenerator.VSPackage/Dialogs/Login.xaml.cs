@@ -288,7 +288,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						Context.IsUseCustomTypeForAltKeys = settings.IsUseCustomTypeForAltKeys;
 						Context.IsMakeCrmEntitiesJsonFriendly = settings.IsMakeCrmEntitiesJsonFriendly;
 						Context.CrmEntityProfiles = settings.CrmEntityProfiles;
-
+						Context.EntityProfilesHeaderSelector = settings.EntityProfilesHeaderSelector;
+						
 						if (settings.LockNamesOnGenerate)
 						{
 							LockNames(Context);
@@ -385,7 +386,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// make sure that all entities selected in profiles are included
 				var missingEntities = settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
 					.SelectMany(filter => filter.EntityProfiles
-					.Where(dataFilter => !dataFilter.IsExcluded || dataFilter.IsGenerateMeta)
+					.Where(dataFilter => dataFilter.IsIncluded || dataFilter.IsGenerateMeta)
 					.Select(dataFilter => dataFilter.LogicalName))
 					.Distinct().Except(settings.EntitiesSelected).ToList();
 
@@ -430,7 +431,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 				// make sure that all entities selected in profiles are included
 				var missingEntities = settings.EntityProfilesHeaderSelector.EntityProfilesHeaders
 					.SelectMany(filter => filter.EntityProfiles
-					.Where(dataFilter => !dataFilter.IsExcluded || dataFilter.IsGenerateMeta)
+					.Where(dataFilter => dataFilter.IsIncluded || dataFilter.IsGenerateMeta)
 					.Select(dataFilter => dataFilter.LogicalName))
 					.Distinct().Except(settings.EntitiesSelected).ToList();
 

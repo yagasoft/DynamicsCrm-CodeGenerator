@@ -411,8 +411,6 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				OnMessage(">> Sorting Entities.", false);
 				sortMessage?.FinishedProgress(progress);
 
-				contextT.EntityProfilesHeaderSelector = Settings.EntityProfilesHeaderSelector;
-
 				Context = contextT;
 
 				OnMessage(">> Gathering metadata.", false);

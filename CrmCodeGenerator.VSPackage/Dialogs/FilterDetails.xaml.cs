@@ -428,7 +428,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							var row = rowList1NSource.FirstOrDefault(r => r.Name == relation1NAsync.SchemaName)
 								?? new Relations1NGridRow
 								   {
-									   IsSelected = EntityProfile.OneToN == null || EntityProfile.OneToN.Contains(relation1NAsync.SchemaName),
+									   IsSelected = EntityProfile.OneToN?.Contains(relation1NAsync.SchemaName) == true,
 									   Name = relation1NAsync.SchemaName,
 									   ToEntity = relation1NAsync.ReferencingEntity ?? "",
 									   ToField = relation1NAsync.ReferencingAttribute ?? "",
@@ -473,7 +473,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							var row = rowListN1Source.FirstOrDefault(r => r.Name == relationN1Async.SchemaName)
 								?? new RelationsN1GridRow
 								   {
-									   IsSelected = EntityProfile.NToOne == null || EntityProfile.NToOne.Contains(relationN1Async.SchemaName),
+									   IsSelected = EntityProfile.NToOne?.Contains(relationN1Async.SchemaName) == true,
 									   Name = relationN1Async.SchemaName,
 									   ToEntity = relationN1Async.ReferencedEntity ?? "",
 									   FromField = relationN1Async.ReferencingAttribute ?? "",
@@ -523,7 +523,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							var row =
 								new RelationsNnGridRow
 								{
-									IsSelected = EntityProfile.NToN == null || EntityProfile.NToN.Contains(relationNnAsync.SchemaName),
+									IsSelected = EntityProfile.NToN?.Contains(relationNnAsync.SchemaName) == true,
 									Name = relationNnAsync.SchemaName,
 									ToEntity = relationNnAsync.Entity1LogicalName == LogicalName
 										? relationNnAsync.Entity2LogicalName

@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.6.4
+### Version: 10.7.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -113,6 +113,10 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.7.1 (2020-10-18)_
++ Added: CRM entity profiles clean-up
++ Improved: JSON size by removing even more redundant information
++ Fixed: changing contract settings that doesn't require a trip to CRM's servers is not reflected if cache-only is used
 #### _v10.6.4 (2020-10-14)_
 + Improved: sort profiles to aid in preventing source control merge conflicts in JSON
 + Fixed: [template] skip Guid.Empty-valued records when calling ProcessFetchXmlRelations

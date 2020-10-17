@@ -311,7 +311,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						   {
 							   OriginalEntityProfile = entityProfile,
 							   EntityProfile = entityProfile.Copy(),
-							   IsSelected = !entityProfile.IsExcluded,
+							   IsSelected = entityProfile.IsIncluded,
 							   Name = entityAsync.LogicalName,
 							   DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
 								   ? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
@@ -342,7 +342,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 
 			// if no filter, select all
-			if (SelectedEntityProfilesHeader.EntityProfiles.Count(e => !e.IsExcluded) == EntityMetadataCache.Count)
+			if (SelectedEntityProfilesHeader.EntityProfiles.Count(e => e.IsIncluded) == EntityMetadataCache.Count)
 			{
 				Dispatcher.Invoke(() => EntitiesSelectAll = true);
 			}
@@ -381,7 +381,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					var original = row.OriginalEntityProfile;
 					var profile = row.EntityProfile;
 
-					profile.IsExcluded = !row.IsSelected;
+					profile.IsIncluded = row.IsSelected;
 					profile.IsGenerateMeta = row.IsGenerateMeta;
 					profile.IsOptionsetLabels = row.IsOptionsetLabels;
 					profile.IsLookupLabels = row.IsLookupLabels;
