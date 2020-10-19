@@ -81,11 +81,6 @@
                     <ColumnDefinition MaxWidth="50" />
                     <ColumnDefinition MaxWidth="50" />
                 </Grid.ColumnDefinitions>
-                <CheckBox x:Name="CheckBoxDisplayFilter" IsChecked="{Binding DisplayFilter}"
-                          VerticalAlignment="Center" Margin="6,0,0,0"
-                          HorizontalAlignment="Stretch">
-                    Filter by Display Name
-                </CheckBox>
                 <TextBox x:Name="TextBoxFilter" Margin="5,0,0,0" Grid.Column="1"
                          KeyDown="TextBoxFilter_OnKeyDown"
                          Text="{Binding Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />

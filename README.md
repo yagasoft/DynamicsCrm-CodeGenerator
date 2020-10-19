@@ -114,6 +114,8 @@ When you make changes to the template and save, Visual Studio will automatically
 ## Changes
 
 #### _v10.7.2 (2020-10-18)_
++ Fixed: filter to properly take the Display Name and Rename columns into account as lower case, and to consider the 'entity' and 'field' columns in relations
+#### _v10.7.2 (2020-10-18)_
 + Fixed: FetchXML result processing helper
 #### _v10.7.1 (2020-10-17)_
 + Added: CRM entity profiles clean-up

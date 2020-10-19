@@ -154,18 +154,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 		}
 
-		private bool displayFilter;
-
-		public bool DisplayFilter
-		{
-			get => displayFilter;
-			set
-			{
-				displayFilter = value;
-				OnPropertyChanged();
-			}
-		}
-
 		public ObservableCollection<EntityProfileGridRow> Entities { get; set; }
 
 		#endregion
@@ -788,45 +776,18 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			IEnumerable<string> customEntities = null;
 
-			if (!string.IsNullOrEmpty(TextBoxFilter.Text))
+			if (TextBoxFilter.Text.IsFilled())
 			{
-
-				// get all regex
-				var prefixes = TextBoxFilter.Text.ToLower()
-					.Split(',').Select(prefix => prefix.Trim())
-					.Where(prefix => !string.IsNullOrEmpty(prefix))
+				var filters = TextBoxFilter.Text.ToLower()
+					.Split(',').Select(t => t.Trim())
+					.Where(t => t.IsFilled())
 					.Distinct();
 
-				// get entity names that match any regex from the fetched list
-				if (DisplayFilter)
-				{
-					customEntities =
-						EntityMetadataCache
-							.ToDictionary(key => key.LogicalName,
-								value =>
-								{
-									var rename = SelectedEntityProfilesHeader.EntityProfiles
-										.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
-
-									return "("
-										+ (string.IsNullOrEmpty(rename)
-											? value.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-												? Naming.GetProperHybridName(value.SchemaName, value.LogicalName)
-												: Naming.Clean(value.DisplayName.UserLocalizedLabel.Label)
-											: rename)
-										+ ")";
-								})
-							.Where(keyValue => prefixes.Any(
-								prefix => Regex.IsMatch(keyValue.Value.ToLower().Replace("(", "").Replace(")", ""), prefix)))
-							.Select(keyValue => keyValue.Key)
-							.Distinct();
-				}
-				else
-				{
-					customEntities = Settings.EntityList
-						.Where(entity => prefixes.Any(prefix => Regex.IsMatch(entity, prefix)))
-						.Distinct();
-				}
+				customEntities = rowListSource
+					.Where(e => filters.Any(f => Regex.IsMatch(e.Name, f)
+						|| (e.DisplayName.IsFilled() && Regex.IsMatch(e.DisplayName.ToLower(), f))
+						|| (e.Rename.IsFilled() && Regex.IsMatch(e.Rename.ToLower(), f))))
+					.Select(e => e.Name).Distinct().ToList();
 			}
 
 			// filter entities

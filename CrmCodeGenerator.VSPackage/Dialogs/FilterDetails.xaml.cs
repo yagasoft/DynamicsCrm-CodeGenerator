@@ -775,7 +775,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 				return source
 					.Where(e => filters.Any(f => Regex.IsMatch(e.Name, f)
-						|| (e.DisplayName.IsFilled() && Regex.IsMatch(e.DisplayName, f)) || (e.Rename.IsFilled() && Regex.IsMatch(e.Rename, f))))
+						|| (e.DisplayName.IsFilled() && Regex.IsMatch(e.DisplayName.ToLower(), f))
+						|| (e.Rename.IsFilled() && Regex.IsMatch(e.Rename.ToLower(), f))
+						|| (e is Relations1NGridRow oneN && ((oneN.ToEntity.IsFilled() && Regex.IsMatch(oneN.ToEntity.ToLower(), f))
+							|| (oneN.ToField.IsFilled() && Regex.IsMatch(oneN.ToField.ToLower(), f))))
+						|| (e is RelationsN1GridRow nOne && ((nOne.ToEntity.IsFilled() && Regex.IsMatch(nOne.ToEntity.ToLower(), f))
+							|| (nOne.FromField.IsFilled() && Regex.IsMatch(nOne.FromField.ToLower(), f))))))
 					.Select(e => e.Name).Distinct().ToList();
 			}
 

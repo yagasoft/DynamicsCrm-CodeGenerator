@@ -50,18 +50,6 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public bool StillOpen { get; set; } = true;
 
-		private bool displayFilter;
-
-		public bool DisplayFilter
-		{
-			get => displayFilter;
-			set
-			{
-				displayFilter = value;
-				OnPropertyChanged();
-			}
-		}
-
 		private bool entitiesSelectAll;
 
 		public bool EntitiesSelectAll
@@ -802,66 +790,41 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		{
 			IEnumerable<string> customEntities = null;
 
-			if (!string.IsNullOrEmpty(TextBoxFilter.Text))
+			if (TextBoxFilter.Text.IsFilled())
 			{
-				// get all regex
-				var prefixes = TextBoxFilter.Text.ToLower()
-					.Split(',').Select(prefix => prefix.Trim())
-					.Where(prefix => !string.IsNullOrEmpty(prefix))
+				var filters = TextBoxFilter.Text.ToLower()
+					.Split(',').Select(t => t.Trim())
+					.Where(t => t.IsFilled())
 					.Distinct();
 
-				// get entity names that match any regex from the fetched list
-				if (DisplayFilter)
-				{
-					customEntities =
-						EntityMetadataCache
-							.ToDictionary(key => key.LogicalName,
-								value =>
-								{
-									var rename = Settings.CrmEntityProfiles
-										.FirstOrDefault(filter => filter.LogicalName == value.LogicalName)?.EntityRename;
-
-									return "("
-										+ (string.IsNullOrEmpty(rename)
-											? value.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
-												? Naming.GetProperHybridName(value.SchemaName, value.LogicalName)
-												: Naming.Clean(value.DisplayName.UserLocalizedLabel.Label)
-											: rename)
-										+ ")";
-								})
-							.Where(keyValue => prefixes.Any(
-								prefix => Regex.IsMatch(keyValue.Value.ToLower().Replace("(", "").Replace(")", ""), prefix)))
-							.Select(keyValue => keyValue.Key)
-							.Distinct();
-				}
-				else
-				{
-					customEntities = Settings.EntityList
-						.Where(entity => prefixes.Any(prefix => Regex.IsMatch(entity, prefix)))
-						.Distinct();
-				}
+				customEntities = rowListSource
+					.Where(e => filters.Any(f => Regex.IsMatch(e.Name, f)
+						|| (e.DisplayName.IsFilled() && Regex.IsMatch(e.DisplayName.ToLower(), f))
+						|| (e.Rename.IsFilled() && Regex.IsMatch(e.Rename.ToLower(), f))))
+					.Select(e => e.Name).Distinct().ToList();
 			}
 
 			// filter entities
-			new Thread(() =>
-					   {
-						   try
-						   {
-							   Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...");
+			new Thread(
+				() =>
+				{
+					try
+					{
+						Status.ShowBusy(Dispatcher, BusyIndicator, "Filtering ...");
 
-							   InitEntityList(customEntities?.ToList());
+						InitEntityList(customEntities?.ToList());
 
-							   //Dispatcher.Invoke(() => { DataContext = this; });
-							   Dispatcher.Invoke(() => TextBoxFilter.Focus());
+						//Dispatcher.Invoke(() => { DataContext = this; });
+						Dispatcher.Invoke(() => TextBoxFilter.Focus());
 
-							   Status.HideBusy(Dispatcher, BusyIndicator);
-						   }
-						   catch (Exception ex)
-						   {
-							   Status.PopException(Dispatcher, ex);
-							   Dispatcher.Invoke(Close);
-						   }
-					   }).Start();
+						Status.HideBusy(Dispatcher, BusyIndicator);
+					}
+					catch (Exception ex)
+					{
+						Status.PopException(Dispatcher, ex);
+						Dispatcher.Invoke(Close);
+					}
+				}).Start();
 		}
 
 		#endregion
