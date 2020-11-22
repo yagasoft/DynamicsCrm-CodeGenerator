@@ -22,11 +22,11 @@ using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
+using Yagasoft.Libraries.EnhancedOrgService.Services.Enhanced;
 using Application = System.Windows.Forms.Application;
 using MetadataHelpers = Yagasoft.CrmCodeGenerator.Helpers.MetadataHelpers;
 
@@ -67,7 +67,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		/// </summary>
 	public partial class Filter : INotifyPropertyChanged
 	{
-		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly IConnectionManager connectionManager;
 		private readonly MetadataCache metadataCache;
 
 		#region Properties
@@ -176,7 +176,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public Filter(Window parentWindow, Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+			IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			this.connectionManager = connectionManager;
 			this.metadataCache = metadataCache;

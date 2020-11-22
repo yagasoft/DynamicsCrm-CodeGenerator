@@ -1,10 +1,10 @@
 ﻿using System;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
+using Microsoft.Xrm.Sdk;
 
 namespace Yagasoft.CrmCodeGenerator.Connection
 {
-	public interface IConnectionManager<out TConnection> where TConnection : IDisposableOrgSvc
+	public interface IConnectionManager
 	{
-		TConnection Get(string connectionString = null);
+		IOrganizationService Get();
 	}
 }

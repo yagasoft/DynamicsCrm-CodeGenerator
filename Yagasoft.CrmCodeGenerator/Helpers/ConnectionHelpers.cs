@@ -3,7 +3,6 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 
 #endregion
 

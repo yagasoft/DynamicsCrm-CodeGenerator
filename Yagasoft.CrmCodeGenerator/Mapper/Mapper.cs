@@ -15,7 +15,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
@@ -144,7 +143,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 		private int progress;
 		private MapperStatus status = MapperStatus.Idle;
 		private bool cancelMapping;
-		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly IConnectionManager connectionManager;
 		private readonly object loggingLock = new object();
 		private Exception exception;
 		private List<MappingAction> actions = new List<MappingAction>();
@@ -188,7 +187,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 		#region ctor
 
-		public Mapper(Settings settings, IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+		public Mapper(Settings settings, IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			this.connectionManager = connectionManager;
 			this.metadataCache = metadataCache;
@@ -238,12 +237,9 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 							{
 								var message = OnMessage("Fetching languages ... ");
 
-								using (var service = connectionManager.Get(Settings.ConnectionString))
-								{
-									Languages = ((RetrieveAvailableLanguagesResponse)
-										service.Execute(new RetrieveAvailableLanguagesRequest()))
-										.LocaleIds.ToList();
-								}
+								Languages = ((RetrieveAvailableLanguagesResponse)
+									connectionManager.Get().Execute(new RetrieveAvailableLanguagesRequest()))
+									.LocaleIds.ToList();
 
 								OnMessage(">> Fetching languages.", false);
 								message?.FinishedProgress(progress);
@@ -634,6 +630,11 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 				throw error;
 			}
 
+			foreach (var key in metadataCache.EntityMetadataCache.Where(p => p.Value == null).Select(p => p.Key))
+			{
+				metadataCache.EntityMetadataCache.Remove(key);
+			}
+
 			var cachedEntities = metadataCache.EntityMetadataCache.Values.ToList();
 
 			ParseRelationshipNames(cachedEntities);
@@ -779,12 +780,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
 					};
 
-				RetrieveMetadataChangesResponse result;
-
-				using (var service = connectionManager.Get(Settings.ConnectionString))
-				{
-					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-				}
+				var result = (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 
 				var isModified = result.DeletedMetadata?.Any() != true
 					|| result.EntityMetadata?
@@ -882,12 +878,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
 					};
 
-				RetrieveMetadataChangesResponse result;
-
-				using (var service = connectionManager.Get(Settings.ConnectionString))
-				{
-					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-				}
+				var result = (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 
 				var isModified = result.DeletedMetadata?.Any() != true
 					|| result.EntityMetadata?.Any(e => e.Attributes.Any()) == true;
@@ -1107,12 +1098,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 						DeletedMetadataFilters = DeletedMetadataFilters.Attribute
 					};
 
-				RetrieveMetadataChangesResponse result;
-
-				using (var service = connectionManager.Get(Settings.ConnectionString))
-				{
-					result = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-				}
+				var result = (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 
 				var isModified = result.DeletedMetadata?.Any() != true
 					|| result.EntityMetadata?.Any(e => e.Attributes.Any()) == true;
@@ -1341,10 +1327,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 						DeletedMetadataFilters = DeletedMetadataFilters.All
 					};
 
-				using (var service = connectionManager.Get(Settings.ConnectionString))
-				{
-					return (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-				}
+				return (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 			}
 			catch (FaultException<OrganizationServiceFault> ex)
 			{

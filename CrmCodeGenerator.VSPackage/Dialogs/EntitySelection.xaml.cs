@@ -22,7 +22,6 @@ using CrmCodeGenerator.VSPackage.ViewModels;
 using Microsoft.Xrm.Sdk.Metadata;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
@@ -39,7 +38,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	/// </summary>
 	public partial class EntitySelection : INotifyPropertyChanged
 	{
-		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly IConnectionManager connectionManager;
 		private readonly MetadataCache metadataCache;
 
 		#region Properties
@@ -138,7 +137,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public EntitySelection(Window parentWindow, Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+			IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			InitializeComponent();
 

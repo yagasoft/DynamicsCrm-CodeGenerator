@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
+using Microsoft.Xrm.Sdk;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.Libraries.Common;
 using Yagasoft.Libraries.EnhancedOrgService.Helpers;
 using Yagasoft.Libraries.EnhancedOrgService.Params;
@@ -18,8 +18,25 @@ using static Yagasoft.CrmCodeGenerator.Helpers.ConnectionHelpers;
 
 namespace CrmCodeGenerator.VSPackage.Connection
 {
-	public class ConnectionManager : IConnectionManager<IDisposableOrgSvc>
+	public class ConnectionManager : IConnectionManager
 	{
+		public string ConnectionString
+		{
+			get => connectionString;
+			set
+			{
+				lock (this)
+				{
+					if (value != connectionString)
+					{
+						service = null;
+					}
+
+					connectionString = value;
+				}
+			}
+		}
+
 		public int Threads
 		{
 			get => threads;
@@ -27,15 +44,15 @@ namespace CrmCodeGenerator.VSPackage.Connection
 			{
 				if (value > threads)
 				{
-					connectionPool = null;
+					service = null;
 				}
 
 				threads = value;
 			}
 		}
 
-		private IEnhancedServicePool<IEnhancedOrgService> connectionPool;
-		private string latestConnectionString;
+		private IEnhancedOrgService service;
+		private string connectionString;
 		private int threads;
 
 		public ConnectionManager(int threads = 3)
@@ -43,39 +60,33 @@ namespace CrmCodeGenerator.VSPackage.Connection
 			Threads = threads;
 		}
 
-		public IDisposableOrgSvc Get(string connectionString = null)
+		public IOrganizationService Get()
 		{
 			try
 			{
 				lock (this)
 				{
-					if (connectionString.IsFilled() && (connectionPool == null || connectionString != latestConnectionString))
+					if (service != null)
 					{
-						connectionPool?.EndWarmup();
-
-						Status.Update($"[Connection] Creating connection pool to CRM ... ");
-						Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
-
-						connectionPool = EnhancedServiceHelper.GetPool(connectionString,
-							new PoolParams
-							{
-								PoolSize = Threads,
-								DequeueTimeoutInMillis = 20 * 1000
-							});
-						connectionPool.WarmUp();
-						latestConnectionString = connectionString;
-
-						Status.Update($"[Connection] [DONE] Created connection pool.");
+						return service;
 					}
+
+					Status.Update($"[Connection] Creating connection to CRM ... ");
+					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
+
+					var connectionPool = EnhancedServiceHelper.GetPool(connectionString, new PoolParams { DequeueTimeoutInMillis = 20 * 1000 });
+					connectionPool.WarmUp();
+
+					service = connectionPool.GetService(threads);
+
+					Status.Update($"[Connection] [DONE] Created connection.");
+
+					return service;
 				}
-
-				var service = new DisposableOrgSvc(connectionPool.GetService());
-
-				return service;
 			}
 			catch (Exception)
 			{
-				connectionPool = null;
+				service = null;
 				throw;
 			}
 		}

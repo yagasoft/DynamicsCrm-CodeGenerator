@@ -15,10 +15,10 @@ using System.Windows.Threading;
 using CrmCodeGenerator.VSPackage.Helpers;
 using Yagasoft.CrmCodeGenerator;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
+using Yagasoft.Libraries.EnhancedOrgService.Services.Enhanced;
 using Application = System.Windows.Forms.Application;
 
 #endregion
@@ -30,7 +30,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	/// </summary>
 	public partial class Options : INotifyPropertyChanged
 	{
-		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly IConnectionManager connectionManager;
 		private readonly MetadataCache metadataCache;
 
 		#region Hide close button stuff
@@ -104,7 +104,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#region Init
 
 		public Options(Window parentWindow, Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+			IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			InitializeComponent();
 

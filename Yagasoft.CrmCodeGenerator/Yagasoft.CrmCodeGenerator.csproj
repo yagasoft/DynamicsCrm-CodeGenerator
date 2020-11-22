@@ -73,13 +73,11 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="Yagasoft.Libraries.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.Common.2.3.2\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.Common.2.4.3\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Connection\IConnectionManager.cs" />
-    <Compile Include="Connection\OrgSvcs\IDisposableOrgSvc.cs" />
-    <Compile Include="Connection\OrgSvcs\DisposableOrgSvcBase.cs" />
     <Compile Include="Helpers\Assembly\AssemblyHelpers.cs" />
     <Compile Include="Helpers\Assembly\Binder.cs" />
     <Compile Include="Helpers\CacheHelpers.cs" />
@@ -115,6 +113,8 @@
     <None Include="Key.snk" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Connection\OrgSvcs\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

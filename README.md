@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.7.2
+### Version: 10.7.3
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -94,10 +94,10 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Upcoming/planned
 
++ Add: Visual Studio Shared Projects support
 + Add: undo/redo
 + Add: parse placeholders in annotations for LogicalName and variable name
 + Add: [template] File field, with a Get and Set that uses the SDK message
-+ Fix: catch and fix the extremely rare 'null reference' error that requires clearing the cache for the tool to work again
 + Fix: [template] helpers to support new stuff since v7
   + LoadRelation methods
 + Improve: switch to async extension VS API
@@ -113,7 +113,9 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
-#### _v10.7.2 (2020-10-18)_
+#### _v10.7.3 (2020-11-22)_
++ Fixed: pre-v7 migration
++ Fixed: rare 'object null reference' error during generate
 + Fixed: filter to properly take the Display Name and Rename columns into account as lower case, and to consider the 'entity' and 'field' columns in relations
 #### _v10.7.2 (2020-10-18)_
 + Fixed: FetchXML result processing helper

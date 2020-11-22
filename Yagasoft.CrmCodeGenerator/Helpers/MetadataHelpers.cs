@@ -11,7 +11,6 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
@@ -107,7 +106,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		};
 
 		public static List<EntityMetadata> RefreshSettingsEntityMetadata(Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+			IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			var entityFilter = new MetadataFilterExpression(LogicalOperator.And);
 
@@ -132,12 +131,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 					ClientVersionStamp = null
 				};
 
-			EntityMetadataCollection result;
-
-			using (var service = connectionManager.Get(settings.ConnectionString))
-			{
-				result = ((RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest)).EntityMetadata;
-			}
+			var result = ((RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest)).EntityMetadata;
 
 			// cache the result
 			var resultFiltered =
@@ -187,7 +181,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		}
 
 		public static IDictionary<string, int> GetEntityCodes(Settings settings,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache)
+			IConnectionManager connectionManager, MetadataCache metadataCache)
 		{
 			if (metadataCache.EntityCodesCache != null)
 			{
@@ -213,16 +207,13 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 					Query = entityQueryExpression
 				};
 
-			using (var service = connectionManager.Get(settings.ConnectionString))
-			{
-				return metadataCache.EntityCodesCache =
-					((RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest)).EntityMetadata
-						.ToDictionary(e => e.LogicalName, e => e.ObjectTypeCode.GetValueOrDefault());
-			}
+			return metadataCache.EntityCodesCache =
+				((RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest)).EntityMetadata
+					.ToDictionary(e => e.LogicalName, e => e.ObjectTypeCode.GetValueOrDefault());
 		}
 
-		public static IEnumerable<string> RetrieveActionNames(Settings settings, 
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache,
+		public static IEnumerable<string> RetrieveActionNames(Settings settings,
+			IConnectionManager connectionManager, MetadataCache metadataCache,
 			string logicalName = "none")
 		{
 			var fetchXml =
@@ -256,18 +247,15 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
   </entity>
 </fetch>";
 
-			using (var service = connectionManager.Get(settings.ConnectionString))
-			{
-				return service.RetrieveMultiple(new FetchExpression(fetchXml))
-					.Entities
-					.Select(e => e.GetAttributeValue<string>("name"))
-					.Distinct()
-					.OrderBy(e => e);
-			}
+			return connectionManager.Get().RetrieveMultiple(new FetchExpression(fetchXml))
+				.Entities
+				.Select(e => e.GetAttributeValue<string>("name"))
+				.Distinct()
+				.OrderBy(e => e);
 		}
 
 		public static PlatformFeature SetImageAndFileFeaturesSupport(Settings settings, PlatformFeature existingFeatures,
-			IConnectionManager<IDisposableOrgSvc> connectionManager)
+			IConnectionManager connectionManager)
 		{
 			const PlatformFeature feature = PlatformFeature.Image;
 
@@ -314,10 +302,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 						Query = entityQueryExpression
 					};
 
-				using (var service = connectionManager.Get(settings.ConnectionString))
-				{
-					var dummy = (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-				}
+				var dummy = (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 
 				return existingFeatures | feature;
 			}
@@ -335,7 +320,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 		}
 
 		public static IEnumerable<Entity> RetrieveActions(IEnumerable<string> actionNamesParam, string connectionString,
-			IConnectionManager<IDisposableOrgSvc> connectionManager)
+			IConnectionManager connectionManager)
 		{
 			var actionNames = actionNamesParam?.ToArray();
 
@@ -383,10 +368,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
   </entity>
 </fetch>";
 
-			using (var service = connectionManager.Get(connectionString))
-			{
-				return service.RetrieveMultiple(new FetchExpression(fetchXml)).Entities;
-			}
+			return connectionManager.Get().RetrieveMultiple(new FetchExpression(fetchXml)).Entities;
 		}
 	}
 }

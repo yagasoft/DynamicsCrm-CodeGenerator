@@ -27,6 +27,14 @@ namespace Yagasoft.CrmCodeGenerator.Helpers.Assembly
 				assemblyName = currentAssemblyInfo;
 			}
 
+			const string crmCodeGeneratorAssembly = "CrmCodeGenerator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cc04d039f850a1ff";
+
+			assemblyName = assemblyName
+				.Replace(crmCodeGeneratorAssembly, "CrmCodeGenerator");
+
+			typeName = typeName
+				.Replace(crmCodeGeneratorAssembly, "CrmCodeGenerator");
+
 			return Type.GetType($"{typeName}, {assemblyName}");
 		}
 	}

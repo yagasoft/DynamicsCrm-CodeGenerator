@@ -21,11 +21,11 @@ using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Metadata.Query;
 using Microsoft.Xrm.Sdk.Query;
 using Yagasoft.CrmCodeGenerator.Connection;
-using Yagasoft.CrmCodeGenerator.Connection.OrgSvcs;
 using Yagasoft.CrmCodeGenerator.Helpers;
 using Yagasoft.CrmCodeGenerator.Models.Cache;
 using Yagasoft.CrmCodeGenerator.Models.Settings;
 using Yagasoft.Libraries.Common;
+using Yagasoft.Libraries.EnhancedOrgService.Services.Enhanced;
 
 #endregion
 
@@ -205,7 +205,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#endregion
 
 		private readonly MetadataCache metadataCache;
-		private readonly IConnectionManager<IDisposableOrgSvc> connectionManager;
+		private readonly IConnectionManager connectionManager;
 		private EntityMetadata metadata;
 
 		private readonly ConcurrentBag<EntityFilterGridRow> rowListAttrSource = new ConcurrentBag<EntityFilterGridRow>();
@@ -231,7 +231,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		public FilterDetails(Window parentWindow, string logicalName, Settings settings,
 			EntityProfile entityProfile, ObservableCollection<GridRow> entities,
-			IConnectionManager<IDisposableOrgSvc> connectionManager, MetadataCache metadataCache,
+			IConnectionManager connectionManager, MetadataCache metadataCache,
 			bool isCrmEntities = false)
 		{
 			InitializeComponent();
@@ -661,10 +661,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					Query = entityQueryExpression,
 				};
 
-			using (var service = connectionManager.Get(Settings.ConnectionString))
-			{
-				return (RetrieveMetadataChangesResponse)service.Execute(retrieveMetadataChangesRequest);
-			}
+			return (RetrieveMetadataChangesResponse)connectionManager.Get().Execute(retrieveMetadataChangesRequest);
 		}
 
 		#endregion

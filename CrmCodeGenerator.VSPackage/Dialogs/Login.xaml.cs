@@ -117,11 +117,12 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			settings.EntityProfilesHeaderSelector ??= new EntityProfilesHeaderSelector();
 
-			mapperThread = new Thread(
-				() =>
-				{
-					mapper = new Mapper(settings, connectionManager, MetadataCache);
-				});
+			mapperThread =
+				new Thread(
+					() =>
+					{
+						mapper = new Mapper(settings, connectionManager, MetadataCache);
+					});
 			mapperThread.Start();
 		}
 
@@ -156,6 +157,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 		private void WarmUp()
 		{
+			connectionManager.ConnectionString = settings.ConnectionString;
+
 			// warm up connections
 			void WarmUpConnections()
 			{
@@ -164,9 +167,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					{
 						try
 						{
-							if (settings.ConnectionString.IsFilled())
+							if (connectionManager.ConnectionString.IsFilled())
 							{
-								using var _ = connectionManager.Get(settings.ConnectionString);
+								connectionManager.Get();
 							}
 						}
 						catch
@@ -186,6 +189,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 					if (args.PropertyName == nameof(settings.ConnectionString))
 					{
+						connectionManager.ConnectionString = settings.ConnectionString;
 						new Thread(() => MetadataCache.Clear()).Start();
 					}
 

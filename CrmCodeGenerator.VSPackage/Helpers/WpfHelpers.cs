@@ -265,21 +265,5 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 
 			return dictionary;
 		}
-
-		/// <summary>
-		/// Author: Ahmed Elsawalhy
-		/// </summary>
-		public static bool IsEmpty(this IEnumerable e)
-		{
-			return !e.IsFilled();
-		}
-
-		/// <summary>
-		/// Author: Ahmed Elsawalhy
-		/// </summary>
-		public static bool IsFilled(this IEnumerable e)
-		{
-			return e.Cast<object>().Any();
-		}
 	}
 }
