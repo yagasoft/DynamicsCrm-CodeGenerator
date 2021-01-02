@@ -748,7 +748,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			{
 				if (metadataCache.LookupKeysMetadataCache == null)
 				{
-					metadataCache.LookupKeysMetadataCache = new Dictionary<string, LookupMetadata>();
+					metadataCache.LookupKeysMetadataCache = new ConcurrentDictionary<string, LookupMetadata>();
 				}
 
 				metadataCache.LookupKeysMetadataCache.TryGetValue(cacheKey, out lookupMetadata);
@@ -835,7 +835,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 			{
 				if (metadataCache.BasicAttributesMetadataCache == null)
 				{
-					metadataCache.BasicAttributesMetadataCache = new Dictionary<string, LookupMetadata>();
+					metadataCache.BasicAttributesMetadataCache = new ConcurrentDictionary<string, LookupMetadata>();
 				}
 
 				metadataCache.BasicAttributesMetadataCache.TryGetValue(cacheKey, out var basicCache);
@@ -912,7 +912,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 		private void ProcessLookupLabels(MappingEntity[] filteredEntities, int threadCount)
 		{
 			var lookupEntitiesCache = metadataCache.LookupEntitiesMetadataCache;
-			var lookupEntitiesSessionCache = new Dictionary<string, LookupMetadata>();
+			var lookupEntitiesSessionCache = new ConcurrentDictionary<string, LookupMetadata>();
 
 			foreach (var entity in filteredEntities
 				.Where(entity => Settings.LookupLabelsEntitiesSelected.Contains(entity.LogicalName)))

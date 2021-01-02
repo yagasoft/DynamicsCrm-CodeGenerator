@@ -159,7 +159,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		#endregion
 
 		private readonly IDictionary<EntityProfilesHeader, ConcurrentBag<EntityProfileGridRow>> rowSourceMap =
-			new Dictionary<EntityProfilesHeader, ConcurrentBag<EntityProfileGridRow>>();
+			new ConcurrentDictionary<EntityProfilesHeader, ConcurrentBag<EntityProfileGridRow>>();
 		private ConcurrentBag<EntityProfileGridRow> rowListSource = new ConcurrentBag<EntityProfileGridRow>();
 
 		#region Property events

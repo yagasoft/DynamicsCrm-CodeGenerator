@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
@@ -32,7 +33,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 			{
 				if (LookupKeysMetadataCacheSerialised == null)
 				{
-					return new Dictionary<string, LookupMetadata>();
+					return new ConcurrentDictionary<string, LookupMetadata>();
 				}
 
 				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
@@ -42,7 +43,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
 				{
 					return (IDictionary<string, LookupMetadata>)serializer.ReadObject(reader)
-						?? new Dictionary<string, LookupMetadata>();
+						?? new ConcurrentDictionary<string, LookupMetadata>();
 				}
 			}
 			set
@@ -67,7 +68,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 			{
 				if (BasicAttributesMetadataCacheSerialised == null)
 				{
-					return new Dictionary<string, LookupMetadata>();
+					return new ConcurrentDictionary<string, LookupMetadata>();
 				}
 
 				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
@@ -77,7 +78,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
 				{
 					return (IDictionary<string, LookupMetadata>)serializer.ReadObject(reader)
-						?? new Dictionary<string, LookupMetadata>();
+						?? new ConcurrentDictionary<string, LookupMetadata>();
 				}
 			}
 			set
@@ -102,7 +103,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 			{
 				if (LookupEntitiesMetadataCacheSerialised == null)
 				{
-					return new Dictionary<string, LookupMetadata>();
+					return new ConcurrentDictionary<string, LookupMetadata>();
 				}
 
 				var serializer = new DataContractSerializer(typeof(IDictionary<string, LookupMetadata>));
@@ -112,7 +113,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
 				{
 					return (IDictionary<string, LookupMetadata>)serializer.ReadObject(reader)
-						?? new Dictionary<string, LookupMetadata>();
+						?? new ConcurrentDictionary<string, LookupMetadata>();
 				}
 			}
 			set
@@ -173,7 +174,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 			{
 				if (ProfileAttributeMetadataCacheSerialised == null)
 				{
-					return new Dictionary<string, EntityMetadata>();
+					return new ConcurrentDictionary<string, EntityMetadata>();
 				}
 
 				var serializer = new DataContractSerializer(typeof(IDictionary<string, EntityMetadata>));
@@ -183,7 +184,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 					.CreateBinaryReader(stream, XmlDictionaryReaderQuotas.Max))
 				{
 					return (IDictionary<string, EntityMetadata>)serializer.ReadObject(reader)
-						?? new Dictionary<string, EntityMetadata>();
+						?? new ConcurrentDictionary<string, EntityMetadata>();
 				}
 			}
 			set
@@ -214,11 +215,11 @@ namespace Yagasoft.CrmCodeGenerator.Models.Cache
 		private void InitFields()
 		{
 			ProfileEntityMetadataCache = ProfileEntityMetadataCache ?? new List<EntityMetadata>();
-			ProfileAttributeMetadataCache = ProfileAttributeMetadataCache ?? new Dictionary<string, EntityMetadata>();
+			ProfileAttributeMetadataCache = ProfileAttributeMetadataCache ?? new ConcurrentDictionary<string, EntityMetadata>();
 
-			LookupEntitiesMetadataCache = LookupEntitiesMetadataCache ?? new Dictionary<string, LookupMetadata>();
+			LookupEntitiesMetadataCache = LookupEntitiesMetadataCache ?? new ConcurrentDictionary<string, LookupMetadata>();
 
-			EntityMetadataCache = EntityMetadataCache ?? new Dictionary<Guid, MappingEntity>();
+			EntityMetadataCache = EntityMetadataCache ?? new ConcurrentDictionary<Guid, MappingEntity>();
 		}
 
 		public void Clear()

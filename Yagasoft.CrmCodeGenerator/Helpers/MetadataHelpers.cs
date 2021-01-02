@@ -1,6 +1,7 @@
 ﻿#region Imports
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -158,7 +159,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 						}).ToList();
 
 			// reset attributes cache as well
-			metadataCache.ProfileAttributeMetadataCache = new Dictionary<string, EntityMetadata>();
+			metadataCache.ProfileAttributeMetadataCache = new ConcurrentDictionary<string, EntityMetadata>();
 
 			var newList = new ObservableCollection<string>();
 
