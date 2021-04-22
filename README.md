@@ -55,7 +55,7 @@ Note: any window can be closed by pressing the _ESC_ button on the keyboard, eve
 Highlight the project where you want to add the template and generated code.   
 Click on Tools –> Add CRM Code Generator Template... (if you don't see this menu, then shutdown VS and reinstall the extension).
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-06.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-06.png)
 
   + Start with one of the provided templates.
   + After a template is added to your project you will be prompted for CRM connection info.
@@ -64,7 +64,7 @@ Click on Tools –> Add CRM Code Generator Template... (if you don't see this me
 
 If you make schema changes in CRM and you want to refresh the code, right click the template and select "Run Custom Tool".
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-07.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-07.png)
 
 #### Changing the template
 
@@ -72,15 +72,15 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Screenshots
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-01.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-01.png)
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-02.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-02.png)
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-03.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-03.png)
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-04.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-04.png)
 
-![File](http://blog.yagasoft.com/wp-content/uploads/2020/08/crm-generator-external-05.png)
+![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-05.png)
 
 ## Credits
 
