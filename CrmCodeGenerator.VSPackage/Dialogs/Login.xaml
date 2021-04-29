@@ -192,7 +192,7 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Margin="10,3,3,3" HorizontalAlignment="Left" VerticalAlignment="Center"
                                FontStyle="Italic" FontSize="14" Padding="0" Cursor="Hand">
-                        <Hyperlink NavigateUri="http://yagasoft.com" RequestNavigate="Hyperlink_RequestNavigate">Yagasoft.com</Hyperlink>
+                        <Hyperlink NavigateUri="https://yagasoft.com" RequestNavigate="Hyperlink_RequestNavigate">Yagasoft.com</Hyperlink>
                     </TextBlock>
                     <Button x:Name="ButtonCredits" Content="{StaticResource ResourceKey=InfoImage}" BorderThickness="1"
                             Grid.Column="1" Margin="0" Padding="3" Click="ButtonCredits_Click" />

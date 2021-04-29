@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.7.4
+### Version: 10.7.5
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -44,7 +44,7 @@ This tool is available as an XrmToolBox plugin as well ([here](https://www.xrmto
 
 ## How To Use
 
-You can read a quick overview of the tool and its functionality [here](http://blog.yagasoft.com/2020/09/dynamics-template-based-code-generator-supercharged).
+You can read a quick overview of the tool and its functionality [here](https://blog.yagasoft.com/2020/09/dynamics-template-based-code-generator-supercharged).
 
 To get started, install the Visual Studio extension ([here](https://marketplace.visualstudio.com/items?itemName=Yagasoft.CrmCodeGenerator)).
 
@@ -113,6 +113,8 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.7.5 (2021-04-29)_
++ Improved: connection readiness performance
 #### _v10.7.4 (2020-12-10)_
 + Fixed: concurrency issues
 #### _v10.7.3 (2020-11-22)_
