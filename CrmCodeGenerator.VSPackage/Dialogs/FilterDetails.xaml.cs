@@ -382,7 +382,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 								   {
 									   IsSelected = EntityProfile.Attributes?.Contains(attributeAsync.LogicalName) == true,
 									   Name = attributeAsync.LogicalName,
-									   DisplayName = attributeAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+									   DisplayName = attributeAsync.DisplayName?.UserLocalizedLabel == null 
+										   || Settings.UseDisplayNames != true
 										   ? Naming.GetProperVariableName(attributeAsync, Settings.TitleCaseLogicalNames)
 										   : Naming.Clean(attributeAsync.DisplayName.UserLocalizedLabel.Label),
 									   Rename = EntityProfile.AttributeRenames?.FirstNotNullOrEmpty(attributeAsync.LogicalName),

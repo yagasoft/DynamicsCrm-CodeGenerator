@@ -267,7 +267,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						Context = Mapper.Context;
 						Context.SplitFiles = settings.SplitFiles;
 						Context.SplitContractFiles = settings.SplitContractFiles;
-						Context.UseDisplayNames = settings.UseDisplayNames;
+						Context.UseDisplayNames = settings.UseDisplayNames == true;
 						Context.IsUseCustomDictionary = settings.IsUseCustomDictionary;
 						Context.IsUseCustomEntityReference = settings.IsUseCustomEntityReference;
 						Context.IsAddEntityAnnotations = settings.IsAddEntityAnnotations;

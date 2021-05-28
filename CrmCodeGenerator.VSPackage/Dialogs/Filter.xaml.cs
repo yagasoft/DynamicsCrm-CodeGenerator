@@ -301,7 +301,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							   EntityProfile = entityProfile.Copy(),
 							   IsSelected = entityProfile.IsIncluded,
 							   Name = entityAsync.LogicalName,
-							   DisplayName = entity.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+							   DisplayName = entity.DisplayName?.UserLocalizedLabel == null || Settings.UseDisplayNames != true
 								   ? Naming.GetProperHybridName(entity.SchemaName, entity.LogicalName)
 								   : Naming.Clean(entity.DisplayName.UserLocalizedLabel.Label),
 							   Rename = entityProfile.EntityRename,

@@ -124,9 +124,9 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
-		public bool UseDisplayNames
+		public bool? UseDisplayNames
 		{
-			get => useDisplayNames;
+			get => useDisplayNames ?? true;
 			set
 			{
 				useDisplayNames = value;
@@ -409,7 +409,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		public string Namespace { get; set; }
 
 		[JsonIgnore]
-		public bool TitleCaseLogicalNamesEnabled => !UseDisplayNames;
+		public bool TitleCaseLogicalNamesEnabled => UseDisplayNames != true;
 
 		public int Threads
 		{
@@ -462,7 +462,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 		private bool includeNonStandard;
 		private bool splitFiles;
 		private bool splitContractFiles;
-		private bool useDisplayNames = true;
+		private bool? useDisplayNames = true;
 		private bool isUseCustomDictionary;
 		private bool isUseCustomEntityReference;
 		private bool isGenerateAlternateKeys;

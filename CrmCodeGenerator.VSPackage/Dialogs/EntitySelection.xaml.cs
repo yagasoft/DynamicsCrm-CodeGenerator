@@ -231,7 +231,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 							   Rename = profile?.EntityRename,
 							   Annotations = profile?.EntityAnnotations,
 							   DisplayName =
-								   entityAsync.DisplayName?.UserLocalizedLabel == null || !Settings.UseDisplayNames
+								   entityAsync.DisplayName?.UserLocalizedLabel == null || Settings.UseDisplayNames != true
 									   ? Naming.GetProperHybridName(entityAsync.SchemaName, entityAsync.LogicalName)
 									   : Naming.Clean(entityAsync.DisplayName.UserLocalizedLabel.Label),
 							   IsGenerateMeta = Settings.PluginMetadataEntitiesSelected.Contains(entityAsync.LogicalName),

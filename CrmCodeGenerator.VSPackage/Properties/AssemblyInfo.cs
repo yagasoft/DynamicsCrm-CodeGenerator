@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Shell;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ahmed Elsawalhy (yagasoft.com)")]
 [assembly: AssemblyProduct("CrmCodeGenerator.VSPackage")]
-[assembly: AssemblyCopyright("Yagasoft 2020")]
+[assembly: AssemblyCopyright("Yagasoft 2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]   
 [assembly: ComVisible(false)]     
@@ -30,8 +30,8 @@ using Microsoft.VisualStudio.Shell;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("10.7.5.0")]
-[assembly: AssemblyFileVersion("10.7.5.0")]
+[assembly: AssemblyVersion("10.7.6.0")]
+[assembly: AssemblyFileVersion("10.7.6.0")]
 
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",
