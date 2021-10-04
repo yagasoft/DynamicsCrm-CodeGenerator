@@ -301,6 +301,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 						MetadataCache.Context = Context;
 
+						Configuration.SaveSettings(settings);
+
 						Status.HideBusy(Dispatcher, BusyIndicator);
 						StillOpen = false;
 						Dispatcher.Invoke(Close, DispatcherPriority.Send);

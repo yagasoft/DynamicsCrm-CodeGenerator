@@ -356,6 +356,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 
 					if (mappingEntity == null)
 					{
+						Settings.EntitiesSelected.Remove(entity);
 						continue;
 					}
 

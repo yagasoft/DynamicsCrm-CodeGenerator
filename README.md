@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.7.6
+### Version: 10.8.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -106,13 +106,15 @@ When you make changes to the template and save, Visual Studio will automatically
 + Add: enum annotations (DisplayName ... etc.)
 + Add: option to add alternate keys to contracts
 + Add: option to use CRM-only contracts to replace Contract classes, optionally
-+ Improve: [template] unify global option-sets into a single enum
 + Add: [template] an attribute/annotation to the Clear Flag fields in contracts, to ease parsing them in helper methods
 + Add: [template] XrmDefinitelyTyped support, and generate form structure
   + The 'sync extension' warning in VS is definitely annoying, but I have to make sure that a single version will be backward compatible back to at least VS 2015
 
 ## Changes
 
+#### _v10.8.1 (2021-10-04)_
++ Added: unify global option-sets (thanks https://github.com/ClemensWon)
++ Fixed: non-existent entities in settings persisting, causing error with 'generate cached'
 #### _v10.7.6 (2021-05-28)_
 + Fixed: Use Display Names option not saved correctly
 #### _v10.7.5 (2021-04-29)_
