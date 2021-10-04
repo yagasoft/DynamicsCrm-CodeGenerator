@@ -89,7 +89,18 @@ namespace CrmCodeGenerator.VSPackage
 			if (await GetServiceAsync(typeof (IMenuCommandService)) is OleMenuCommandService mcs)
 			{
 				var templateCmd = new CommandID(GuidList.guidCrmCodeGenerator_VSPackageCmdSet, (int) PkgCmdIDList.cmdidAddTemplate);
-				var templateItem = new MenuCommand((o,e) => AddTemplateCallbackAsync(o, e).Wait(cancellationToken), templateCmd);
+				var templateItem = new MenuCommand(
+					async (o, e) =>
+						  {
+							  try
+							  {
+								  await AddTemplateCallbackAsync(o, e);
+							  }
+							  catch (Exception ex)
+							  {
+								  MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+							  }
+						  }, templateCmd);
 				mcs.AddCommand(templateItem);
 			}
 
