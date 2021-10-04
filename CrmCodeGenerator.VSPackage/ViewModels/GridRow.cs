@@ -69,7 +69,6 @@ namespace CrmCodeGenerator.VSPackage.ViewModels
 			}
 		}
 
-		private bool isFiltered;
 		private string rename;
 		private string annotations;
 		private EntityMetadata entity;

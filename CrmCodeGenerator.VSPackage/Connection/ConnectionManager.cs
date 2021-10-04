@@ -74,10 +74,23 @@ namespace CrmCodeGenerator.VSPackage.Connection
 					Status.Update($"[Connection] Creating connection to CRM ... ");
 					Status.Update($"[Connection] Connection String: '{SecureConnectionString(connectionString)}'.");
 
-					var connectionPool = EnhancedServiceHelper.GetPool(connectionString, new PoolParams { DequeueTimeoutInMillis = 20 * 1000 });
-					connectionPool.WarmUp();
-
-					service = connectionPool.GetService(threads);
+					service = EnhancedServiceHelper.GetPoolingService(
+						new ServiceParams
+						{
+							ConnectionParams =
+								new ConnectionParams
+								{
+									ConnectionString = connectionString
+								},
+							PoolParams =
+								new PoolParams
+								{
+									PoolSize = threads,
+									DequeueTimeout = TimeSpan.FromSeconds(20)
+								},
+							OperationHistoryLimit = 1
+						});
+					service.WarmUp();
 
 					Status.Update($"[Connection] [DONE] Created connection.");
 

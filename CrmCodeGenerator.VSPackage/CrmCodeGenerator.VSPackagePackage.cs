@@ -6,17 +6,21 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
 using CrmCodeGenerator.VSPackage.Dialogs;
 using CrmCodeGenerator.VSPackage.Helpers;
 using EnvDTE;
 using EnvDTE80;
+
+using Microsoft;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.VersionControl.Client;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Yagasoft.CrmCodeGenerator.Helpers.Assembly;
+using Task = System.Threading.Tasks.Task;
 
 #endregion
 
@@ -33,18 +37,17 @@ namespace CrmCodeGenerator.VSPackage
 	/// </summary>
 	// This attribute tells the PkgDef creation utility (CreatePkgDef.exe) that this class is
 	// a package.
-	[PackageRegistration(UseManagedResourcesOnly = true)]
+	[PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 	// This attribute is used to register the information needed to show this package
 	// in the Help/About dialog of Visual Studio.
 	[InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
 	//this causes the class to load when VS starts [ProvideAutoLoad("ADFC4E64-0397-11D1-9F4E-00A0C911004F")]
-	[ProvideAutoLoad(VSConstants.UICONTEXT.SolutionHasSingleProject_string)]
-	[ProvideAutoLoad(VSConstants.UICONTEXT.SolutionHasMultipleProjects_string)]
+	//[ProvideAutoLoad(VSConstants.UICONTEXT.SolutionHasSingleProject_string)]
+	//[ProvideAutoLoad(VSConstants.UICONTEXT.SolutionHasMultipleProjects_string)]
 	// This attribute is needed to let the shell know that this package exposes some menus.
 	[ProvideMenuResource("Menus.ctmenu", 1)]
 	[Guid(GuidList.guidCrmCodeGenerator_VSPackagePkgString)]
-	public sealed class CrmCodeGenerator_VSPackagePackage : Package,
-		IVsSolutionEvents3
+	public sealed class CrmCodeGenerator_VSPackagePackage : AsyncPackage, IVsSolutionEvents3
 	{
 		/// <summary>
 		///     Default constructor of the package.
@@ -68,7 +71,7 @@ namespace CrmCodeGenerator.VSPackage
 		///     Initialization of the package; this method is called right after the package is sited, so this is the place
 		///     where you can put all the initialization code that rely on services provided by VisualStudio.
 		/// </summary>
-		protected override void Initialize()
+		protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
 		{
 			////AssemblyHelpers.RedirectAssembly("Microsoft.Xrm.Sdk", new Version("9.0.0.0"), "31bf3856ad364e35");
 			////AssemblyHelpers.RedirectAssembly("Microsoft.Xrm.Sdk.Deployment", new Version("9.0.0.0"), "31bf3856ad364e35");
@@ -77,18 +80,20 @@ namespace CrmCodeGenerator.VSPackage
 			////	new Version("3.19.8.16603"), "31bf3856ad364e35");
 			////AssemblyHelpers.RedirectAssembly("Newtonsoft.Json", new Version("10.0.0.0"), "30ad4fe6b2a6aeed");
 
+			await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+
 			Debug.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering Initialize() of: {0}", ToString()));
-			base.Initialize();
+			await base.InitializeAsync(cancellationToken, progress);
 
 			// Add our command handlers for menu (commands must exist in the .vsct file)
-			var mcs = GetService(typeof (IMenuCommandService)) as OleMenuCommandService;
-			if (null != mcs)
+			if (await GetServiceAsync(typeof (IMenuCommandService)) is OleMenuCommandService mcs)
 			{
 				var templateCmd = new CommandID(GuidList.guidCrmCodeGenerator_VSPackageCmdSet, (int) PkgCmdIDList.cmdidAddTemplate);
-				var tempalteItem = new MenuCommand(AddTemplateCallback, templateCmd);
-				mcs.AddCommand(tempalteItem);
+				var templateItem = new MenuCommand((o,e) => AddTemplateCallbackAsync(o, e).Wait(cancellationToken), templateCmd);
+				mcs.AddCommand(templateItem);
 			}
-			AdviseSolutionEvents();
+
+			await AdviseSolutionEventsAsync();
 		}
 
 		protected override void Dispose(bool disposing)
@@ -98,14 +103,16 @@ namespace CrmCodeGenerator.VSPackage
 			base.Dispose(disposing);
 		}
 
-		private IVsSolution solution = null;
+		private IVsSolution solution;
 		private uint _handleCookie;
 
-		private void AdviseSolutionEvents()
+		private async Task AdviseSolutionEventsAsync()
 		{
+			await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+
 			UnadviseSolutionEvents();
 
-			solution = GetService(typeof (SVsSolution)) as IVsSolution;
+			solution = await GetServiceAsync(typeof (SVsSolution)) as IVsSolution;
 
 			if (solution != null)
 			{
@@ -115,6 +122,8 @@ namespace CrmCodeGenerator.VSPackage
 
 		private void UnadviseSolutionEvents()
 		{
+			ThreadHelper.ThrowIfNotOnUIThread();
+
 			if (solution != null)
 			{
 				if (_handleCookie != uint.MaxValue)
@@ -134,11 +143,13 @@ namespace CrmCodeGenerator.VSPackage
 		///     See the Initialize method to see how the menu item is associated to this function using
 		///     the OleMenuCommandService service and the MenuCommand class.
 		/// </summary>
-		private void AddTemplateCallback(object sender, EventArgs args)
+		private async Task AddTemplateCallbackAsync(object sender, EventArgs args)
 		{
+			await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+
 			try
 			{
-				AddTemplate();
+				await AddTemplateAsync();
 			}
 			catch (UserException e)
 			{
@@ -152,105 +163,114 @@ namespace CrmCodeGenerator.VSPackage
 			}
 		}
 
-		private void AddTemplate()
+		private async Task AddTemplateAsync()
 		{
-			var dte2 = GetService(typeof (SDTE)) as DTE2;
+			await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
+
+			var dte2 = await GetServiceAsync(typeof(SDTE)) as DTE2;
+			Assumes.Present(dte2);
 
 			var project = dte2.GetSelectedProject();
+
 			if (project == null || string.IsNullOrWhiteSpace(project.FullName))
 			{
 				throw new UserException("Please select a project first");
 			}
 
 			var m = new AddTemplate(dte2, project);
-			m.Closed += (sender, e) =>
-			            {
-				            // logic here Will be called after the child window is closed
-				            if (((AddTemplate) sender).Canceled == true)
-				            {
-					            return;
-				            }
 
-				            var templatePath = Path.GetFullPath(Path.Combine(project.GetPath(), m.Props.Template));
-				            //GetFullpath removes un-needed relative paths  (ie if you are putting something in the solution directory)
+			m.Closed +=
+				(sender, e) =>
+				{
+					ThreadHelper.ThrowIfNotOnUIThread();
 
-				            if (File.Exists(templatePath))
-				            {
-					            var results = VsShellUtilities.ShowMessageBox(ServiceProvider.GlobalProvider,
-						            "'" + templatePath + "' already exists, are you sure you want to overwrite?", "Overwrite",
-						            OLEMSGICON.OLEMSGICON_QUERY, OLEMSGBUTTON.OLEMSGBUTTON_YESNOCANCEL,
-						            OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
-					            if (results != 6)
-					            {
-						            return;
-					            }
+					// logic here Will be called after the child window is closed
+					if (((AddTemplate)sender).Canceled)
+					{
+						return;
+					}
 
-					            //if the window is open we have to close it before we overwrite it.
-					            var pi = project.GetProjectItem(m.Props.Template);
-					            if (pi != null && pi.Document != null)
-					            {
-						            pi.Document.Close(vsSaveChanges.vsSaveChangesNo);
-					            }
-				            }
+					var templatePath = Path.GetFullPath(Path.Combine(project.GetPath(), m.Props.Template));
+					//GetFullpath removes un-needed relative paths  (ie if you are putting something in the solution directory)
 
-				            var templateSamplesPath = Path.Combine(DteHelper.AssemblyDirectory(), @"Resources\Templates");
-				            var defaultTemplatePath = Path.Combine(templateSamplesPath, m.DefaultTemplate.SelectedValue.ToString());
-				            if (!File.Exists(defaultTemplatePath))
-				            {
-					            throw new UserException("T4Path: " + defaultTemplatePath + " is missing or you can't access it.");
-				            }
+					if (File.Exists(templatePath))
+					{
+						var results = VsShellUtilities.ShowMessageBox(ServiceProvider.GlobalProvider,
+							"'" + templatePath + "' already exists, are you sure you want to overwrite?", "Overwrite",
+							OLEMSGICON.OLEMSGICON_QUERY, OLEMSGBUTTON.OLEMSGBUTTON_YESNOCANCEL,
+							OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+						if (results != 6)
+						{
+							return;
+						}
 
-				            var dir = Path.GetDirectoryName(templatePath);
-				            if (!Directory.Exists(dir))
-				            {
-					            Directory.CreateDirectory(dir);
-				            }
+						//if the window is open we have to close it before we overwrite it.
+						var pi = project.GetProjectItem(m.Props.Template);
+						if (pi != null && pi.Document != null)
+						{
+							pi.Document.Close(vsSaveChanges.vsSaveChangesNo);
+						}
+					}
 
-				            Status.Update("[Template] Adding " + templatePath + " to project ... ");
-				            // When you add a TT file to visual studio, it will try to automatically compile it, 
-				            // if there is error (and there will be error because we have custom generator) 
-				            // the error will persit until you close Visual Studio. The solution is to add 
-				            // a blank file, then overwrite it
-				            // http://stackoverflow.com/questions/17993874/add-template-file-without-custom-tool-to-project-programmatically
-				            var blankTemplatePath = Path.Combine(DteHelper.AssemblyDirectory(), @"Resources\Templates\_Blank.tt");
-							// check out file if in TFS
-							try
-							{
-								var workspaceInfo = Workstation.Current.GetLocalWorkspaceInfo(templatePath);
+					var templateSamplesPath = Path.Combine(DteHelper.AssemblyDirectory(), @"Resources\Templates");
+					var defaultTemplatePath = Path.Combine(templateSamplesPath, m.DefaultTemplate.SelectedValue.ToString());
+					if (!File.Exists(defaultTemplatePath))
+					{
+						throw new UserException("T4Path: " + defaultTemplatePath + " is missing or you can't access it.");
+					}
 
-								if (workspaceInfo != null)
-								{
-									var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
-									var workspace = workspaceInfo.GetWorkspace(server);
-									workspace.PendEdit(templatePath);
-									Status.Update("[Template] Checked out template file from TFS' current workspace.");
-								}
-							}
-							catch (Exception)
-							{
-								// ignored
-							}
+					var dir = Path.GetDirectoryName(templatePath);
+					if (!Directory.Exists(dir))
+					{
+						Directory.CreateDirectory(dir);
+					}
 
-				            try
-				            {
-								File.Copy(blankTemplatePath, templatePath, true);
-							}
-				            catch (Exception ex)
-				            {
-								var error = ex.Message + "\n" + ex.StackTrace;
-								MessageBox.Show(error, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+					Status.Update("[Template] Adding " + templatePath + " to project ... ");
+					// When you add a TT file to visual studio, it will try to automatically compile it, 
+					// if there is error (and there will be error because we have custom generator) 
+					// the error will persit until you close Visual Studio. The solution is to add 
+					// a blank file, then overwrite it
+					// http://stackoverflow.com/questions/17993874/add-template-file-without-custom-tool-to-project-programmatically
+					var blankTemplatePath = Path.Combine(DteHelper.AssemblyDirectory(), @"Resources\Templates\_Blank.tt");
+					// check out file if in TFS
+					try
+					{
+						var workspaceInfo = Workstation.Current.GetLocalWorkspaceInfo(templatePath);
 
-					            throw;
-				            }
+						if (workspaceInfo != null)
+						{
+							var server = new TfsTeamProjectCollection(workspaceInfo.ServerUri);
+							var workspace = workspaceInfo.GetWorkspace(server);
+							workspace.PendEdit(templatePath);
+							Status.Update("[Template] Checked out template file from TFS' current workspace.");
+						}
+					}
+					catch (Exception)
+					{
+						// ignored
+					}
 
-				            Status.Update("[Template] [DONE] Adding template file to project.");
+					try
+					{
+						File.Copy(blankTemplatePath, templatePath, true);
+					}
+					catch (Exception ex)
+					{
+						var error = ex.Message + "\n" + ex.StackTrace;
+						MessageBox.Show(error, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 
-				            var p = project.ProjectItems.AddFromFile(templatePath);
-				            p.Properties.SetValue("CustomTool", "");
+						throw;
+					}
 
-				            File.Copy(defaultTemplatePath, templatePath, true);
-				            p.Properties.SetValue("CustomTool", typeof (CrmCodeGenerator2011).Name);
-			            };
+					Status.Update("[Template] [DONE] Adding template file to project.");
+
+					var p = project.ProjectItems.AddFromFile(templatePath);
+					p.Properties.SetValue("CustomTool", "");
+
+					File.Copy(defaultTemplatePath, templatePath, true);
+					p.Properties.SetValue("CustomTool", nameof(CrmCodeGenerator2011));
+				};
+
 			m.ShowModal();
 		}
 

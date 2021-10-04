@@ -55,6 +55,8 @@ namespace CrmCodeGenerator.VSPackage
 		{
 			get
 			{
+				ThreadHelper.ThrowIfNotOnUIThread();
+
 				if (codeDomProvider != null)
 				{
 					return codeDomProvider;
@@ -75,6 +77,8 @@ namespace CrmCodeGenerator.VSPackage
 		{
 			get
 			{
+				ThreadHelper.ThrowIfNotOnUIThread();
+
 				if (serviceProvider != null)
 				{
 					return serviceProvider;
@@ -250,6 +254,8 @@ namespace CrmCodeGenerator.VSPackage
 
 		public void Dispose()
 		{
+			ThreadHelper.ThrowIfNotOnUIThread();
+
 			if (codeDomProvider != null)
 			{
 				codeDomProvider.Dispose();

@@ -114,6 +114,7 @@ When you make changes to the template and save, Visual Studio will automatically
 
 #### _v10.8.1 (2021-10-04)_
 + Added: unify global option-sets (thanks https://github.com/ClemensWon)
++ Improved: upgraded to VS Async API
 + Fixed: non-existent entities in settings persisting, causing error with 'generate cached'
 #### _v10.7.6 (2021-05-28)_
 + Fixed: Use Display Names option not saved correctly

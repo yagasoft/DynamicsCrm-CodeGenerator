@@ -57,3 +57,7 @@ using Microsoft.VisualStudio.Shell;
 [assembly: ProvideBindingRedirection(AssemblyName = "Newtonsoft.Json",
 	CodeBase = @"$PackageFolder$\Newtonsoft.Json.dll",
 	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "10.0.0.0")]
+
+[assembly: ProvideBindingRedirection(AssemblyName = "Yagasoft.Libraries.Common",
+	CodeBase = @"$PackageFolder$\Yagasoft.Libraries.Common.dll",
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "3.0.0.0")]

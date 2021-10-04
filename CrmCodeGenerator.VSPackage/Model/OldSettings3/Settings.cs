@@ -1093,99 +1093,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 			public int _EntitiesPerThread = 5;
 		}
 
-		public SerializableSettings SerializedSettings
-		{
-			get
-			{
-				return null;
-
-				var entityMetadataCacheGuid = new Guid[EntityMetadataCache.Count];
-				var entityMetadataCacheMappingEntity = new MappingEntity[EntityMetadataCache.Count];
-
-				var index = 0;
-				EntityMetadataCache.Keys.ToList()
-					.ForEach(key =>
-					         {
-						         var value = EntityMetadataCache[key];
-						         entityMetadataCacheGuid[index] = key;
-						         entityMetadataCacheMappingEntity[index] = value;
-						         index++;
-					         });
-
-				return new SerializableSettings
-				       {
-					       _EntityMetadataCacheGuid = entityMetadataCacheGuid,
-					       _EntityMetadataCacheMappingEntity = entityMetadataCacheMappingEntity,
-					       _UseSSL = UseSSL,
-					       _UseIFD = UseIFD,
-					       _UseOnline = UseOnline,
-					       _UseOffice365 = UseOffice365,
-					       _EntitiesToIncludeString = EntitiesToIncludeString,
-					       _CrmOrg = CrmOrg,
-					       _Password = Password,
-					       _Username = Username,
-					       _Domain = Domain,
-					       _Namespace = Namespace,
-					       _ProjectName = ProjectName,
-					       _ServerName = ServerName,
-					       _ServerPort = ServerPort,
-					       _HomeRealm = HomeRealm,
-					       _UseWindowsAuth = UseWindowsAuth,
-					       _EntitiesString = EntitiesString,
-					       _SelectPrefixes = SelectPrefixes,
-					       _SplitFiles = SplitFiles,
-					       _Context = Context,
-					       _Threads = Threads,
-					       _EntitiesPerThread = EntitiesPerThread
-				       };
-			}
-
-			set
-			{
-				if (value == null)
-				{
-					return;
-				}
-
-				EntityMetadataCache.Clear();
-
-				for (var i = 0; i < value._EntityMetadataCacheGuid.Length; i++)
-				{
-					EntityMetadataCache.Add(value._EntityMetadataCacheGuid[i], value._EntityMetadataCacheMappingEntity[i]);
-				}
-
-				UseSSL = value._UseSSL;
-				UseIFD = value._UseIFD;
-				UseOnline = value._UseOnline;
-				UseOffice365 = value._UseOffice365;
-				EntitiesToIncludeString = value._EntitiesToIncludeString ?? EntitiesToIncludeString;
-				CrmOrg = value._CrmOrg ?? CrmOrg;
-				Password = value._Password ?? Password;
-				Username = value._Username ?? Username;
-				Domain = value._Domain ?? Domain;
-				Namespace = value._Namespace ?? Namespace;
-				ProjectName = value._ProjectName ?? ProjectName;
-				ServerName = value._ServerName ?? ServerName;
-				HomeRealm = value._HomeRealm ?? HomeRealm;
-				UseWindowsAuth = value._UseWindowsAuth;
-				EntitiesString = value._EntitiesString ?? EntitiesString;
-				SelectPrefixes = value._SelectPrefixes ?? SelectPrefixes;
-				SplitFiles = value._SplitFiles;
-				Context = value._Context;
-				Threads = value._Threads <= 0 ? 2 : value._Threads;
-				EntitiesPerThread = value._EntitiesPerThread <= 0 ? 5 : value._EntitiesPerThread;
-				ServerPort = value._ServerPort ?? ServerPort;
-
-				if (string.IsNullOrWhiteSpace(ServerPort) || Regex.IsMatch(ServerPort, "^\\d+$"))
-				{
-					ServerName = $"{(UseSSL ? "https" : "http")}://{ServerName}";
-					ServerName += string.IsNullOrWhiteSpace(ServerPort) ? "" : $":{ServerPort}";
-					ServerName += string.IsNullOrWhiteSpace(CrmOrg) ? "" : $"/{CrmOrg}";
-					ServerPort = UseOffice365 ? "Office365" : (UseIFD ? "IFD" : "AD");
-				}
-			}
-		}
-
 		#endregion
 
 		#region Init
@@ -1216,8 +1123,6 @@ namespace CrmCodeGenerator.VSPackage.Model
 			Dirty = false;
 
 			InitFields();
-
-			SerializedSettings = serSettings;
 		}
 
 		public void OnDeserialization(object sender)
