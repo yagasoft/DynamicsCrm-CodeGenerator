@@ -15,9 +15,11 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 	public class MappingEnum
 	{
 		public Guid? MetadataId { get; set; }
+		public bool? IsGlobal { get; set; }
 		public string DisplayName { get; set; }
 		public string FriendlyName { get; set; }
 		public string LogicalName { get; set; }
+		public string EnumName { get; set; }
 		public bool IsMultiSelect { get; set; }
 		public MapperEnumItem[] Items { get; set; }
 
@@ -25,9 +27,9 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 		{
 			mappingEnum = mappingEnum
 				?? new MappingEnum
-				   {
-					   MetadataId = picklist.MetadataId
-				   };
+				{
+					MetadataId = picklist.MetadataId
+				};
 
 			if (picklist.SchemaName != null)
 			{
@@ -42,6 +44,16 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 			if (attributeAsEnum?.OptionSet != null && attributeAsEnum.OptionSet.Options.Count > 0)
 			{
 				var newItems = new List<MapperEnumItem>();
+				mappingEnum.IsGlobal = attributeAsEnum.OptionSet.IsGlobal;
+				if (mappingEnum.IsGlobal == true)
+				{
+					mappingEnum.EnumName = attributeAsEnum.OptionSet.Name;
+				}
+				else
+				{
+					mappingEnum.EnumName = mappingEnum.LogicalName;
+
+				}
 
 				newItems.AddRange(attributeAsEnum.OptionSet.Options
 					.Where(o => o.Label.UserLocalizedLabel != null)

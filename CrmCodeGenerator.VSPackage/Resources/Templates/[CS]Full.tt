@@ -51,7 +51,10 @@ using Microsoft.Xrm.Sdk.Client;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Query;
 
-<# var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName)).ToArray(); #>
+<# 
+   var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName)).ToArray(); 
+   Dictionary<string, MappingEnum> globalEnumerations = new Dictionary<string, MappingEnum>();
+#>
 <# if (Context.FileName == "CrmSchema") { #>[assembly: ProxyTypesAssemblyAttribute()]<# } #>
 
 namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<#= Context.FileName #><#}#>
@@ -2766,9 +2769,10 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
 	#region Entities
 <#
 	var manager = Manager.Create(Host, GenerationEnvironment);
-	Generate(manager);
+	Generate(manager, globalEnumerations);
 	GenerateContracts(manager);
 	GenerateBase(manager);
+	GenerateGlobalEnumerations(manager, globalEnumerations);
 	CloseFiles(manager);
 #>
 <#+
@@ -2805,7 +2809,7 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
    **/
 #>
 <#+
-	void Generate(Manager manager, MappingEntity entity)
+	void Generate(Manager manager, MappingEntity entity,  Dictionary<string, MappingEnum> globalEnumerations)
 	{
 		var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName)).ToArray();
 		var oneNRels= entity.RelationshipsOneToMany.Where(r => selectedEntities.Select(m => m.LogicalName).Contains(r.Type));
@@ -2942,7 +2946,13 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ if(attribute.IsDeprecated) { #>
 		[Obsolete]
 <#+ } #>
+<#+ if ((attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode)&& attribute.EnumData != null && attribute.EnumData.IsGlobal == true)
+	{#>
+		public GlobalEnumerations.<#= attribute.EnumData.EnumName #>? <#= attribute.SchemaName #>
+<#+	}
+	else {#>
 		public <#= attributeType #> <#= attributeName #>
+<#+	}#>
 		{
 <#+ if (attribute.IsActivityParty) { #>
 			get
@@ -2975,9 +2985,14 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ } #>
 <#+ if (attribute.EnumData != null && attribute.EnumData.IsMultiSelect) { #>
                 return value?.Cast<<#= attributeType.Replace("[]", "") #>>().ToArray();
-<#+ } else if(attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) { #>
-                return (<#= attributeType #>) value?.Value;
-<#+ } else if (attribute.TargetTypeForCrmSvcUtil.Contains("Money")) { #>
+<#+ } else if(attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) { 
+		if (attribute.EnumData.IsGlobal == true) {#>
+			return (GlobalEnumerations.<#= attribute.EnumData.EnumName #>) value?.Value;
+		<#+}
+		else {#>
+			return (<#= attributeType #>) value?.Value;
+		<#+}
+	} else if (attribute.TargetTypeForCrmSvcUtil.Contains("Money")) { #>
                 return value?.Value;
 <#+ } else if (attribute.Attribute != null && attribute.Attribute.IsMultiTyped && Context.IsUseCustomEntityReference) { #>
                 return value == null ? null : new LookupValue(value.LogicalName, value.Id);
@@ -3525,6 +3540,10 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ foreach(var enm in entity.Enums.Where(e => fields.Any(f => f.LogicalName == e.LogicalName))) {
         var attribute = entity.Fields.FirstOrDefault(field => field.LogicalName == enm.LogicalName);
         var attributeName = Context.UseDisplayNames ? (FirstNotNullOrEmpty((entityFilter == null || entityFilter.AttributeRenames == null) ? null : entityFilter.AttributeRenames, attribute == null ? "" : attribute.Attribute.LogicalName) ?? enm.FriendlyName) : enm.DisplayName;
+		if (enm.IsGlobal != null && enm.IsGlobal.Value) {
+			globalEnumerations[enm.EnumName] = enm;
+			continue;
+		}
  #>
 		public enum <#= attributeName #>Enum
 		{
@@ -3763,13 +3782,13 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 		manager.EndBlock();
 	}
 
-	void Generate(Manager manager)
+	void Generate(Manager manager,  Dictionary<string, MappingEnum> globalEnumerations)
 	{
 		var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName));
 
 		foreach (var entity in selectedEntities)
 		{
-			Generate(manager, entity);
+			Generate(manager, entity, globalEnumerations);
 		}
 	}
 #>
@@ -3806,6 +3825,36 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
     *********************************************************
     **********************************************************
    **/
+#>
+
+<#+
+	void GenerateGlobalEnumerations(Manager manager, Dictionary<string, MappingEnum> globalEnumerations)
+    {
+	if (Context.SplitFiles) {
+		manager.StartNewFile("GlobalEnumerations.generated.cs");
+#>
+namespace <#= Context.Namespace #> {
+<#+ } #>	
+	#region GlobalEnumerations
+	public class GlobalEnumerations
+	{
+<#+
+	 foreach(var enm in globalEnumerations) {
+	 Log(enm.Value.EnumName);		
+#>
+		public enum <#= enm.Value.EnumName #>
+		{
+<#+ foreach(var item in enm.Value.Items) { #>
+			<#+ if (Context.IsAddEntityAnnotations) { #>[EnumMember]<#+ } #><#= item.Name #> = <#= item.Value #>,
+<#+ } #>
+		}
+<#+ } #>
+	}
+<#+
+	if (Context.SplitFiles) {
+		manager.EndBlock();
+    }
+    }
 #>
 
 <#+
@@ -4708,7 +4757,14 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 
 		if (crmType.Contains("OptionSetValue") || field.IsStateCode)
 		{
-			return attributeName + "Enum?";
+			if (field.EnumData != null && field.EnumData.IsGlobal == true)
+            {
+				return field.EnumData.LogicalName + "?";
+            }
+			else
+			{
+				return attributeName + "Enum?";
+            }
 		}
         else if (field.EnumData != null && field.EnumData.IsMultiSelect)
         {
