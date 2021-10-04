@@ -72,8 +72,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Yagasoft.Libraries.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.Common.2.4.5\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
+    <Reference Include="Yagasoft.Libraries.Common, Version=3.3.3.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
+      <HintPath>..\packages\Yagasoft.Libraries.Common.3.4.1\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
