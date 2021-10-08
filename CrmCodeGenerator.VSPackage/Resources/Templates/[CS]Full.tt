@@ -77,7 +77,12 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
 		{
 		}
 
-<# foreach (var entityQ in selectedEntities) {
+<# 
+var activityparty = selectedEntities.FirstOrDefault(tmp => tmp.LogicalName == "activityparty");
+var activitypartyTmpName = Context.CrmEntityProfiles.FirstOrDefault((tmp) => tmp.LogicalName == "activityparty");
+var activitypartyName = (activitypartyTmpName == null || activitypartyTmpName.EntityRename == null)
+				? (Context.UseDisplayNames ? activityparty.FriendlyName : activityparty.HybridName) : activitypartyTmpName.EntityRename;
+foreach (var entityQ in selectedEntities) {
 			var crmEntityNameTemp = Context.CrmEntityProfiles.FirstOrDefault(e => e.LogicalName == entityQ.LogicalName);
 			var crmEntityName = (crmEntityNameTemp == null || crmEntityNameTemp.EntityRename == null)
 				? (Context.UseDisplayNames ? entityQ.FriendlyName : entityQ.HybridName) : crmEntityNameTemp.EntityRename;
@@ -2769,7 +2774,7 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
 	#region Entities
 <#
 	var manager = Manager.Create(Host, GenerationEnvironment);
-	Generate(manager, globalEnumerations);
+	Generate(manager ,globalEnumerations, activitypartyName);
 	GenerateContracts(manager);
 	GenerateBase(manager);
 	GenerateGlobalEnumerations(manager, globalEnumerations);
@@ -2809,7 +2814,7 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
    **/
 #>
 <#+
-	void Generate(Manager manager, MappingEntity entity, Dictionary<string, MappingEnum> globalEnumerations)
+	void Generate(Manager manager, MappingEntity entity, Dictionary<string, MappingEnum> globalEnumerations, string activitypartyName)
 	{
 		var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName)).ToArray();
 		var oneNRels= entity.RelationshipsOneToMany.Where(r => selectedEntities.Select(m => m.LogicalName).Contains(r.Type));
@@ -2946,13 +2951,16 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ if(attribute.IsDeprecated) { #>
 		[Obsolete]
 <#+ } #>
-<#+ if ((attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) && attribute.EnumData?.IsGlobal == true)
+<#+ if(attribute.IsActivityParty) {#>
+	public <#= activitypartyName #>[] <#= attributeName #>
+<#+} else {
+	if ((attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) && attribute.EnumData?.IsGlobal == true)
 	{#>
 		public GlobalEnums.<#= attribute.EnumData.EnumName #>? <#= attribute.SchemaName #>
 <#+	}
 	else {#>
-		public <#= attributeType #> <#= attributeName #>
-<#+	}#>
+	public <#= attributeType #> <#= attributeName #>
+<#+} }#>
 		{
 <#+ if (attribute.IsActivityParty) { #>
 			get
@@ -2962,7 +2970,7 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 				if (collection == null && backupAttributeCollection != null && backupAttributeCollection.Contains("<#= attribute.Attribute.LogicalName #>"))
 				    collection = (EntityCollection) backupAttributeCollection["<#= attribute.Attribute.LogicalName #>"];
 <#+ } #>
-				if (collection != null && collection.Entities != null) return collection.Entities.Select(entity => entity.ToEntity<ActivityParty>()).ToArray();
+				if (collection != null && collection.Entities != null) return collection.Entities.Select(entity => entity.ToEntity<<#= activitypartyName #>>()).ToArray();
 				else return null;
 			}
 			set
@@ -3782,13 +3790,13 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 		manager.EndBlock();
 	}
 
-	void Generate(Manager manager, Dictionary<string, MappingEnum> globalEnumerations)
+	void Generate(Manager manager, Dictionary<string, MappingEnum> globalEnumerations, string activitypartyName)
 	{
 		var selectedEntities = Context.Entities.Where(e => Context.SelectedEntities.Contains(e.LogicalName));
 
 		foreach (var entity in selectedEntities)
 		{
-			Generate(manager, entity, globalEnumerations);
+			Generate(manager, entity, globalEnumerations, activitypartyName);
 		}
 	}
 #>
