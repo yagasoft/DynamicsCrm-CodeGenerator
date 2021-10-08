@@ -34,6 +34,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -51,20 +52,18 @@ Contributions
 </Label>
             <Separator Grid.Column="0" Grid.Row="3" Grid.ColumnSpan="2" />
             <Label Grid.Column="0" Grid.Row="4" FontFamily="Gabriola" FontSize="28">Eric Labashosky</Label>
-            <Label Grid.Column="1" Grid.Row="4" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">
-extension
-base code
-            </Label>
+            <Label Grid.Column="1" Grid.Row="4" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">extension
+base code</Label>
             <Label Grid.Column="0" Grid.Row="5" FontFamily="Gabriola" FontSize="28">Ramy Victor</Label>
-            <Label Grid.Column="1" Grid.Row="5" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">
-enhancements
- &amp; debugging
-            </Label>
+            <Label Grid.Column="1" Grid.Row="5" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">enhancements
+ &amp; debugging</Label>
             <Label Grid.Column="0" Grid.Row="6" FontFamily="Gabriola" FontSize="28">Mohammed Ghoname</Label>
-            <Label Grid.Column="1" Grid.Row="6" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">
-   feature
-suggestions
-            </Label>
+            <Label Grid.Column="1" Grid.Row="6" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">   feature
+suggestions</Label>
+            <Label Grid.Column="0" Grid.Row="7" FontFamily="Gabriola" FontSize="28" xml:space="preserve">                  ClemensWon
+(https://github.com/ClemensWon)</Label>
+            <Label Grid.Column="1" Grid.Row="7" FontFamily="Verdana" FontSize="15" FontStyle="Italic" xml:space="preserve">    global
+option-sets</Label>
         </Grid>
     </StackPanel>
 </Window>
