@@ -4,7 +4,7 @@
     {
 	    public const string AppName = "Dynamics Template-based Code Generator";
 	    public const string AppId = "vs-code-gen-ext";
-	    public const string AppVersion = "10.8.2";
+	    public const string AppVersion = "10.8.3";
 
 	    public const string SettingsVersion = "10.5.1";
 

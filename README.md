@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.8.2
+### Version: 10.8.3
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -112,6 +112,8 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.8.3 (2021-10-11)_
++ Fixed: cache not working
 #### _v10.8.2 (2021-10-04)_
 + Added: unify global option-sets (thanks https://github.com/ClemensWon)
 + Improved: upgraded to VS Async API

@@ -50,7 +50,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 								throw new Exception("Invalid settings format.");
 							}
 
-							Libraries.Common.CacheHelpers.AddToMemCache(cacheKey, cache);
+							Libraries.Common.CacheHelpers.AddToMemCache(cacheKey, cache, TimeSpan.MaxValue);
 
 							logger("[Cache] [DONE] Finished loading cache.");
 
@@ -65,7 +65,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 					logger("!! [Cache] ![ERROR]! Failed to read cache => " + ex.BuildExceptionMessage(isUseExStackTrace: true));
 				}
 
-				return Libraries.Common.CacheHelpers.AddToMemCache(cacheKey, new MetadataCache());
+				return Libraries.Common.CacheHelpers.AddToMemCache(cacheKey, new MetadataCache(), TimeSpan.MaxValue);
 			}
 		}
 
