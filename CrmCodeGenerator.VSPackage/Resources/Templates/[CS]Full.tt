@@ -78,11 +78,12 @@ namespace <#= Context.Namespace #><# if (Context.FileName != "CrmSchema") { #>.<
 		}
 
 <# 
-	var activityParty = selectedEntities.FirstOrDefault(tmp => tmp.LogicalName == "activityparty");
-	var activityPartyTmpName = Context.CrmEntityProfiles.FirstOrDefault((tmp) => tmp.LogicalName == "activityparty");
+	var activityParty = Context.Entities.FirstOrDefault(t => t.LogicalName == "activityparty");
+	var activityPartyTmpName = Context.CrmEntityProfiles.FirstOrDefault(t => t.LogicalName == "activityparty");
 	var activityPartyName = activityPartyTmpName?.EntityRename == null
-		? (Context.UseDisplayNames ? activityParty.FriendlyName : activityParty.HybridName)
+		? ((Context.UseDisplayNames ? activityParty?.FriendlyName : activityParty?.HybridName) ?? "ActivityParty")
 		: activityPartyTmpName.EntityRename;
+
 	foreach (var entityQ in selectedEntities) {
 		var crmEntityNameTemp = Context.CrmEntityProfiles.FirstOrDefault(e => e.LogicalName == entityQ.LogicalName);
 		var crmEntityName = (crmEntityNameTemp == null || crmEntityNameTemp.EntityRename == null)
