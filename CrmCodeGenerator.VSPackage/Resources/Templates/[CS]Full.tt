@@ -2969,6 +2969,24 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 	}
 #>
 		{
+<#+
+	if (attribute.Attribute.LogicalName == "activitytypecode") {#>
+		get
+		{
+			var value = GetAttributeValue<GlobalEnums.activitypointer_activitytypecode?>("activitytypecode");
+			if (value == null && backupAttributeCollection != null && backupAttributeCollection.Contains("activitytypecode"))
+				value = (GlobalEnums.activitypointer_activitytypecode?) backupAttributeCollection["activitytypecode"];
+			   return value;
+		}
+		set
+		{
+			OnPropertyChanging();
+            SetAttributeValue("actualdurationminutes", value);
+			OnPropertyChanged();
+		}
+	<#+}
+	else {
+#>
 <#+ if (attribute.IsActivityParty) { #>
 			get
 			{
@@ -3055,7 +3073,7 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ } #>
 			}
 <#+ } #>
-<#+ } #>
+<#+ } }#>
 		}
 
 <#+ if (Context.IsGenerateAlternateKeys) {
