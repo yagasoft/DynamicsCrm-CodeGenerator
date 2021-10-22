@@ -2956,9 +2956,13 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 <#+ if(attribute.IsActivityParty) {#>
 	public <#= activityPartyName #>[] <#= attributeName #>
 <#+ } else {
-	if ((attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) && attribute.EnumData?.IsGlobal == true) {
-#>
+	if ((attribute.EnumData != null || attribute.IsStateCode) && attribute.EnumData?.IsGlobal == true) {
+		if (attribute.EnumData.IsMultiSelect) {#>
+		public GlobalEnums.<#= attribute.EnumData.EnumName #>[] <#= attribute.SchemaName #>
+<#+		}
+		else {#>
 		public GlobalEnums.<#= attribute.EnumData.EnumName #>? <#= attribute.SchemaName #>
+<#+		}#>
 <#+	} else {#>
 	public <#= attributeType #> <#= attributeName #>
 <#+ }
@@ -2995,7 +2999,7 @@ namespace <#= Context.Namespace #><#+ if (Context.FileName != "CrmSchema") { #>.
 				    value = (<#= crmType #>) backupAttributeCollection["<#= attribute.Attribute.LogicalName #>"];
 <#+ } #>
 <#+ if (attribute.EnumData != null && attribute.EnumData.IsMultiSelect) { #>
-                return value?.Cast<<#= attributeType.Replace("[]", "") #>>().ToArray();
+                return value?.Cast<GlobalEnums.<#= attribute.EnumData.EnumName #>>().ToArray();
 <#+ } else if(attribute.TargetTypeForCrmSvcUtil.Contains("OptionSetValue") || attribute.IsStateCode) { 
 		if (attribute.EnumData.IsGlobal) { #>
 			return (GlobalEnums.<#= attribute.EnumData.EnumName #>) value?.Value;
