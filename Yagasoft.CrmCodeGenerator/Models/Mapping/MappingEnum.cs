@@ -15,7 +15,7 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 	public class MappingEnum
 	{
 		public Guid? MetadataId { get; set; }
-		public bool IsGlobal { get; set; }
+		public MapperEnumGlobal Global { get; set; }
 		public string DisplayName { get; set; }
 		public string FriendlyName { get; set; }
 		public string LogicalName { get; set; }
@@ -45,8 +45,27 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 			{
 				var newItems = new List<MapperEnumItem>();
 
-				mappingEnum.IsGlobal = attributeAsEnum.OptionSet.IsGlobal == true;
-				mappingEnum.EnumName = mappingEnum.IsGlobal ? attributeAsEnum.OptionSet.Name : mappingEnum.LogicalName;
+				var isGlobal = attributeAsEnum.OptionSet.IsGlobal == true;
+
+				if (isGlobal)
+				{
+					var label = attributeAsEnum.OptionSet.DisplayName?.UserLocalizedLabel?.Label;
+					var displayName = Naming.GetProperVariableName(attributeAsEnum.OptionSet.Name, isTitleCaseLogicalName);
+
+					mappingEnum.Global =
+						new MapperEnumGlobal
+						{
+							EnumName = attributeAsEnum.OptionSet.Name,
+							FriendlyName = Naming.Clean(
+								string.IsNullOrEmpty(label)
+									? Naming.Clean(displayName)
+									: Naming.Clean(label)),
+							DisplayName = displayName,
+							LogicalName = attributeAsEnum.OptionSet.Name
+						};
+				}
+
+				mappingEnum.EnumName = mappingEnum.LogicalName;
 
 				newItems.AddRange(attributeAsEnum.OptionSet.Options
 					.Where(o => o.Label.UserLocalizedLabel != null)
@@ -135,5 +154,14 @@ namespace Yagasoft.CrmCodeGenerator.Models.Mapping
 		public string DisplayName => Attribute.DisplayName;
 
 		public LocalizedLabelSerialisable[] LocalizedLabels => Attribute.LocalizedLabels;
+	}
+
+	[Serializable]
+	public class MapperEnumGlobal
+	{
+		public string DisplayName { get; set; }
+		public string FriendlyName { get; set; }
+		public string LogicalName { get; set; }
+		public string EnumName { get; set; }
 	}
 }

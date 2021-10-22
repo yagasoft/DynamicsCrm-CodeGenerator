@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.8.4
+### Version: 10.8.5
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -112,12 +112,16 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ## Changes
 
+#### _v10.8.5 (2021-10-22)_
++ Improved: refactor
++ Fixed: [template] multiselect option-sets mapping to global option-sets (thanks https://github.com/ClemensWon)
++ Fixed: [template] consider the 'use display names' setting for global option-sets
 #### _v10.8.4 (2021-10-19)_
-+ Fixed: ActivityParty naming issue (thanks https://github.com/ClemensWon)
++ Fixed: [template] ActivityParty naming issue (thanks https://github.com/ClemensWon)
 #### _v10.8.3 (2021-10-11)_
 + Fixed: cache not working
 #### _v10.8.2 (2021-10-04)_
-+ Added: unify global option-sets (thanks https://github.com/ClemensWon)
++ Added: [template] unify global option-sets (thanks https://github.com/ClemensWon)
 + Improved: upgraded to VS Async API
 + Fixed: non-existent entities in settings persisting, causing error with 'generate cached'
 #### _v10.7.6 (2021-05-28)_
