@@ -216,6 +216,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 		private List<string> oneToNFilter;
 		private List<string> nToOneFilter;
 
+		private CellHighlighter fieldsCellHighlighter;
+		private CellHighlighter oneNCellHighlighter;
+		private CellHighlighter nOneCellHighlighter;
+		private CellHighlighter nNCellHighlighter;
+
 		#region Property events
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -1116,6 +1121,38 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				checkBox.IsChecked = !checkBox.IsChecked;
 			}
+		}
+
+		private void DataGridCell_MouseIn(object sender, MouseEventArgs e)
+		{
+			var cell = sender as DataGridCell;
+			GetHighlighter(cell)?.HighlightCell(cell);
+		}
+
+		private void DataGridCell_MouseOut(object sender, MouseEventArgs e)
+		{
+			var cell = sender as DataGridCell;
+			GetHighlighter(cell)?.UnhighlightCell(cell);
+		}
+
+		private CellHighlighter GetHighlighter(DataGridCell cell)
+		{
+			if (cell == null)
+			{
+				return null;
+			}
+
+			var grid = cell.GetParent<DataGrid>();
+
+			var highlighter = grid.Name switch {
+				nameof(FieldsGrid) => fieldsCellHighlighter ??= new CellHighlighter(),
+				nameof(Relations1NGrid) => oneNCellHighlighter ??= new CellHighlighter(),
+				nameof(RelationsN1Grid) => nOneCellHighlighter ??= new CellHighlighter(),
+				nameof(RelationsNnGrid) => nNCellHighlighter ??= new CellHighlighter(),
+				_ => null
+				};
+
+			return highlighter;
 		}
 
 		#endregion

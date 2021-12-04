@@ -33,6 +33,8 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
         <Style TargetType="{x:Type DataGridCell}">
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridCell_PreviewMouseLeftButtonDown" />
+            <EventSetter Event="MouseEnter" Handler="DataGridCell_MouseIn" />
+            <EventSetter Event="MouseLeave" Handler="DataGridCell_MouseOut" />
             <Style.Triggers>
                 <Trigger Property="DataGridCell.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Transparent" />
@@ -55,6 +57,9 @@
                 <Trigger Property="DataGridRow.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Blue" />
                     <Setter Property="BorderThickness" Value="1" />
+                </Trigger>
+                <Trigger Property="DataGridRow.IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#f2f2f2" />
                 </Trigger>
             </Style.Triggers>
         </Style>

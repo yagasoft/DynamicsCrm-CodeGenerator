@@ -40,6 +40,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 	{
 		private readonly IConnectionManager connectionManager;
 		private readonly MetadataCache metadataCache;
+		private CellHighlighter cellHighlighter;
 
 		#region Properties
 
@@ -730,6 +731,11 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				checkBox.IsChecked = !checkBox.IsChecked;
 			}
+		}
+
+		private void DataGridCell_MouseOver(object sender, MouseEventArgs e)
+		{
+			(cellHighlighter ??= new CellHighlighter())?.HighlightCellHover(sender as DataGridCell);
 		}
 
 		#endregion

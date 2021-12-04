@@ -266,4 +266,67 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 			return dictionary;
 		}
 	}
+
+	public class CellHighlighter
+	{
+		private static readonly SolidColorBrush highlightedBrush = new SolidColorBrush(Color.FromRgb(242, 242, 242));
+		private static readonly SolidColorBrush nonHighlightedBrush = new SolidColorBrush(Colors.Transparent);
+
+		private int? latestHighlightedColumnIndex;
+		private IReadOnlyCollection<IReadOnlyCollection<DataGridCell>> latestHighlightedRowsCache;
+
+		public void HighlightCellHover(DataGridCell cell)
+		{
+			UnhighlightCell(cell);
+			HighlightCell(cell);
+			latestHighlightedColumnIndex = cell.Column.DisplayIndex;
+		}
+
+		public void HighlightCell(DataGridCell cell)
+		{
+			var rows = GetRows(cell);
+
+			if (rows == null)
+			{
+				return;
+			}
+
+			foreach (var childCell in rows
+				.SelectMany(r => r
+					.Where(c => c.Column.DisplayIndex == cell.Column.DisplayIndex
+						&& (c.Background as SolidColorBrush)?.Color != highlightedBrush.Color)))
+			{
+				childCell.Background = highlightedBrush;
+			}
+		}
+
+		public void UnhighlightCell(DataGridCell cell)
+		{
+			var rows = GetRows(cell);
+
+			if (rows == null)
+			{
+				return;
+			}
+
+			foreach (var childCell in rows
+				.SelectMany(r => r
+					.Where(c => c.Column.DisplayIndex == (latestHighlightedColumnIndex ?? cell.Column.DisplayIndex)
+						&& (c.Background as SolidColorBrush)?.Color != nonHighlightedBrush.Color)))
+			{
+				childCell.Background = nonHighlightedBrush;
+			}
+		}
+
+		private IReadOnlyCollection<IReadOnlyCollection<DataGridCell>> GetRows(DataGridCell cell)
+		{
+			if (cell == null)
+			{
+				return null;
+			}
+
+			return latestHighlightedRowsCache ??= cell.GetParent<DataGrid>()?.GetChildren<DataGridRow>()?
+				.Select(r => r.GetChildren<DataGridCell>().ToArray()).ToArray();
+		}
+	}
 }

@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.8.5
+### Version: 10.9.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -98,20 +98,20 @@ When you make changes to the template and save, Visual Studio will automatically
 + Add: undo/redo
 + Add: parse placeholders in annotations for LogicalName and variable name
 + Add: [template] File field, with a Get and Set that uses the SDK message
-+ Fix: [template] helpers to support new stuff since v7
-  + LoadRelation methods
-+ Improve: switch to async extension VS API
-+ Improve: [template] rework lookup labels localisation
-  + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
 + Add: enum annotations (DisplayName ... etc.)
 + Add: option to add alternate keys to contracts
 + Add: option to use CRM-only contracts to replace Contract classes, optionally
 + Add: [template] an attribute/annotation to the Clear Flag fields in contracts, to ease parsing them in helper methods
 + Add: [template] XrmDefinitelyTyped support, and generate form structure
-  + The 'sync extension' warning in VS is definitely annoying, but I have to make sure that a single version will be backward compatible back to at least VS 2015
++ Improve: [template] rework lookup labels localisation
+  + After the upgrade to v7, it has been buggy, and I don't like how it uses ExecuteMultiple to load labels in the first place; so I need to come up with a method that is faster but still as efficient
++ Fix: [template] helpers to support new stuff since v7
+  + LoadRelation methods
 
 ## Changes
 
+#### _v10.9.1 (2021-12-04)_
++ Added: cell highlighter for easier interaction with grids
 #### _v10.8.5 (2021-10-22)_
 + Improved: refactor
 + Fixed: [template] multiselect option-sets mapping to global option-sets (thanks https://github.com/ClemensWon)
