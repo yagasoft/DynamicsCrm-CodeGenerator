@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Yagasoft.Libraries.Common;
@@ -112,18 +113,30 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 			return false;
 		}
 
-		public static T GetChild<T>(this DependencyObject depObj) where T : DependencyObject
+		public static T GetChild<T>(this DependencyObject depObj, int? index = null) where T : DependencyObject
 		{
 			if (depObj == null)
 			{
 				return null;
 			}
 
-			for (var i = 0; i < VisualTreeHelper.GetChildrenCount(depObj); i++)
+			var count = VisualTreeHelper.GetChildrenCount(depObj);
+
+			for (var i = 0; i < count; i++)
 			{
 				var child = VisualTreeHelper.GetChild(depObj, i);
 
-				var result = (child as T) ?? GetChild<T>(child);
+				if (child is T childT)
+				{
+					if (!index.HasValue || index == i)
+					{
+						return childT;
+					}
+
+					continue;
+				}
+
+				var result = GetChild<T>(child, index);
 
 				if (result != null)
 				{
@@ -264,69 +277,6 @@ namespace CrmCodeGenerator.VSPackage.Helpers
 			}
 
 			return dictionary;
-		}
-	}
-
-	public class CellHighlighter
-	{
-		private static readonly SolidColorBrush highlightedBrush = new SolidColorBrush(Color.FromRgb(242, 242, 242));
-		private static readonly SolidColorBrush nonHighlightedBrush = new SolidColorBrush(Colors.Transparent);
-
-		private int? latestHighlightedColumnIndex;
-		private IReadOnlyCollection<IReadOnlyCollection<DataGridCell>> latestHighlightedRowsCache;
-
-		public void HighlightCellHover(DataGridCell cell)
-		{
-			UnhighlightCell(cell);
-			HighlightCell(cell);
-			latestHighlightedColumnIndex = cell.Column.DisplayIndex;
-		}
-
-		public void HighlightCell(DataGridCell cell)
-		{
-			var rows = GetRows(cell);
-
-			if (rows == null)
-			{
-				return;
-			}
-
-			foreach (var childCell in rows
-				.SelectMany(r => r
-					.Where(c => c.Column.DisplayIndex == cell.Column.DisplayIndex
-						&& (c.Background as SolidColorBrush)?.Color != highlightedBrush.Color)))
-			{
-				childCell.Background = highlightedBrush;
-			}
-		}
-
-		public void UnhighlightCell(DataGridCell cell)
-		{
-			var rows = GetRows(cell);
-
-			if (rows == null)
-			{
-				return;
-			}
-
-			foreach (var childCell in rows
-				.SelectMany(r => r
-					.Where(c => c.Column.DisplayIndex == (latestHighlightedColumnIndex ?? cell.Column.DisplayIndex)
-						&& (c.Background as SolidColorBrush)?.Color != nonHighlightedBrush.Color)))
-			{
-				childCell.Background = nonHighlightedBrush;
-			}
-		}
-
-		private IReadOnlyCollection<IReadOnlyCollection<DataGridCell>> GetRows(DataGridCell cell)
-		{
-			if (cell == null)
-			{
-				return null;
-			}
-
-			return latestHighlightedRowsCache ??= cell.GetParent<DataGrid>()?.GetChildren<DataGridRow>()?
-				.Select(r => r.GetChildren<DataGridCell>().ToArray()).ToArray();
 		}
 	}
 }

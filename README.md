@@ -2,7 +2,6 @@
 
 [![Join the chat at https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator](https://badges.gitter.im/yagasoft/DynamicsCrm-CodeGenerator.svg)](https://gitter.im/yagasoft/DynamicsCrm-CodeGenerator?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Version: 10.9.1
 ---
 
 A Visual Studio extension for generating early bound classes for Microsoft Dynamics CRM entities based on a template file, similar to Entity Framework.
@@ -82,16 +81,6 @@ When you make changes to the template and save, Visual Studio will automatically
 
 ![File](https://github.com/yagasoft/DynamicsCrm-CodeGenerator/raw/master/guide/images/crm-generator-external-05.png)
 
-## Credits
-
-  + Base code:
-	+ Eric Labashosky
-	+ https://github.com/xairrick/CrmCodeGenerator
-  + My work:
-	+ Completely reworked the screens
-	+ Greatly enhanced the generation and regeneration speed
-	+ Added the features that don't exist in the official tool
-
 ## Upcoming/planned
 
 + Add: Visual Studio Shared Projects support
@@ -108,49 +97,52 @@ When you make changes to the template and save, Visual Studio will automatically
 + Fix: [template] helpers to support new stuff since v7
   + LoadRelation methods
 
-## Changes
+## Credits & Contributions
 
-#### _v10.9.1 (2021-12-04)_
-+ Added: cell highlighter for easier interaction with grids
-#### _v10.8.5 (2021-10-22)_
-+ Improved: refactor
-+ Fixed: [template] multiselect option-sets mapping to global option-sets (thanks https://github.com/ClemensWon)
-+ Fixed: [template] consider the 'use display names' setting for global option-sets
-#### _v10.8.4 (2021-10-19)_
-+ Fixed: [template] ActivityParty naming issue (thanks https://github.com/ClemensWon)
-#### _v10.8.3 (2021-10-11)_
-+ Fixed: cache not working
-#### _v10.8.2 (2021-10-04)_
++ [Eric Labashosky](https://github.com/xairrick):
+  + Original extension base code
+  + My work:
+    + Redesigned the screens and most of the logic
+    + Greatly boosted the generation and regeneration speed
+    + Added the features that don't exist in the Microsoft's tool
++ Ramy Victor:
+  + Enhancements
+  + Debugging during the early versions
++ Mohammed Ghoname:
+  + New feature suggestions during the early versions
++ [ClemensWon](https://github.com/ClemensWon):
+  + Global option-sets
+
+## Changes
++ Check Releases page for the later changes
+#### _v10.6 to v10.9.1 (since 2020-10-01)_
++ Added: CRM entity profiles clean-up
++ Added: Filter Details window row filtering
 + Added: [template] unify global option-sets (thanks https://github.com/ClemensWon)
-+ Improved: upgraded to VS Async API
-+ Fixed: non-existent entities in settings persisting, causing error with 'generate cached'
-#### _v10.7.6 (2021-05-28)_
-+ Fixed: Use Display Names option not saved correctly
-#### _v10.7.5 (2021-04-29)_
++ Added: cell highlighter for easier interaction with grids
++ Improved: sort profiles to aid in preventing source control merge conflicts in JSON
++ Improved: JSON size by removing even more redundant information
 + Improved: connection readiness performance
-#### _v10.7.4 (2020-12-10)_
-+ Fixed: concurrency issues
-#### _v10.7.3 (2020-11-22)_
++ Improved: upgraded to VS Async API
++ Improved: refactor
++ Fixed: Actions 'loading' indicator issue
++ Fixed: generated code 'labels' syntax error
++ Fixed: connection errors causing deadlocks
++ Fixed: connection issues
++ Fixed: [template] removed LimitAttributes, which caused issues in sandbox plugins
++ Fixed: [template] skip Guid.Empty-valued records when calling ProcessFetchXmlRelations
++ Fixed: changing contract settings that doesn't require a trip to CRM's servers is not reflected if cache-only is used
++ Fixed: FetchXML result processing helper
 + Fixed: pre-v7 migration
 + Fixed: rare 'object null reference' error during generate
 + Fixed: filter to properly take the Display Name and Rename columns into account as lower case, and to consider the 'entity' and 'field' columns in relations
-#### _v10.7.2 (2020-10-18)_
-+ Fixed: FetchXML result processing helper
-#### _v10.7.1 (2020-10-17)_
-+ Added: CRM entity profiles clean-up
-+ Improved: JSON size by removing even more redundant information
-+ Fixed: changing contract settings that doesn't require a trip to CRM's servers is not reflected if cache-only is used
-#### _v10.6.4 (2020-10-14)_
-+ Improved: sort profiles to aid in preventing source control merge conflicts in JSON
-+ Fixed: [template] skip Guid.Empty-valued records when calling ProcessFetchXmlRelations
-+ Fixed: [template] removed LimitAttributes, which caused issues in sandbox plugins
-+ Fixed: connection issues
-#### _v10.6.3 (2020-10-04)_
-+ Fixed: connection errors causing deadlocks
-#### _v10.6.2 (2020-10-01)_
-+ Added: Filter Details window row filtering
-+ Fixed: generated code 'labels' syntax error
-+ Fixed: Actions 'loading' indicator issue
++ Fixed: concurrency issues
++ Fixed: Use Display Names option not saved correctly
++ Fixed: non-existent entities in settings persisting, causing error with 'generate cached'
++ Fixed: cache not working
++ Fixed: [template] ActivityParty naming issue (thanks https://github.com/ClemensWon)
++ Fixed: [template] consider the 'use display names' setting for global option-sets
++ Fixed: [template] multiselect option-sets mapping to global option-sets (thanks https://github.com/ClemensWon)
 #### _v10.1 to v10.5 (since 2020-08-28)_
 + Added: option to link CRM entity profile with contract profiles, effectively copying selection changes made in contracts to the CRM entity to keep them in sync
 + Added: option to define entity, attribute, and contract custom annotations through the UI
@@ -233,6 +225,8 @@ When you make changes to the template and save, Visual Studio will automatically
 + Fixed: [template] contract label dictionary has wrong type definition
 + Fixed: issues
 + Removed: connection profiles to encourage generating from a single model source for the selected project
+#### _v1.1.1 (2015-03-01)_
++ Initial release
 
 ---
 **Copyright &copy; by Ahmed Elsawalhy ([Yagasoft](https://yagasoft.com))** -- _GPL v3 Licence_

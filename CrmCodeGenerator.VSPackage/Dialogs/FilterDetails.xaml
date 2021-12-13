@@ -5,6 +5,7 @@
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
         xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
         xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
+        xmlns:helpers="clr-namespace:CrmCodeGenerator.VSPackage.Helpers"
         Title="{Binding WindowTitle}" Width="1360" Height="670" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner"
             ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
@@ -33,13 +34,24 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToHiddenConverter" TrueValue="Visible" FalseValue="Collapsed"/>
         <Style TargetType="{x:Type DataGridCell}">
             <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridCell_PreviewMouseLeftButtonDown" />
-            <EventSetter Event="MouseEnter" Handler="DataGridCell_MouseIn" />
-            <EventSetter Event="MouseLeave" Handler="DataGridCell_MouseOut" />
             <Style.Triggers>
                 <Trigger Property="DataGridCell.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Transparent" />
                     <Setter Property="Background" Value="Transparent" />
                     <Setter Property="Foreground" Value="Black" />
+                </Trigger>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="helpers:DataGridBehavior.HighlightColumn" Value="True"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Style.Triggers>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -57,9 +69,6 @@
                 <Trigger Property="DataGridRow.IsSelected" Value="True">
                     <Setter Property="BorderBrush" Value="Blue" />
                     <Setter Property="BorderThickness" Value="1" />
-                </Trigger>
-                <Trigger Property="DataGridRow.IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#f2f2f2" />
                 </Trigger>
             </Style.Triggers>
         </Style>

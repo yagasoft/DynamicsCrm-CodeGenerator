@@ -30,8 +30,8 @@ using Microsoft.VisualStudio.Shell;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("10.9.1.0")]
-[assembly: AssemblyFileVersion("10.9.1.0")]
+[assembly: AssemblyVersion("10.9.2.0")]
+[assembly: AssemblyFileVersion("10.9.2.0")]
 
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",
