@@ -7,6 +7,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
         xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
+        xmlns:helpers="clr-namespace:CrmCodeGenerator.VSPackage.Helpers"
         mc:Ignorable="d"
         Title="CRM Entities Selection and Generation Options" Width="1024" Height="670" Loaded="Window_Loaded"
         WindowStartupLocation="CenterOwner"
@@ -39,6 +40,19 @@
                     <Setter Property="BorderBrush" Value="Transparent" />
                     <Setter Property="Background" Value="Transparent" />
                 </Trigger>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="helpers:DataGridBehavior.HighlightColumn" Value="True"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Style.Triggers>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
+                </Trigger>
             </Style.Triggers>
         </Style>
         <Style TargetType="{x:Type DataGridRow}">
@@ -57,6 +71,9 @@
                     <Setter Property="BorderBrush" Value="Blue" />
                     <Setter Property="BorderThickness" Value="1" />
                 </Trigger>
+                <!--<Trigger Property="DataGridRow.IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#fbfbfb" />
+                </Trigger>-->
             </Style.Triggers>
         </Style>
     </Window.Resources>

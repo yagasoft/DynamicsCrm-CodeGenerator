@@ -5,6 +5,7 @@
         xmlns:xcdg="http://schemas.xceed.com/wpf/xaml/datagrid"
         xmlns:converters="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs.Converters"
         xmlns:t="clr-namespace:CrmCodeGenerator.VSPackage.Dialogs"
+        xmlns:helpers="clr-namespace:CrmCodeGenerator.VSPackage.Helpers"
         Title="{Binding WindowTitle}" Width="1024" Height="670" Loaded="Window_Loaded" WindowStartupLocation="CenterOwner"
             ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" ScrollViewer.VerticalScrollBarVisibility="Disabled">
 
@@ -37,6 +38,19 @@
                     <Setter Property="BorderBrush" Value="Transparent" />
                     <Setter Property="Background" Value="Transparent" />
                     <Setter Property="Foreground" Value="Black" />
+                </Trigger>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="helpers:DataGridBehavior.HighlightColumn" Value="True"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Style.Triggers>
+                <Trigger Property="helpers:DataGridBehavior.IsCellHighlighted" Value="True">
+                    <Setter Property="Background" Value="{x:Static helpers:DataGridBehavior.HighlightColour}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
