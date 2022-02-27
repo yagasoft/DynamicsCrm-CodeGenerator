@@ -1402,7 +1402,7 @@ namespace Yagasoft.CrmCodeGenerator.Mapper
 								VarName = Naming.GetProperVariableName(message.Name, false),
 								Description = Naming.XmlEscape(message.Description),
 								TargetEntityName = message.PrimaryObjectTypeCode,
-								InputFields = grp.GroupBy(g => g.InputName)
+								InputFields = grp.Where(e => e.InputName.IsFilled()).GroupBy(g => g.InputName)
 									.Select(g =>
 									{
 									   var input = g.First();

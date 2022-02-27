@@ -234,7 +234,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
           <link-entity name='sdkmessageresponsefield' from='sdkmessageresponseid' to='sdkmessageresponseid' link-type='outer'>
           </link-entity>
         </link-entity>
-        <link-entity name='sdkmessagerequestfield' from='sdkmessagerequestid' to='sdkmessagerequestid'>
+        <link-entity name='sdkmessagerequestfield' from='sdkmessagerequestid' to='sdkmessagerequestid' link-type='outer'>
           <filter>
             <condition attribute='fieldmask' operator='neq' value='4' />
           </filter>
@@ -350,7 +350,7 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
             <attribute name='position' alias='outputposition' />
           </link-entity>
         </link-entity>
-        <link-entity name='sdkmessagerequestfield' from='sdkmessagerequestid' to='sdkmessagerequestid' >
+        <link-entity name='sdkmessagerequestfield' from='sdkmessagerequestid' to='sdkmessagerequestid' link-type='outer'>
           <attribute name='name' alias='inputname' />
           <attribute name='clrparser' alias='clrparser' />
           <attribute name='optional' alias='optional' />
