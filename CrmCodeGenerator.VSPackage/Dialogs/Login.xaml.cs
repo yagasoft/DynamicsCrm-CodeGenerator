@@ -91,6 +91,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Owner = main;
 
 			settings = Configuration.LoadSettings();
+			Naming.ReplacemenStrings = settings.ReplacementStrings;
 
 			connectionManager = CacheHelpers.GetFromMemCacheAdd(Constants.ConnCacheMemKey,
 				() => new ConnectionManager(settings.Threads));

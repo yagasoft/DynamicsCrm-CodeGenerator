@@ -421,6 +421,8 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			}
 		}
 
+		public string[][] ReplacementStrings { get; set; }
+
 		#region boiler-plate INotifyPropertyChanged
 		
 		public event PropertyChangedEventHandler PropertyChanged;

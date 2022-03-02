@@ -149,6 +149,50 @@ namespace CrmCodeGenerator.VSPackage
 			settings.AppVersion ??= Constants.AppVersion;
 			settings.SettingsVersion = Constants.SettingsVersion;
 			settings.BaseFileName = FileName;
+			settings.ReplacementStrings ??= new string[][] { 
+				new [] { "ج", "z" },
+				new [] { "ح", "d" } ,
+				new [] { "خ", "s" } ,
+				new [] { "ه", "s" } ,
+				new [] { "ع", "k" } ,
+				new [] { "غ", "f" } ,
+				new [] { "ف", "gh" } ,
+				new [] { "ق", "a" } ,
+				new [] { "ث", "h" } ,
+				new [] { "ص", "kh" } ,
+				new [] { "ض", "h" } ,
+				new [] { "ذ", "g" } ,
+
+				new [] { "ط", "sh" },
+				new [] { "ك", "s" } ,
+				new [] { "م", "y" } ,
+				new [] { "ن", "b" } ,
+				new [] { "ت", "l" } ,
+				new [] { "ا", "a" } ,
+				new [] { "ل", "t" } ,
+				new [] { "ب", "n" } ,
+				new [] { "ي", "m" } ,
+				new [] { "س", "k" } ,
+				new [] { "ش", "t" } ,
+
+				new [] { "ظ", "ea" },
+				new [] { "ز", "a" } ,
+				new [] { "و", "oa" } ,
+				new [] { "ة", "r" } ,
+				new [] { "ى", "la" } ,
+				new [] { "لا", "y" } ,
+				new [] { "ر", "t" } ,
+				new [] { "ؤ", "o" } ,
+				new [] { "ء", "th" } ,
+				new [] { "ئ", "z" } ,
+
+				new [] { "آ", "la" },
+				new [] { "لآ", "e" } ,
+				new [] { "لأ", "a" } ,
+				new [] { "أ", "la" } ,
+				new [] { "إ", "la" } ,
+				new [] { "لإ", "a" } 
+			};
 
 			LoadConnection(settings);
 			SetTemplateInfo(settings);
