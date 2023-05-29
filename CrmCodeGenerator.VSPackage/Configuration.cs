@@ -149,50 +149,20 @@ namespace CrmCodeGenerator.VSPackage
 			settings.AppVersion ??= Constants.AppVersion;
 			settings.SettingsVersion = Constants.SettingsVersion;
 			settings.BaseFileName = FileName;
-			settings.ReplacementStrings ??= new string[][] { 
-				new [] { "ج", "z" },
-				new [] { "ح", "d" } ,
-				new [] { "خ", "s" } ,
-				new [] { "ه", "s" } ,
-				new [] { "ع", "k" } ,
-				new [] { "غ", "f" } ,
-				new [] { "ف", "gh" } ,
-				new [] { "ق", "a" } ,
-				new [] { "ث", "h" } ,
-				new [] { "ص", "kh" } ,
-				new [] { "ض", "h" } ,
-				new [] { "ذ", "g" } ,
 
-				new [] { "ط", "sh" },
-				new [] { "ك", "s" } ,
-				new [] { "م", "y" } ,
-				new [] { "ن", "b" } ,
-				new [] { "ت", "l" } ,
-				new [] { "ا", "a" } ,
-				new [] { "ل", "t" } ,
-				new [] { "ب", "n" } ,
-				new [] { "ي", "m" } ,
-				new [] { "س", "k" } ,
-				new [] { "ش", "t" } ,
-
-				new [] { "ظ", "ea" },
-				new [] { "ز", "a" } ,
-				new [] { "و", "oa" } ,
-				new [] { "ة", "r" } ,
-				new [] { "ى", "la" } ,
-				new [] { "لا", "y" } ,
-				new [] { "ر", "t" } ,
-				new [] { "ؤ", "o" } ,
-				new [] { "ء", "th" } ,
-				new [] { "ئ", "z" } ,
-
-				new [] { "آ", "la" },
-				new [] { "لآ", "e" } ,
-				new [] { "لأ", "a" } ,
-				new [] { "أ", "la" } ,
-				new [] { "إ", "la" } ,
-				new [] { "لإ", "a" } 
-			};
+			settings.ReplacementStrings ??= LoadReplacementChars()
+				??
+				new[]
+				{
+					new[] { "ذ", "z" }, new[] { "ض", "d" }, new[] { "ص", "s" }, new[] { "ث", "s" }, new[] { "ق", "k" },
+					new[] { "ف", "f" }, new[] { "غ", "gh" }, new[] { "ع", "a" }, new[] { "ه", "h" }, new[] { "خ", "kh" },
+					new[] { "ح", "h" }, new[] { "ج", "g" }, new[] { "ش", "sh" }, new[] { "س", "s" }, new[] { "ي", "y" },
+					new[] { "ب", "b" }, new[] { "ل", "l" }, new[] { "ا", "a" }, new[] { "ت", "t" }, new[] { "ن", "n" },
+					new[] { "م", "m" }, new[] { "ك", "k" }, new[] { "ط", "t" }, new[] { "ئ", "ea" }, new[] { "ء", "a" },
+					new[] { "ؤ", "oa" }, new[] { "ر", "r" }, new[] { "لا", "la" }, new[] { "ى", "y" }, new[] { "ة", "t" },
+					new[] { "و", "o" }, new[] { "ز", "th" }, new[] { "ظ", "z" }, new[] { "لإ", "la" }, new[] { "إ", "e" },
+					new[] { "أ", "a" }, new[] { "لأ", "la" }, new[] { "لآ", "la" }, new[] { "آ", "a" }
+				};
 
 			LoadConnection(settings);
 			SetTemplateInfo(settings);
@@ -800,6 +770,37 @@ namespace CrmCodeGenerator.VSPackage
 
 				var fileContent = File.ReadAllText(file);
 				return Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		private static string[][] LoadReplacementChars()
+		{
+			try
+			{
+				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+				var folder = $@"{dte.Solution.GetPath()}";
+
+				Directory.CreateDirectory(folder);
+
+				var file = $@"{folder}\ys-replacement-chars.json";
+
+				if (!File.Exists(file))
+				{
+					return null;
+				}
+
+				var fileContent = File.ReadAllText(file);
+
+				return JsonConvert.DeserializeObject<string[][]>(fileContent,
+					new JsonSerializerSettings
+					{
+						DefaultValueHandling = DefaultValueHandling.Ignore,
+						NullValueHandling = NullValueHandling.Ignore
+					});
 			}
 			catch
 			{

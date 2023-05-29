@@ -15,15 +15,14 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 {
 	public class Naming
 	{
-		static string[][] replacementStrings;
 		public static string[][] ReplacemenStrings
-        {
-			get 
-			{
-				return replacementStrings ?? new string[0][];
-			}
+		{
+			get => replacementStrings ?? Array.Empty<string[]>();
 			set => replacementStrings = value;
         }
+
+		private static string[][] replacementStrings;
+
 		public static string Clean(string p, bool isTitleCase = false)
 		{
 			var result = "";
@@ -56,10 +55,8 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 				result = sb.ToString();
 			}
 
-			foreach(string[] replacementPair in replacementStrings)
+			foreach(var replacementPair in ReplacemenStrings.Where(r => r.Length == 2))
             {
-				if (replacementStrings.Length != 2)
-					continue;
 				result = result.Replace(replacementPair[0], replacementPair[1]);
             }
 
