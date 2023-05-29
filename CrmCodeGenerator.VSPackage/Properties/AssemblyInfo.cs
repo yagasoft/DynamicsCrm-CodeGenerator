@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Shell;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ahmed Elsawalhy (yagasoft.com)")]
 [assembly: AssemblyProduct("CrmCodeGenerator.VSPackage")]
-[assembly: AssemblyCopyright("Yagasoft 2021")]
+[assembly: AssemblyCopyright("Yagasoft 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]   
 [assembly: ComVisible(false)]     
@@ -30,8 +30,8 @@ using Microsoft.VisualStudio.Shell;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("10.9.2.0")]
-[assembly: AssemblyFileVersion("10.9.2.0")]
+[assembly: AssemblyVersion("11.1.1.0")]
+[assembly: AssemblyFileVersion("11.1.1.0")]
 
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",
@@ -52,7 +52,7 @@ using Microsoft.VisualStudio.Shell;
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.IdentityModel.Clients.ActiveDirectory",
 	CodeBase = @"$PackageFolder$\Microsoft.IdentityModel.Clients.ActiveDirectory.dll",
-	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "3.19.8.16603")]
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "3.0.0.0")]
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Newtonsoft.Json",
 	CodeBase = @"$PackageFolder$\Newtonsoft.Json.dll",

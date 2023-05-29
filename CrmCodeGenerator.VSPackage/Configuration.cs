@@ -820,10 +820,13 @@ namespace CrmCodeGenerator.VSPackage
 			{
 				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
 				var folder = $@"{dte.Solution.GetPath()}";
-
-				Directory.CreateDirectory(folder);
-
 				var file = $@"{folder}\ys-replacement-chars.json";
+
+				if (!File.Exists(file))
+				{
+					Status.Update("[Settings] Created a new replacement char (ys-replacement-chars.json) file at the solution level.");
+					File.Create(file).Dispose();
+				}
 
 				if (!File.Exists(file))
 				{
@@ -831,16 +834,20 @@ namespace CrmCodeGenerator.VSPackage
 				}
 
 				var fileContent = File.ReadAllText(file);
+				Status.Update("[Settings] Loaded char replacements.");
 
-				return JsonConvert.DeserializeObject<string[][]>(fileContent,
-					new JsonSerializerSettings
-					{
-						DefaultValueHandling = DefaultValueHandling.Ignore,
-						NullValueHandling = NullValueHandling.Ignore
-					});
+				return fileContent.Any()
+					? JsonConvert.DeserializeObject<string[][]>(fileContent,
+						new JsonSerializerSettings
+						{
+							DefaultValueHandling = DefaultValueHandling.Ignore,
+							NullValueHandling = NullValueHandling.Ignore
+						})
+					: null;
 			}
-			catch
+			catch (Exception ex)
 			{
+				Status.Update($"!! [Settings] ![ERROR]! Failed to load replacement char file: {ex.Message}.");
 				return null;
 			}
 		}
