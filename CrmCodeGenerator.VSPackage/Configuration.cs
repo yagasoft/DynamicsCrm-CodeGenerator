@@ -541,6 +541,8 @@ namespace CrmCodeGenerator.VSPackage
 				CleanSettings(settings);
 			}
 
+			settings.ReplacementStrings = null;
+
 			Status.Update("[Settings] Serialising settings ...");
 			var serialisedSettings = JsonConvert.SerializeObject(settings, Formatting.Indented,
 				new JsonSerializerSettings
