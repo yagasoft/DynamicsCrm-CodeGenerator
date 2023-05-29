@@ -394,6 +394,8 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 						header.EntityProfiles.Add(profile);
 					}
 				}
+
+				header.EntityProfiles = header.EntityProfiles.OrderBy(p => p.LogicalName).ToList();
 			}
 
 			foreach (var entityRow in Entities.Where(entity => entity.IsOptionsetLabels))
@@ -411,6 +413,9 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					Settings.LookupLabelsEntitiesSelected.Add(entityRow.Name);
 				}
 			}
+
+			Settings.OptionsetLabelsEntitiesSelected = new ObservableCollection<string>(Settings.OptionsetLabelsEntitiesSelected.OrderBy(p => p));
+			Settings.LookupLabelsEntitiesSelected = new ObservableCollection<string>(Settings.LookupLabelsEntitiesSelected.OrderBy(p => p));
 
 			foreach (var entity in Settings.EntityList)
 			{

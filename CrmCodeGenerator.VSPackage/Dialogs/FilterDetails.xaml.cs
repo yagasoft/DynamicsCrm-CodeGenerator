@@ -564,34 +564,38 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 
 			//EntityProfile.EnglishLabelField = TextBoxEnglishLabelField.Text;
 
-			EntityProfile.Attributes = rowListAttrSource.Where(field => field.IsSelected).Select(field => field.Name).ToArray();
+			EntityProfile.Attributes = rowListAttrSource.Where(field => field.IsSelected).Select(field => field.Name).OrderBy(p => p).ToArray();
 			EntityProfile.AttributeRenames = rowListAttrSource.Where(field => !string.IsNullOrWhiteSpace(field.Rename))
 				.ToDictionary(field => field.Name, field => field.Rename);
 			EntityProfile.AttributeLanguages = rowListAttrSource.Where(field => !string.IsNullOrWhiteSpace(field.Language))
 				.ToDictionary(field => field.Name, field => field.Language);
 			EntityProfile.AttributeAnnotations = rowListAttrSource.Where(field => !string.IsNullOrWhiteSpace(field.Annotations))
 				.ToDictionary(field => field.Name, field => field.Annotations);
-			EntityProfile.ReadOnly = rowListAttrSource.Where(field => field.IsReadOnly).Select(field => field.Name).ToArray();
-			EntityProfile.ClearFlag = rowListAttrSource.Where(field => field.IsClearFlag).Select(field => field.Name).ToArray();
+			EntityProfile.ReadOnly = rowListAttrSource.Where(field => field.IsReadOnly).Select(field => field.Name).OrderBy(p => p).ToArray();
+			EntityProfile.ClearFlag = rowListAttrSource.Where(field => field.IsClearFlag).Select(field => field.Name).OrderBy(p => p).ToArray();
 
 			EntityProfile.OneToN =
-				rowList1NSource.Where(relation => relation.IsSelected).Select(relation => relation.Name).ToArray();
+				rowList1NSource.Where(relation => relation.IsSelected).Select(relation => relation.Name).OrderBy(p => p).ToArray();
 			EntityProfile.OneToNRenames = rowList1NSource.Where(relation => !string.IsNullOrWhiteSpace(relation.Rename))
 				.ToDictionary(relation => relation.Name, relation => relation.Rename);
-			EntityProfile.OneToNReadOnly = rowList1NSource.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
+			EntityProfile.OneToNReadOnly = rowList1NSource.Where(relation => relation.IsReadOnly)
+				.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
 
 			EntityProfile.NToOne =
-				rowListN1Source.Where(relation => relation.IsSelected).Select(relation => relation.Name).ToArray();
+				rowListN1Source.Where(relation => relation.IsSelected).Select(relation => relation.Name).OrderBy(p => p).ToArray();
 			EntityProfile.NToOneRenames = rowListN1Source.Where(relation => !string.IsNullOrWhiteSpace(relation.Rename))
 				.ToDictionary(relation => relation.Name, relation => relation.Rename);
-			EntityProfile.NToOneFlatten = rowListN1Source.ToDictionary(relation => relation.Name, relation => relation.IsFlatten);
-			EntityProfile.NToOneReadOnly = rowListN1Source.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
+			EntityProfile.NToOneFlatten = rowListN1Source.Where(relation => relation.IsFlatten)
+				.ToDictionary(relation => relation.Name, relation => relation.IsFlatten);
+			EntityProfile.NToOneReadOnly = rowListN1Source.Where(relation => relation.IsReadOnly)
+				.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
 
 			EntityProfile.NToN =
-				RelationsNn.Where(relation => relation.IsSelected).Select(relation => relation.Name).ToArray();
+				RelationsNn.Where(relation => relation.IsSelected).Select(relation => relation.Name).OrderBy(p => p).ToArray();
 			EntityProfile.NToNRenames = RelationsNn.Where(relation => !string.IsNullOrWhiteSpace(relation.Rename))
 				.ToDictionary(relation => relation.Name, relation => relation.Rename);
-			EntityProfile.NToNReadOnly = RelationsNn.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
+			EntityProfile.NToNReadOnly = RelationsNn.Where(relation => relation.IsReadOnly)
+				.ToDictionary(relation => relation.Name, relation => relation.IsReadOnly);
 
 			var toSelect = Relations1N.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
 				.Union(RelationsN1.Where(relation => relation.IsSelected).Select(relation => relation.ToEntity)
@@ -603,6 +607,34 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			{
 				entityRow.IsSelected = true;
 			}
+
+			SortSettings();
+		}
+
+		private void SortSettings()
+		{
+			EntityProfile.AttributeRenames = SortValues(EntityProfile.AttributeRenames);
+			EntityProfile.AttributeLanguages = SortValues(EntityProfile.AttributeLanguages);
+			EntityProfile.AttributeAnnotations = SortValues(EntityProfile.AttributeAnnotations);
+			EntityProfile.OneToNRenames = SortValues(EntityProfile.OneToNRenames);
+			EntityProfile.OneToNReadOnly = SortValues(EntityProfile.OneToNReadOnly);
+			EntityProfile.NToOneRenames = SortValues(EntityProfile.NToOneRenames);
+			EntityProfile.NToOneFlatten = SortValues(EntityProfile.NToOneFlatten);
+			EntityProfile.NToOneReadOnly = SortValues(EntityProfile.NToOneReadOnly);
+			EntityProfile.NToNRenames = SortValues(EntityProfile.NToNRenames);
+			EntityProfile.NToNReadOnly = SortValues(EntityProfile.NToNReadOnly);
+		}
+
+		private static IDictionary<string, T> SortValues<T>(IDictionary<string, T> source)
+		{
+			var sorted = new SortedDictionary<string, T>();
+
+			foreach (var pair in source)
+			{
+				sorted[pair.Key] = pair.Value;
+			}
+
+			return sorted;
 		}
 
 		#region CRM
