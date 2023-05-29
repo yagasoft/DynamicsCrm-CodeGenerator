@@ -91,6 +91,7 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			Owner = main;
 
 			settings = Configuration.LoadSettings();
+			Naming.ReplacemenStrings = settings.ReplacementStrings;
 
 			connectionManager = CacheHelpers.GetFromMemCacheAdd(Constants.ConnCacheMemKey,
 				() => new ConnectionManager(settings.Threads));
@@ -136,21 +137,26 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 			}
 
 			var templateVersion = settings.DetectedTemplateVersion;
+			var isTemplateLatest = false;
+			var isTemplateCompatible = false;
 
 			if (templateVersion.IsEmpty())
 			{
 				LabelTemplateVersion.Content = "--";
 				LabelCompatibility.Content = "--";
 			}
+			else
+            {
+				isTemplateLatest = new Version(templateVersion) >= new Version(Constants.LatestTemplateVersion);
+				isTemplateCompatible = new Version(templateVersion) >= new Version(Constants.MinTemplateVersion);
+			}
 
 			LabelTemplateVersion.Content = templateVersion;
 			LabelTemplateVersion.Foreground = Brushes.Blue;
 
-			var isTemplateLatest = new Version(templateVersion) >= new Version(Constants.LatestTemplateVersion);
 			LabelTemplateLatest.Content = isTemplateLatest ? "(latest)" : "(outdated)";
 			LabelTemplateLatest.Foreground = isTemplateLatest ? Brushes.Green : Brushes.PaleVioletRed;
-
-			var isTemplateCompatible = new Version(templateVersion) >= new Version(Constants.MinTemplateVersion);
+ 
 			LabelCompatibility.Content = isTemplateCompatible ? "YES" : "NO";
 			LabelCompatibility.Foreground = isTemplateCompatible ? Brushes.Green : Brushes.Red;
 		}

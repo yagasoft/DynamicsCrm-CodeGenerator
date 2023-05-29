@@ -15,6 +15,14 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 {
 	public class Naming
 	{
+		public static string[][] ReplacemenStrings
+		{
+			get => replacementStrings ?? Array.Empty<string[]>();
+			set => replacementStrings = value;
+        }
+
+		private static string[][] replacementStrings;
+
 		public static string Clean(string p, bool isTitleCase = false)
 		{
 			var result = "";
@@ -47,35 +55,10 @@ namespace Yagasoft.CrmCodeGenerator.Helpers
 				result = sb.ToString();
 			}
 
-			var arabicChars =
-				new[]
-				{
-					"ذ", "ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج"
-					, "ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م", "ك", "ط"
-					, "ئ", "ء", "ؤ", "ر", "لا", "ى", "ة", "و", "ز", "ظ"
-					, "لإ", "إ", "أ", "لأ", "لآ", "آ"
-				};
-			var correspondingEnglishChars =
-				new[]
-				{
-					"z", "d", "s", "s", "k", "f", "gh", "a", "h", "kh", "h", "g"
-					, "sh", "s", "y", "b", "l", "a", "t", "n", "m", "k", "t"
-					, "ea", "a", "oa", "r", "la", "y", "t", "o", "th", "z"
-					, "la", "e", "a", "la", "la", "a"
-				};
-
-			result = Regex.Replace(result, "[^A-Za-z0-9]"
-				, match =>
-				  {
-					  return match.Success
-						  ? match.Value.Select(character =>
-											   {
-												   var index = Array.IndexOf<string>(arabicChars, character.ToString());
-												   return index < 0 ? "_" : correspondingEnglishChars[index];
-											   })
-							  .Aggregate((char1, char2) => char1 + char2)
-						  : "";
-				  });
+			foreach(var replacementPair in ReplacemenStrings.Where(r => r.Length == 2))
+            {
+				result = result.Replace(replacementPair[0], replacementPair[1]);
+            }
 
 			result = Capitalize(result, isTitleCase);
 

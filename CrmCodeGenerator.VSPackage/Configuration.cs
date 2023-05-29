@@ -150,6 +150,20 @@ namespace CrmCodeGenerator.VSPackage
 			settings.SettingsVersion = Constants.SettingsVersion;
 			settings.BaseFileName = FileName;
 
+			settings.ReplacementStrings ??= LoadReplacementChars()
+				??
+				new[]
+				{
+					new[] { "ذ", "z" }, new[] { "ض", "d" }, new[] { "ص", "s" }, new[] { "ث", "s" }, new[] { "ق", "k" },
+					new[] { "ف", "f" }, new[] { "غ", "gh" }, new[] { "ع", "a" }, new[] { "ه", "h" }, new[] { "خ", "kh" },
+					new[] { "ح", "h" }, new[] { "ج", "g" }, new[] { "ش", "sh" }, new[] { "س", "s" }, new[] { "ي", "y" },
+					new[] { "ب", "b" }, new[] { "ل", "l" }, new[] { "ا", "a" }, new[] { "ت", "t" }, new[] { "ن", "n" },
+					new[] { "م", "m" }, new[] { "ك", "k" }, new[] { "ط", "t" }, new[] { "ئ", "ea" }, new[] { "ء", "a" },
+					new[] { "ؤ", "oa" }, new[] { "ر", "r" }, new[] { "لا", "la" }, new[] { "ى", "y" }, new[] { "ة", "t" },
+					new[] { "و", "o" }, new[] { "ز", "th" }, new[] { "ظ", "z" }, new[] { "لإ", "la" }, new[] { "إ", "e" },
+					new[] { "أ", "a" }, new[] { "لأ", "la" }, new[] { "لآ", "la" }, new[] { "آ", "a" }
+				};
+
 			LoadConnection(settings);
 			SetTemplateInfo(settings);
 
@@ -514,6 +528,8 @@ namespace CrmCodeGenerator.VSPackage
 				CleanSettings(settings);
 			}
 
+			settings.ReplacementStrings = null;
+
 			Status.Update("[Settings] Sorting settings ...");
 			SortSettings(settings);
 
@@ -791,6 +807,37 @@ namespace CrmCodeGenerator.VSPackage
 
 				var fileContent = File.ReadAllText(file);
 				return Encoding.UTF8.GetString(Convert.FromBase64String(fileContent));
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		private static string[][] LoadReplacementChars()
+		{
+			try
+			{
+				var dte = (DTE)Package.GetGlobalService(typeof(SDTE));
+				var folder = $@"{dte.Solution.GetPath()}";
+
+				Directory.CreateDirectory(folder);
+
+				var file = $@"{folder}\ys-replacement-chars.json";
+
+				if (!File.Exists(file))
+				{
+					return null;
+				}
+
+				var fileContent = File.ReadAllText(file);
+
+				return JsonConvert.DeserializeObject<string[][]>(fileContent,
+					new JsonSerializerSettings
+					{
+						DefaultValueHandling = DefaultValueHandling.Ignore,
+						NullValueHandling = NullValueHandling.Ignore
+					});
 			}
 			catch
 			{
