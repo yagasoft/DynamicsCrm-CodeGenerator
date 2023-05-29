@@ -521,19 +521,6 @@ namespace CrmCodeGenerator.VSPackage
 
 			Status.Update("[Settings] Ordering profiles ...");
 
-			settings.EntitiesSelected = new ObservableCollection<string>(settings.EntitiesSelected.OrderBy(e => e));
-			settings.CrmEntityProfiles = new List<EntityProfile>(settings.CrmEntityProfiles
-				.OrderBy(e => e.LogicalName));
-
-			settings.EntityProfilesHeaderSelector.EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader>(settings
-				.EntityProfilesHeaderSelector.EntityProfilesHeaders.OrderBy(e => e.DisplayName));
-
-			foreach (var header in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
-			{
-				header.EntityProfiles = new List<EntityProfile>(header.EntityProfiles
-					.OrderBy(e => e.LogicalName));
-			}
-
 			Status.Update("[Settings] Cleaning redundant settings ...");
 
 			if (settings.IsCleanSave)
@@ -542,6 +529,9 @@ namespace CrmCodeGenerator.VSPackage
 			}
 
 			settings.ReplacementStrings = null;
+
+			Status.Update("[Settings] Sorting settings ...");
+			SortSettings(settings);
 
 			Status.Update("[Settings] Serialising settings ...");
 			var serialisedSettings = JsonConvert.SerializeObject(settings, Formatting.Indented,
@@ -555,6 +545,51 @@ namespace CrmCodeGenerator.VSPackage
 			File.WriteAllText(file, serialisedSettings);
 
 			Status.Update("[Settings] [DONE] Writing settings.");
+		}
+
+		private static void SortSettings(Settings settings)
+		{
+			settings.CrmEntityProfiles = settings.CrmEntityProfiles.OrderBy(p => p.LogicalName).ToList();
+
+			settings.EntityProfilesHeaderSelector.EntityProfilesHeaders = new ObservableCollection<EntityProfilesHeader>(settings
+				.EntityProfilesHeaderSelector.EntityProfilesHeaders.OrderBy(e => e.DisplayName));
+
+			foreach (var header in settings.EntityProfilesHeaderSelector.EntityProfilesHeaders)
+			{
+				header.EntityProfiles = new List<EntityProfile>(header.EntityProfiles
+					.OrderBy(e => e.LogicalName));
+			}
+
+			foreach (var profile in settings.CrmEntityProfiles
+				.Union(settings.EntityProfilesHeaderSelector.EntityProfilesHeaders.SelectMany(h => h.EntityProfiles)))
+			{
+				profile.Attributes = profile.Attributes.OrderBy(p => p).ToArray();
+				profile.OneToN = profile.OneToN.OrderBy(p => p).ToArray();
+				profile.NToOne = profile.NToOne.OrderBy(p => p).ToArray();
+				profile.NToN = profile.NToN.OrderBy(p => p).ToArray();
+
+				profile.ReadOnly = profile.ReadOnly.OrderBy(p => p).ToArray();
+				profile.ClearFlag = profile.ClearFlag.OrderBy(p => p).ToArray();
+			}
+
+			settings.EntitiesSelected = new ObservableCollection<string>(settings.EntitiesSelected.OrderBy(p => p));
+			settings.EarlyBoundFilteredSelected = new ObservableCollection<string>(settings.EarlyBoundFilteredSelected.OrderBy(p => p));
+
+			settings.EarlyBoundLinkedSelected = new ObservableCollection<string>(settings.EarlyBoundLinkedSelected.OrderBy(p => p));
+
+			settings.PluginMetadataEntitiesSelected = new ObservableCollection<string>(settings.PluginMetadataEntitiesSelected.OrderBy(p => p));
+			settings.JsEarlyBoundEntitiesSelected = new ObservableCollection<string>(settings.JsEarlyBoundEntitiesSelected.OrderBy(p => p));
+
+			settings.OptionsetLabelsEntitiesSelected = new ObservableCollection<string>(settings.OptionsetLabelsEntitiesSelected.OrderBy(p => p));
+			settings.LookupLabelsEntitiesSelected = new ObservableCollection<string>(settings.LookupLabelsEntitiesSelected.OrderBy(p => p));
+
+			var tempSelectedActions = settings.SelectedActions;
+			settings.SelectedActions = new SortedDictionary<string, string[]>();
+
+			foreach (var pair in tempSelectedActions)
+			{
+				settings.SelectedActions[pair.Key] = pair.Value.OrderBy(p => p).ToArray();
+			}
 		}
 
 		private static void SaveConnection(Settings settings)

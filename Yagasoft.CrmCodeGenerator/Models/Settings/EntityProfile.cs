@@ -127,24 +127,24 @@ namespace Yagasoft.CrmCodeGenerator.Models.Settings
 			.Any(e => (e.GetGetMethod().Invoke(this, null) as IEnumerable)?.Cast<object>().Any() == true);
 
 		public string[] Attributes { get; set; } = new string[0];
-		public IDictionary<string, string> AttributeRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, string> AttributeLanguages { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, string> AttributeAnnotations { get; set; } = new Dictionary<string, string>();
+		public IDictionary<string, string> AttributeRenames { get; set; } = new SortedDictionary<string, string>();
+		public IDictionary<string, string> AttributeLanguages { get; set; } = new SortedDictionary<string, string>();
+		public IDictionary<string, string> AttributeAnnotations { get; set; } = new SortedDictionary<string, string>();
 		public string[] ReadOnly { get; set; } = new string[0];
 		public string[] ClearFlag { get; set; } = new string[0];
 
 		public string[] OneToN { get; set; } = new string[0];
-		public IDictionary<string, string> OneToNRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> OneToNReadOnly { get; set; } = new Dictionary<string, bool>();
+		public IDictionary<string, string> OneToNRenames { get; set; } = new SortedDictionary<string, string>();
+		public IDictionary<string, bool> OneToNReadOnly { get; set; } = new SortedDictionary<string, bool>();
 
 		public string[] NToOne { get; set; } = new string[0];
-		public IDictionary<string, string> NToOneRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> NToOneFlatten { get; set; } = new Dictionary<string, bool>();
-		public IDictionary<string, bool> NToOneReadOnly { get; set; } = new Dictionary<string, bool>();
+		public IDictionary<string, string> NToOneRenames { get; set; } = new SortedDictionary<string, string>();
+		public IDictionary<string, bool> NToOneFlatten { get; set; } = new SortedDictionary<string, bool>();
+		public IDictionary<string, bool> NToOneReadOnly { get; set; } = new SortedDictionary<string, bool>();
 
 		public string[] NToN { get; set; } = new string[0];
-		public IDictionary<string, string> NToNRenames { get; set; } = new Dictionary<string, string>();
-		public IDictionary<string, bool> NToNReadOnly { get; set; } = new Dictionary<string, bool>();
+		public IDictionary<string, string> NToNRenames { get; set; } = new SortedDictionary<string, string>();
+		public IDictionary<string, bool> NToNReadOnly { get; set; } = new SortedDictionary<string, bool>();
 
 		public EntityProfile(string logicalName)
 		{

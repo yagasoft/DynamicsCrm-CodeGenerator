@@ -424,6 +424,32 @@ namespace CrmCodeGenerator.VSPackage.Dialogs
 					Settings.SelectedActions.Remove(entity.LogicalName);
 				}
 			}
+
+			SortSettings();
+		}
+
+		private void SortSettings()
+		{
+			Settings.CrmEntityProfiles = Settings.CrmEntityProfiles.OrderBy(p => p.LogicalName).ToList();
+
+			Settings.EntitiesSelected = new ObservableCollection<string>(Settings.EntitiesSelected.OrderBy(p => p));
+			Settings.EarlyBoundFilteredSelected = new ObservableCollection<string>(Settings.EarlyBoundFilteredSelected.OrderBy(p => p));
+
+			Settings.EarlyBoundLinkedSelected = new ObservableCollection<string>(Settings.EarlyBoundLinkedSelected.OrderBy(p => p));
+
+			Settings.PluginMetadataEntitiesSelected = new ObservableCollection<string>(Settings.PluginMetadataEntitiesSelected.OrderBy(p => p));
+			Settings.JsEarlyBoundEntitiesSelected = new ObservableCollection<string>(Settings.JsEarlyBoundEntitiesSelected.OrderBy(p => p));
+
+			Settings.OptionsetLabelsEntitiesSelected = new ObservableCollection<string>(Settings.OptionsetLabelsEntitiesSelected.OrderBy(p => p));
+			Settings.LookupLabelsEntitiesSelected = new ObservableCollection<string>(Settings.LookupLabelsEntitiesSelected.OrderBy(p => p));
+
+			var tempSelectedActions = Settings.SelectedActions;
+			Settings.SelectedActions = new SortedDictionary<string, string[]>();
+
+			foreach (var pair in tempSelectedActions)
+			{
+				Settings.SelectedActions[pair.Key] = pair.Value.OrderBy(p => p).ToArray();
+			}
 		}
 
 		#region CRM
