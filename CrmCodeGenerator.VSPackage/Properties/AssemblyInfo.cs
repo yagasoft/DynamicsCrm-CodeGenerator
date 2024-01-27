@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Shell;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ahmed Elsawalhy (yagasoft.com)")]
 [assembly: AssemblyProduct("CrmCodeGenerator.VSPackage")]
-[assembly: AssemblyCopyright("Yagasoft 2023")]
+[assembly: AssemblyCopyright("Copyright © Ahmed Elsawalhy")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]   
 [assembly: ComVisible(false)]     
@@ -30,8 +30,8 @@ using Microsoft.VisualStudio.Shell;
 // You can specify all the values or you can default the Revision and Build Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("11.1.1.0")]
-[assembly: AssemblyFileVersion("11.1.1.0")]
+[assembly: AssemblyVersion("11.1.2.0")]
+[assembly: AssemblyFileVersion("11.1.2.0")]
 
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Microsoft.Xrm.Sdk",
@@ -60,4 +60,4 @@ using Microsoft.VisualStudio.Shell;
 
 [assembly: ProvideBindingRedirection(AssemblyName = "Yagasoft.Libraries.Common",
 	CodeBase = @"$PackageFolder$\Yagasoft.Libraries.Common.dll",
-	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "3.0.0.0")]
+	OldVersionLowerBound = "0.0.0.0", OldVersionUpperBound = "8.0.0.0")]

@@ -447,7 +447,8 @@
       <HintPath>..\packages\Microsoft.Win32.Registry.5.0.0\lib\net461\Microsoft.Win32.Registry.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Xrm.Client, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.6.2.1\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.7.1.1\lib\net462\Microsoft.Xrm.Client.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Xrm.Sdk, Version=9.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.CrmSdk.CoreAssemblies.9.0.2.21\lib\net462\Microsoft.Xrm.Sdk.dll</HintPath>
@@ -665,11 +666,13 @@
       <HintPath>..\packages\Extended.Wpf.Toolkit.2.8\lib\net40\Xceed.Wpf.Toolkit.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Yagasoft.Libraries.Common, Version=3.3.3.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.Common.4.1.4\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
+    <Reference Include="Yagasoft.Libraries.Common, Version=8.1.1.1, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
+      <HintPath>..\packages\Yagasoft.Libraries.Common.8.1.1\lib\net462\Yagasoft.Libraries.Common.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="Yagasoft.Libraries.EnhancedOrgService, Version=6.2.1.0, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
-      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.6.2.1\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
+    <Reference Include="Yagasoft.Libraries.EnhancedOrgService, Version=7.1.1.1, Culture=neutral, PublicKeyToken=d99f90f6e31ed2df, processorArchitecture=MSIL">
+      <HintPath>..\packages\Yagasoft.Libraries.EnhancedOrgService.7.1.1\lib\net462\Yagasoft.Libraries.EnhancedOrgService.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
